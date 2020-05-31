@@ -21,6 +21,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -30,12 +31,11 @@ import org.eclipse.smarthome.config.discovery.AbstractDiscoveryService;
 import org.eclipse.smarthome.config.discovery.DiscoveryResult;
 import org.eclipse.smarthome.config.discovery.DiscoveryResultBuilder;
 import org.eclipse.smarthome.config.discovery.DiscoveryService;
+import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.ThingUID;
-import org.eclipse.smarthome.core.thing.binding.ThingHandler;
-import org.eclipse.smarthome.core.thing.binding.ThingHandlerService;
-import org.openhab.binding.tradfri.internal.DeviceUpdateListener;
 import org.openhab.binding.tradfri.internal.handler.TradfriGatewayHandler;
+import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,11 +51,11 @@ import com.google.gson.JsonSyntaxException;
  * @author Manuel Raffel - Added support for blinds
  */
 @NonNullByDefault
-public class TradfriDiscoveryService extends AbstractDiscoveryService
-        implements DeviceUpdateListener, DiscoveryService, ThingHandlerService {
+@Component(service = DiscoveryService.class, configurationPid = "discovery.tradfri")
+public class TradfriDiscoveryService extends AbstractDiscoveryService {
     private final Logger logger = LoggerFactory.getLogger(TradfriDiscoveryService.class);
 
-    private @Nullable TradfriGatewayHandler handler;
+    private final CopyOnWriteArrayList<TradfriGatewayHandler> gatewayHandlers = new CopyOnWriteArrayList<TradfriGatewayHandler>();
 
     private static final String REMOTE_CONTROLLER_MODEL = "TRADFRI remote control";
 
@@ -74,50 +74,64 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService
 
     @Override
     protected void startScan() {
-        handler.startScan();
+        for (TradfriGatewayHandler gh : gatewayHandlers) {
+            gh.startScan();
+        }
     }
 
     @Override
     protected synchronized void stopScan() {
+        for (TradfriGatewayHandler gh : gatewayHandlers) {
+            gh.stopScan();
+        }
         super.stopScan();
         removeOlderResults(getTimestampOfLastScan());
     }
 
     @Override
-    public void setThingHandler(@Nullable ThingHandler handler) {
-        if (handler instanceof TradfriGatewayHandler) {
-            this.handler = (TradfriGatewayHandler) handler;
+    public void deactivate() {
+        super.deactivate();
+        removeOlderResults(new Date().getTime());
+    }
+
+    /**
+     * Starts background discovery logic. This method is
+     * called when {@link AbstractDiscoveryService#isBackgroundDiscoveryEnabled()} is true
+     * and when the component is being activated (see {@link AbstractDiscoveryService#activate()}.
+     */
+    @Override
+    protected void startBackgroundDiscovery() {
+        for (TradfriGatewayHandler gh : gatewayHandlers) {
+            gh.startScan();
         }
     }
 
+    /**
+     * Stops background discovery logic. This method is
+     * called when {@link AbstractDiscoveryService#isBackgroundDiscoveryEnabled()} is false
+     * and when the component is being deactivated (see {@link AbstractDiscoveryService#deactivate()}.
+     */
     @Override
-    public @Nullable ThingHandler getThingHandler() {
-        return handler;
+    protected void stopBackgroundDiscovery() {
+        for (TradfriGatewayHandler gh : gatewayHandlers) {
+            gh.stopScan();
+        }
     }
 
-    @Override
-    public void activate() {
-        handler.registerDeviceUpdateListener(this);
-    }
-
-    @Override
-    public void deactivate() {
-        removeOlderResults(new Date().getTime());
-        handler.unregisterDeviceUpdateListener(this);
-    }
-
-    @Override
-    public void onUpdate(@Nullable String instanceId, @Nullable JsonObject data) {
-        ThingUID bridge = handler.getThing().getUID();
+    public void onDeviceUpdate(@Nullable Bridge bridge, @Nullable String instanceId, @Nullable JsonObject data) {
+        if (bridge == null) {
+            return;
+        }
+        ThingUID bridgeUID = bridge.getUID();
         try {
-            if (data != null && data.has(INSTANCE_ID)) {
-                int id = data.get(INSTANCE_ID).getAsInt();
-                String type = data.get(TYPE).getAsString();
+            if (data != null && data.has(RESOURCE_INSTANCE_ID)) {
+                int id = data.get(RESOURCE_INSTANCE_ID).getAsInt();
+                int type = data.get(DEVICE_TYPE).getAsInt();
                 JsonObject deviceInfo = data.get(DEVICE).getAsJsonObject();
                 String model = deviceInfo.get(DEVICE_MODEL).getAsString();
                 ThingUID thingId = null;
 
-                if (TYPE_LIGHT.equals(type) && data.has(LIGHT)) {
+                if (DEVICE_TYPE_LIGHT == type && data.has(LIGHT)) {
                     JsonObject state = data.get(LIGHT).getAsJsonArray().get(0).getAsJsonObject();
 
                     // Color temperature light:
@@ -138,36 +152,37 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService
                     if (thingType == null) {
                         thingType = THING_TYPE_DIMMABLE_LIGHT;
                     }
-                    thingId = new ThingUID(thingType, bridge, Integer.toString(id));
-                } else if (TYPE_BLINDS.equals(type) && data.has(BLINDS)) {
+                    thingId = new ThingUID(thingType, bridgeUID, Integer.toString(id));
+                } else if (DEVICE_TYPE_BLINDS == type && data.has(BLINDS)) {
                     // Blinds
-                    thingId = new ThingUID(THING_TYPE_BLINDS, bridge, Integer.toString(id));
-                } else if (TYPE_PLUG.equals(type) && data.has(PLUG)) {
+                    thingId = new ThingUID(THING_TYPE_BLINDS, bridgeUID, Integer.toString(id));
+                } else if (DEVICE_TYPE_PLUG == type && data.has(PLUG)) {
                     // Smart plug
-                    thingId = new ThingUID(THING_TYPE_ONOFF_PLUG, bridge, Integer.toString(id));
-                } else if (TYPE_SWITCH.equals(type) && data.has(SWITCH)) {
+                    ThingTypeUID thingType = THING_TYPE_ONOFF_PLUG;
+                    thingId = new ThingUID(thingType, bridgeUID, Integer.toString(id));
+                } else if (DEVICE_TYPE_SWITCH == type && data.has(SWITCH)) {
                     // Remote control and wireless dimmer
                     // As protocol does not distinguishes between remote control and wireless dimmer,
                     // we check for the whole model name
                     ThingTypeUID thingType = (model != null && REMOTE_CONTROLLER_MODEL.equals(model))
                             ? THING_TYPE_REMOTE_CONTROL
                             : THING_TYPE_DIMMER;
-                    thingId = new ThingUID(thingType, bridge, Integer.toString(id));
-                } else if (TYPE_REMOTE.equals(type)) {
-                    thingId = new ThingUID(THING_TYPE_OPEN_CLOSE_REMOTE_CONTROL, bridge, Integer.toString(id));
-                } else if (TYPE_SENSOR.equals(type) && data.has(SENSOR)) {
+                    thingId = new ThingUID(thingType, bridgeUID, Integer.toString(id));
+                } else if (DEVICE_TYPE_REMOTE == type) {
+                    thingId = new ThingUID(THING_TYPE_OPEN_CLOSE_REMOTE_CONTROL, bridgeUID, Integer.toString(id));
+                } else if (DEVICE_TYPE_SENSOR == type && data.has(SENSOR)) {
                     // Motion sensor
-                    thingId = new ThingUID(THING_TYPE_MOTION_SENSOR, bridge, Integer.toString(id));
+                    thingId = new ThingUID(THING_TYPE_MOTION_SENSOR, bridgeUID, Integer.toString(id));
                 }
 
                 if (thingId == null) {
                     // we didn't identify any device, so let's quit
                     logger.debug("Ignoring unknown device on TRADFRI gateway:\n\ttype : {}\n\tmodel: {}\n\tinfo : {}",
-                            type, model, deviceInfo.getAsString());
+                            type, model, deviceInfo);
                     return;
                 }
 
-                String label = data.get(NAME).getAsString();
+                String label = data.get(RESOURCE_NAME).getAsString();
 
                 Map<String, Object> properties = new HashMap<>(1);
                 properties.put("id", id);
@@ -182,12 +197,24 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService
                 }
 
                 logger.debug("Adding device {} to inbox", thingId);
-                DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(thingId).withBridge(bridge)
+                DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(thingId).withBridge(bridgeUID)
                         .withLabel(label).withProperties(properties).withRepresentationProperty("id").build();
                 thingDiscovered(discoveryResult);
             }
         } catch (JsonSyntaxException e) {
             logger.debug("JSON error during discovery: {}", e.getMessage());
         }
+    }
+
+    public void registerTradfriGatewayHandler(TradfriGatewayHandler gatewayHandler) {
+        this.gatewayHandlers.add(gatewayHandler);
+
+        if (isBackgroundDiscoveryEnabled()) {
+            gatewayHandler.startScan();
+        }
+    }
+
+    public void unRegisterTradfriGatewayHandler(TradfriGatewayHandler gatewayHandler) {
+        this.gatewayHandlers.remove(gatewayHandler);
     }
 }

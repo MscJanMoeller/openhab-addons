@@ -28,6 +28,7 @@ import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.ThingStatusInfo;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
 import org.openhab.binding.tradfri.internal.CoapCallback;
+import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import org.openhab.binding.tradfri.internal.TradfriCoapClient;
 import org.openhab.binding.tradfri.internal.config.TradfriDeviceConfig;
 import org.openhab.binding.tradfri.internal.model.TradfriDeviceData;
@@ -66,7 +67,7 @@ public abstract class TradfriThingHandler extends BaseThingHandler implements Co
         this.id = getConfigAs(TradfriDeviceConfig.class).id;
         TradfriGatewayHandler handler = (TradfriGatewayHandler) tradfriGateway.getHandler();
 
-        String uriString = handler.getGatewayURI() + "/" + id;
+        String uriString = handler.getGatewayURI() + "/" + TradfriBindingConstants.ENDPOINT_DEVICES + "/" + id;
         try {
             URI uri = new URI(uriString);
             coapClient = new TradfriCoapClient(uri);
@@ -107,17 +108,20 @@ public abstract class TradfriThingHandler extends BaseThingHandler implements Co
 
     @Override
     @SuppressWarnings("null")
-    public void setStatus(ThingStatus status, ThingStatusDetail statusDetail) {
-        if (active && getBridge().getStatus() != ThingStatus.OFFLINE && status != ThingStatus.ONLINE) {
+    public void onError(ThingStatus status, ThingStatusDetail statusDetail) {
+        ThingStatus gwStatus = getBridge().getStatus();
+        if (active && gwStatus != ThingStatus.OFFLINE && status != ThingStatus.ONLINE) {
             updateStatus(status, statusDetail);
             // we are offline and lost our observe relation - let's try to establish the connection in 10 seconds again
-            scheduler.schedule(() -> {
-                if (observeRelation != null) {
-                    observeRelation.reactiveCancel();
-                    observeRelation = null;
-                }
-                observeRelation = coapClient.startObserve(this);
-            }, 10, TimeUnit.SECONDS);
+            if (gwStatus == ThingStatus.ONLINE) {
+                scheduler.schedule(() -> {
+                    if (observeRelation != null) {
+                        observeRelation.reactiveCancel();
+                        observeRelation = null;
+                    }
+                    observeRelation = coapClient.startObserve(this);
+                }, 10, TimeUnit.SECONDS);
+            }
         }
     }
 

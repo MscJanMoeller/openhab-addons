@@ -1,0 +1,34 @@
+@startuml
+
+interface CoapCallback {
+    +void onUpdate(...)
+    +void onError(...)
+}
+
+interface CoapHandler {
+    +void onLoad(...)
+    +void onError(...)
+}
+
+class TradfriThingHandler {
+    +setStatus(...)
+    +bridgeStatusChanged(...)
+}
+
+CoapCallback <|.. TradfriThingHandler
+BaseThingHandler <|-- TradfriThingHandler
+TradfriThingHandler <|-- TradfriLightHandler
+TradfriThingHandler <|-- TradfriPlugHandler
+TradfriThingHandler <|-- TradfriSensorHandler
+TradfriThingHandler <|-- TradfriControllerHandler
+
+class TradfriGatewayHandler {
+    +setStatus(...)
+}
+
+CoapCallback <|.. TradfriGatewayHandler
+BaseBridgeHandler <|-- TradfriGatewayHandler
+
+CoapHandler <|.. TradfriCoapHandler
+TradfriCoapHandler o--CoapCallback
+@enduml

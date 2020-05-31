@@ -14,7 +14,6 @@ package org.openhab.binding.tradfri.internal;
 
 import java.net.URI;
 import java.util.LinkedList;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -35,13 +34,17 @@ import org.slf4j.LoggerFactory;
 @NonNullByDefault
 public class TradfriCoapClient extends CoapClient {
 
-    private static final long TIMEOUT = 2000;
+    public static final long TIMEOUT = 2000;
     private static final int DEFAULT_DELAY_MILLIS = 600;
     private final Logger logger = LoggerFactory.getLogger(TradfriCoapClient.class);
     private final LinkedList<PayloadCallbackPair> commandsQueue = new LinkedList<>();
     private @Nullable Future<?> job;
 
     public TradfriCoapClient(URI uri) {
+        this(uri.toString());
+    }
+
+    public TradfriCoapClient(String uri) {
         super(uri);
         setTimeout(TIMEOUT);
     }
@@ -72,18 +75,6 @@ public class TradfriCoapClient extends CoapClient {
      */
     public CoapObserveRelation startObserve(CoapCallback callback) {
         return observe(new TradfriCoapHandler(callback));
-    }
-
-    /**
-     * Asynchronously executes a GET on the resource and provides the result through a {@link CompletableFuture}.
-     *
-     * @return the future that will hold the result
-     */
-    public CompletableFuture<String> asyncGet() {
-        logger.debug("CoAP GET request\nuri: {}", getURI());
-        CompletableFuture<String> future = new CompletableFuture<>();
-        get(new TradfriCoapHandler(future));
-        return future;
     }
 
     /**

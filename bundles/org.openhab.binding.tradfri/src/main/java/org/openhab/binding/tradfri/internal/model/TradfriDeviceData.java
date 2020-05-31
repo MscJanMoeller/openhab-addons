@@ -69,7 +69,7 @@ public abstract class TradfriDeviceData {
     }
 
     public Integer getDeviceId() {
-        return root.get(INSTANCE_ID).getAsInt();
+        return root.get(RESOURCE_INSTANCE_ID).getAsInt();
     }
 
     public boolean getReachabilityStatus() {

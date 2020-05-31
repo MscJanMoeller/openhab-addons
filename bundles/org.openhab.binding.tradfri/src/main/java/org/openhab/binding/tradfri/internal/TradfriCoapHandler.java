@@ -12,8 +12,6 @@
  */
 package org.openhab.binding.tradfri.internal;
 
-import java.util.concurrent.CompletableFuture;
-
 import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.jdt.annotation.NonNullByDefault;
@@ -23,11 +21,12 @@ import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 
 /**
- * The {@link TradfriCoapHandler} is used to handle the asynchronous coap reponses.
+ * The {@link TradfriCoapHandler} is used to handle the asynchronous CoAP responses.
  * It can either be used with a callback class or with a future.
  *
  * @author Kai Kreuzer - Initial contribution
@@ -39,7 +38,14 @@ public class TradfriCoapHandler implements CoapHandler {
     private final JsonParser parser = new JsonParser();
 
     private @Nullable CoapCallback callback;
-    private @Nullable CompletableFuture<String> future;
+
+    /**
+     * Constructor for using a callback
+     *
+     * @param callback the callback to use for responses
+     */
+    public TradfriCoapHandler() {
+    }
 
     /**
      * Constructor for using a callback
@@ -48,15 +54,6 @@ public class TradfriCoapHandler implements CoapHandler {
      */
     public TradfriCoapHandler(CoapCallback callback) {
         this.callback = callback;
-    }
-
-    /**
-     * Constructor for using a future
-     *
-     * @param future the future to use for responses
-     */
-    public TradfriCoapHandler(CompletableFuture<String> future) {
-        this.future = future;
     }
 
     @Override
@@ -70,24 +67,15 @@ public class TradfriCoapHandler implements CoapHandler {
             final CoapCallback callback = this.callback;
             if (callback != null) {
                 try {
-                    callback.onUpdate(parser.parse(response.getResponseText()));
-                    callback.setStatus(ThingStatus.ONLINE, ThingStatusDetail.NONE);
+                    deliverPayload(this.parser.parse(response.getResponseText()));
                 } catch (JsonParseException e) {
                     logger.warn("Observed value is no valid json: {}, {}", response.getResponseText(), e.getMessage());
                 }
             }
-            final CompletableFuture<String> future = this.future;
-            if (future != null) {
-                String data = response.getResponseText();
-                future.complete(data);
-            }
         } else {
             logger.debug("CoAP error {}", response.getCode());
             if (callback != null) {
-                callback.setStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
-            }
-            if (future != null) {
-                future.completeExceptionally(new RuntimeException("Response " + response.getCode().toString()));
+                callback.onError(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
             }
         }
     }
@@ -95,11 +83,19 @@ public class TradfriCoapHandler implements CoapHandler {
     @Override
     public void onError() {
         logger.debug("CoAP onError");
-        if (callback != null) {
-            callback.setStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
+        if (this.callback != null) {
+            this.callback.onError(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
         }
-        if (future != null) {
-            future.completeExceptionally(new RuntimeException("CoAP GET resulted in an error."));
+    }
+
+    /**
+     * This is being called, if new data is received from a CoAP request.
+     *
+     * @param data the received json structure
+     */
+    protected void deliverPayload(JsonElement data) {
+        if (this.callback != null) {
+            this.callback.onUpdate(data);
         }
     }
 }

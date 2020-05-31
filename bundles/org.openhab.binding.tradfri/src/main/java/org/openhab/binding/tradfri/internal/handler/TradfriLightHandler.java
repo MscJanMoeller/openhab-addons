@@ -20,6 +20,7 @@ import org.eclipse.smarthome.core.library.types.HSBType;
 import org.eclipse.smarthome.core.library.types.IncreaseDecreaseType;
 import org.eclipse.smarthome.core.library.types.OnOffType;
 import org.eclipse.smarthome.core.library.types.PercentType;
+import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.ChannelUID;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
@@ -124,7 +125,8 @@ public class TradfriLightHandler extends TradfriThingHandler {
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
-        if (active) {
+        Bridge gateway = getBridge();
+        if (active && gateway != null && gateway.getStatus() == ThingStatus.ONLINE) {
             if (command instanceof RefreshType) {
                 logger.debug("Refreshing channel {}", channelUID);
                 coapClient.asyncGet(this);
@@ -144,6 +146,8 @@ public class TradfriLightHandler extends TradfriThingHandler {
                 default:
                     logger.error("Unknown channel UID {}", channelUID);
             }
+        } else {
+            logger.debug("Bridge not online. Cannot handle command {} for channel {}", command, channelUID);
         }
     }
 

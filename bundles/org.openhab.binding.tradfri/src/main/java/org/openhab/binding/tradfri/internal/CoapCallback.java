@@ -40,5 +40,5 @@ public interface CoapCallback {
      * @param status The thing status
      * @param statusDetail the status detail
      */
-    public void setStatus(ThingStatus status, ThingStatusDetail statusDetail);
+    public void onError(ThingStatus status, ThingStatusDetail statusDetail);
 }

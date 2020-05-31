@@ -15,13 +15,11 @@ package org.openhab.binding.tradfri.internal.handler;
 import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Set;
+import java.text.MessageFormat;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -29,8 +27,12 @@ import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.elements.exception.ConnectorException;
+import org.eclipse.californium.scandium.AlertHandler;
+import org.eclipse.californium.scandium.ConnectionListener;
 import org.eclipse.californium.scandium.DTLSConnector;
 import org.eclipse.californium.scandium.config.DtlsConnectorConfig;
+import org.eclipse.californium.scandium.dtls.AlertMessage;
+import org.eclipse.californium.scandium.dtls.Connection;
 import org.eclipse.californium.scandium.dtls.pskstore.StaticPskStore;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
@@ -42,20 +44,20 @@ import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.binding.BaseBridgeHandler;
 import org.eclipse.smarthome.core.thing.binding.ThingHandler;
-import org.eclipse.smarthome.core.thing.binding.ThingHandlerService;
 import org.eclipse.smarthome.core.types.Command;
 import org.openhab.binding.tradfri.internal.CoapCallback;
-import org.openhab.binding.tradfri.internal.DeviceUpdateListener;
 import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import org.openhab.binding.tradfri.internal.TradfriCoapClient;
-import org.openhab.binding.tradfri.internal.TradfriCoapHandler;
 import org.openhab.binding.tradfri.internal.config.TradfriGatewayConfig;
 import org.openhab.binding.tradfri.internal.discovery.TradfriDiscoveryService;
+import org.openhab.binding.tradfri.internal.handler.TradfriResourceListEventListener.ResourceListEvent;
+import org.openhab.binding.tradfri.internal.model.TradfriDevice;
+import org.openhab.binding.tradfri.internal.model.TradfriGatewayData;
 import org.openhab.binding.tradfri.internal.model.TradfriVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.JsonArray;
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
@@ -69,24 +71,39 @@ import com.google.gson.JsonSyntaxException;
  * @author Kai Kreuzer - Initial contribution
  */
 @NonNullByDefault
-public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCallback {
+public class TradfriGatewayHandler extends BaseBridgeHandler implements ConnectionListener, AlertHandler {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     private static final TradfriVersion MIN_SUPPORTED_VERSION = new TradfriVersion("1.2.42");
 
-    private @NonNullByDefault({}) TradfriCoapClient deviceClient;
+    private static final int ACCEPTED_PING_LOSSES = 1;
+
+    private static final Gson gson = new Gson();
+
     private @NonNullByDefault({}) String gatewayURI;
-    private @NonNullByDefault({}) String gatewayInfoURI;
+
+    private @NonNullByDefault({}) CoapClient gatewayClient;
+    private @NonNullByDefault({}) TradfriCoapClient gatewayInfoClient;
+
     private @NonNullByDefault({}) DTLSConnector dtlsConnector;
     private @Nullable CoapEndpoint endPoint;
 
-    private final Set<DeviceUpdateListener> deviceUpdateListeners = new CopyOnWriteArraySet<>();
+    private @NonNullByDefault({}) TradfriResourceListObserver deviceListObserver;
+    private @NonNullByDefault({}) TradfriResourceListObserver groupListObserver;
+    private @NonNullByDefault({}) TradfriResourceListObserver sceneListObserver;
 
-    private @Nullable ScheduledFuture<?> scanJob;
+    private final TradfriDiscoveryService discoveryService;
 
-    public TradfriGatewayHandler(Bridge bridge) {
+    private @Nullable ScheduledFuture<?> supvJob;
+
+    private int pingLosses = 0;
+
+    private @Nullable TradfriGatewayData gatewayData;
+
+    public TradfriGatewayHandler(Bridge bridge, TradfriDiscoveryService ds) {
         super(bridge);
+        this.discoveryService = ds;
     }
 
     @Override
@@ -101,6 +118,19 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCall
         if (isNullOrEmpty(configuration.host)) {
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR,
                     "Host must be specified in the configuration!");
+            return;
+        }
+
+        // Create coap client for getting details about the gateway
+        try {
+            // Use class URI to validate host
+            URI uri = new URI("coaps://" + configuration.host + ":" + configuration.port + "/");
+            this.gatewayURI = uri.toString();
+            this.gatewayClient = new CoapClient(uri);
+            this.gatewayInfoClient = new TradfriCoapClient(uri.toString() + ENDPOINT_GATEWAY_DETAILS);
+        } catch (URISyntaxException e) {
+            logger.error("Illegal gateway URI '{}': {}", this.gatewayURI, e.getMessage());
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, e.getMessage());
             return;
         }
 
@@ -132,39 +162,6 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCall
                 }
             });
         }
-    }
-
-    @Override
-    public Collection<Class<? extends ThingHandlerService>> getServices() {
-        return Collections.singleton(TradfriDiscoveryService.class);
-    }
-
-    private void establishConnection() {
-        TradfriGatewayConfig configuration = getConfigAs(TradfriGatewayConfig.class);
-
-        this.gatewayURI = "coaps://" + configuration.host + ":" + configuration.port + "/" + DEVICES;
-        this.gatewayInfoURI = "coaps://" + configuration.host + ":" + configuration.port + "/" + GATEWAY + "/"
-                + GATEWAY_DETAILS;
-        try {
-            URI uri = new URI(gatewayURI);
-            deviceClient = new TradfriCoapClient(uri);
-        } catch (URISyntaxException e) {
-            logger.error("Illegal gateway URI '{}': {}", gatewayURI, e.getMessage());
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, e.getMessage());
-            return;
-        }
-
-        DtlsConnectorConfig.Builder builder = new DtlsConnectorConfig.Builder();
-        builder.setPskStore(new StaticPskStore(configuration.identity, configuration.preSharedKey.getBytes()));
-        builder.setMaxConnections(100);
-        builder.setStaleConnectionThreshold(60);
-        dtlsConnector = new DTLSConnector(builder.build());
-        endPoint = new CoapEndpoint.Builder().setConnector(dtlsConnector).build();
-        deviceClient.setEndpoint(endPoint);
-        updateStatus(ThingStatus.UNKNOWN);
-
-        // schedule a new scan every minute
-        scanJob = scheduler.scheduleWithFixedDelay(this::startScan, 0, 1, TimeUnit.MINUTES);
     }
 
     /**
@@ -259,32 +256,166 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCall
         return false;
     }
 
+    private void establishConnection() {
+        TradfriGatewayConfig configuration = getConfigAs(TradfriGatewayConfig.class);
+
+        DtlsConnectorConfig.Builder builder = new DtlsConnectorConfig.Builder();
+        builder.setPskStore(new StaticPskStore(configuration.identity, configuration.preSharedKey.getBytes()));
+        builder.setMaxConnections(100);
+        // builder.setStaleConnectionThreshold(60);
+        builder.setConnectionListener(this);
+        this.dtlsConnector = new DTLSConnector(builder.build());
+        this.dtlsConnector.setAlertHandler(this);
+        this.endPoint = new CoapEndpoint.Builder().setConnector(this.dtlsConnector).build();
+
+        if (this.gatewayClient != null) {
+            this.gatewayClient.setEndpoint(getEndpoint());
+        }
+
+        if (this.gatewayInfoClient != null) {
+            this.gatewayInfoClient.setEndpoint(getEndpoint());
+        }
+
+        // Schedule a CoAP ping every minute to check the connection
+        supvJob = scheduler.scheduleWithFixedDelay(this::checkConnection, 0, 1, TimeUnit.MINUTES);
+
+        updateStatus(ThingStatus.UNKNOWN);
+    }
+
+    private void checkConnection() {
+        if (this.gatewayClient != null && getEndpoint() != null) {
+            if (!this.gatewayClient.ping(TradfriCoapClient.TIMEOUT)) {
+                tryResumeConnection();
+                if (this.pingLosses++ > ACCEPTED_PING_LOSSES) {
+                    String detailedError = MessageFormat.format("{0} CoAP pings lost. Gateway seems to be down.",
+                            this.pingLosses);
+                    onConnectionError(detailedError);
+                }
+            } else {
+                this.pingLosses = 0;
+            }
+        }
+    }
+
+    private void tryResumeConnection() {
+        // To fix connection issues after a gateway reboot, a session resume is forced for the next CoAP message
+        logger.debug("Gateway communication error. Forcing session resume on next command.");
+        TradfriGatewayConfig configuration = getConfigAs(TradfriGatewayConfig.class);
+        InetSocketAddress peerAddress = new InetSocketAddress(configuration.host, configuration.port);
+        this.dtlsConnector.forceResumeSessionFor(peerAddress);
+    }
+
+    @Override
+    public void onConnectionEstablished(@Nullable Connection connection) {
+        logger.debug("DTLS connection established successfully");
+
+        // Requesting info about the gateway and add firmware version
+        requestGatewayInfo();
+    }
+
+    @Override
+    public void onConnectionRemoved(@Nullable Connection connection) {
+        logger.debug("DTLS connection removed");
+        // Restart endpoint
+        if (this.endPoint != null) {
+            try {
+                this.endPoint.stop();
+                this.endPoint.start();
+                logger.debug("Started CoAP endpoint {}", this.endPoint.getAddress());
+            } catch (IOException e) {
+                logger.error("Could not start CoAP endpoint", e);
+            }
+        }
+    }
+
+    @Override
+    public void onAlert(@Nullable InetSocketAddress peer, @Nullable AlertMessage alert) {
+        if (peer != null && alert != null) {
+            String detailedError = MessageFormat.format("Failed connecting to {0}: {1}", peer.toString(),
+                    alert.getDescription());
+            onConnectionError(detailedError);
+        }
+    }
+
+    public void onConnectionError(String detailedError) {
+        if (!isNullOrEmpty(detailedError)) {
+            logger.warn(detailedError);
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, detailedError);
+        } else {
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
+        }
+    }
+
     @Override
     public void dispose() {
-        if (scanJob != null) {
-            scanJob.cancel(true);
-            scanJob = null;
+        stopScan();
+
+        if (supvJob != null) {
+            supvJob.cancel(true);
+            supvJob = null;
         }
         if (endPoint != null) {
             endPoint.destroy();
             endPoint = null;
         }
-        if (deviceClient != null) {
-            deviceClient.shutdown();
-            deviceClient = null;
+        if (gatewayClient != null) {
+            gatewayClient.shutdown();
+            gatewayClient = null;
+        }
+        if (gatewayInfoClient != null) {
+            gatewayInfoClient.shutdown();
+            gatewayInfoClient = null;
         }
         super.dispose();
     }
 
     /**
-     * Does a request to the gateway to list all available devices/services.
-     * The response is received and processed by the method {@link onUpdate(JsonElement data)}.
+     * Does requests to the gateway to list all available devices, groups and scenes.
      */
-    public void startScan() {
-        if (endPoint != null) {
-            requestGatewayInfo();
-            deviceClient.get(new TradfriCoapHandler(this));
+    public synchronized void startScan() {
+        stopScan();
+
+        // Create observer for devices, groups and scenes and observe lists
+
+        this.deviceListObserver = new TradfriResourceListObserver(getGatewayURI() + "/" + ENDPOINT_DEVICES,
+                getEndpoint(), scheduler);
+        this.deviceListObserver.registerListener((event, id) -> {
+            if (event == ResourceListEvent.RESOURCE_ADDED) {
+                TradfriResourceObserver<TradfriDevice> observer = new TradfriDeviceObserver(
+                        getGatewayURI() + "/" + ENDPOINT_DEVICES + "/" + id, getEndpoint(), scheduler);
+                observer.registerListener((resourceData) -> {
+                    this.discoveryService.onDeviceUpdate(getThing(), resourceData.getInstanceID(),
+                            gson.toJsonTree(resourceData).getAsJsonObject());
+                });
+                observer.observe();
+            }
+        });
+        this.deviceListObserver.observe();
+
+        this.groupListObserver = new TradfriResourceListObserver(getGatewayURI() + "/" + ENDPOINT_GROUPS, getEndpoint(),
+                scheduler);
+        this.groupListObserver.observe();
+
+        this.sceneListObserver = new TradfriResourceListObserver(getGatewayURI() + "/" + ENDPOINT_SCENES, getEndpoint(),
+                scheduler);
+        this.sceneListObserver.observe();
+    }
+
+    public synchronized void stopScan() {
+
+        if (this.deviceListObserver != null) {
+            this.deviceListObserver.dispose();
+            this.deviceListObserver = null;
         }
+        if (this.groupListObserver != null) {
+            this.groupListObserver.dispose();
+            this.groupListObserver = null;
+        }
+        if (this.sceneListObserver != null) {
+            this.sceneListObserver.dispose();
+            this.sceneListObserver = null;
+        }
+
     }
 
     /**
@@ -305,79 +436,24 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCall
         return endPoint;
     }
 
-    @Override
-    public void onUpdate(JsonElement data) {
-        logger.debug("onUpdate response: {}", data);
-        if (endPoint != null) {
-            try {
-                JsonArray array = data.getAsJsonArray();
-                for (int i = 0; i < array.size(); i++) {
-                    requestDeviceDetails(array.get(i).getAsString());
-                }
-            } catch (JsonSyntaxException e) {
-                logger.debug("JSON error: {}", e.getMessage());
-                setStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
-            }
-        }
-    }
-
     private synchronized void requestGatewayInfo() {
-        // we are reusing our coap client and merely temporarily set a gateway info to call
-        deviceClient.setURI(gatewayInfoURI);
-        deviceClient.asyncGet().thenAccept(data -> {
-            logger.debug("requestGatewayInfo response: {}", data);
-            JsonObject json = new JsonParser().parse(data).getAsJsonObject();
-            String firmwareVersion = json.get(VERSION).getAsString();
-            getThing().setProperty(Thing.PROPERTY_FIRMWARE_VERSION, firmwareVersion);
-            updateStatus(ThingStatus.ONLINE, ThingStatusDetail.NONE);
+        gatewayInfoClient.asyncGet(new CoapCallback() {
+            @Override
+            public void onUpdate(JsonElement data) {
+                logger.debug("requestGatewayInfo response: {}", data);
+                try {
+                    gatewayData = gson.fromJson(data, TradfriGatewayData.class);
+                    getThing().setProperty(Thing.PROPERTY_FIRMWARE_VERSION, gatewayData.getVersion());
+                } catch (JsonSyntaxException ex) {
+                    logger.error("Unexpected requestGatewayInfo response: {}", data);
+                }
+            }
+
+            @Override
+            public void onError(ThingStatus status, ThingStatusDetail statusDetail) {
+                logger.error("CoAP error: requestGatewayInfo failed");
+            }
         });
-        // restore root URI
-        deviceClient.setURI(gatewayURI);
-    }
-
-    private synchronized void requestDeviceDetails(String instanceId) {
-        // we are reusing our coap client and merely temporarily set a sub-URI to call
-        deviceClient.setURI(gatewayURI + "/" + instanceId);
-        deviceClient.asyncGet().thenAccept(data -> {
-            logger.debug("requestDeviceDetails response: {}", data);
-            JsonObject json = new JsonParser().parse(data).getAsJsonObject();
-            deviceUpdateListeners.forEach(listener -> listener.onUpdate(instanceId, json));
-        });
-        // restore root URI
-        deviceClient.setURI(gatewayURI);
-    }
-
-    @Override
-    public void setStatus(ThingStatus status, ThingStatusDetail statusDetail) {
-        // to fix connection issues after a gateway reboot, a session resume is forced for the next command
-        if (status == ThingStatus.OFFLINE && statusDetail == ThingStatusDetail.COMMUNICATION_ERROR) {
-            logger.debug("Gateway communication error. Forcing a re-initialization!");
-            dispose();
-            initialize();
-        }
-
-        // are we still connected at all?
-        if (endPoint != null) {
-            updateStatus(status, statusDetail);
-        }
-    }
-
-    /**
-     * Registers a listener, which is informed about device details.
-     *
-     * @param listener the listener to register
-     */
-    public void registerDeviceUpdateListener(DeviceUpdateListener listener) {
-        this.deviceUpdateListeners.add(listener);
-    }
-
-    /**
-     * Unregisters a given listener.
-     *
-     * @param listener the listener to unregister
-     */
-    public void unregisterDeviceUpdateListener(DeviceUpdateListener listener) {
-        this.deviceUpdateListeners.remove(listener);
     }
 
     private boolean isNullOrEmpty(@Nullable String string) {
@@ -396,4 +472,5 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCall
             }
         }
     }
+
 }

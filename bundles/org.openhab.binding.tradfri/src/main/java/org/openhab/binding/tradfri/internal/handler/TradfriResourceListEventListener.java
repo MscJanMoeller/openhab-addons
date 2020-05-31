@@ -10,27 +10,29 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.tradfri.internal;
+package org.openhab.binding.tradfri.internal.handler;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.openhab.binding.tradfri.internal.handler.TradfriGatewayHandler;
-
-import com.google.gson.JsonObject;
 
 /**
- * {@link DeviceUpdateListener} can register on the {@link TradfriGatewayHandler} to be
- * informed about details about devices.
+ * {@link TradfriResourceListEventListener} can register at the {@link TradfriResourceListObserver}
+ * to be informed about the creation or deletion of resources like devices, groups or scenes.
  *
- * @author Kai Kreuzer - Initial contribution
+ * @author Jan Möller - Initial contribution
  */
 @NonNullByDefault
-public interface DeviceUpdateListener {
+public interface TradfriResourceListEventListener {
+
+    enum ResourceListEvent {
+        RESOURCE_ADDED,
+        RESOURCE_REMOVED
+    }
 
     /**
      * This method is called when new device information is received.
      *
+     * @param event defines whether a resource was added or removed
      * @param instanceId The instance id of the device
-     * @param data the json data describing the device
      */
-    public void onUpdate(String instanceId, JsonObject data);
+    public void onUpdate(ResourceListEvent event, String instanceId);
 }

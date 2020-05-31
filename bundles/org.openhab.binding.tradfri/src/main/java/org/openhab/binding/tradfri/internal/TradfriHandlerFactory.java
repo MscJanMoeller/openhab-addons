@@ -16,12 +16,14 @@ import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.smarthome.config.discovery.DiscoveryService;
 import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandlerFactory;
 import org.eclipse.smarthome.core.thing.binding.ThingHandler;
 import org.eclipse.smarthome.core.thing.binding.ThingHandlerFactory;
+import org.openhab.binding.tradfri.internal.discovery.TradfriDiscoveryService;
 import org.openhab.binding.tradfri.internal.handler.TradfriBlindHandler;
 import org.openhab.binding.tradfri.internal.handler.TradfriControllerHandler;
 import org.openhab.binding.tradfri.internal.handler.TradfriGatewayHandler;
@@ -29,6 +31,7 @@ import org.openhab.binding.tradfri.internal.handler.TradfriLightHandler;
 import org.openhab.binding.tradfri.internal.handler.TradfriPlugHandler;
 import org.openhab.binding.tradfri.internal.handler.TradfriSensorHandler;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * The {@link TradfriHandlerFactory} is responsible for creating things and thing handlers.
@@ -41,6 +44,18 @@ import org.osgi.service.component.annotations.Component;
 @NonNullByDefault
 public class TradfriHandlerFactory extends BaseThingHandlerFactory {
 
+    private @NonNullByDefault({}) TradfriDiscoveryService discoveryService;
+
+    @Reference(target = "(service.pid=discovery.tradfri)")
+    // @Reference
+    protected void setDiscoveryService(final DiscoveryService discoveryService) {
+        this.discoveryService = (TradfriDiscoveryService) discoveryService;
+    }
+
+    protected void unsetDiscoveryService(final DiscoveryService discoveryService) {
+        this.discoveryService = null;
+    }
+
     @Override
     public boolean supportsThingType(ThingTypeUID thingTypeUID) {
         return SUPPORTED_THING_TYPES_UIDS.contains(thingTypeUID);
@@ -51,7 +66,9 @@ public class TradfriHandlerFactory extends BaseThingHandlerFactory {
         ThingTypeUID thingTypeUID = thing.getThingTypeUID();
 
         if (GATEWAY_TYPE_UID.equals(thingTypeUID)) {
-            return new TradfriGatewayHandler((Bridge) thing);
+            TradfriGatewayHandler handler = new TradfriGatewayHandler((Bridge) thing, this.discoveryService);
+            this.discoveryService.registerTradfriGatewayHandler(handler);
+            return handler;
         } else if (THING_TYPE_DIMMER.equals(thingTypeUID) || THING_TYPE_REMOTE_CONTROL.equals(thingTypeUID)
                 || THING_TYPE_OPEN_CLOSE_REMOTE_CONTROL.equals(thingTypeUID)) {
             return new TradfriControllerHandler(thing);
@@ -65,5 +82,12 @@ public class TradfriHandlerFactory extends BaseThingHandlerFactory {
             return new TradfriPlugHandler(thing);
         }
         return null;
+    }
+
+    @Override
+    protected void removeHandler(ThingHandler thingHandler) {
+        if (thingHandler instanceof TradfriGatewayHandler) {
+            this.discoveryService.unRegisterTradfriGatewayHandler((TradfriGatewayHandler) thingHandler);
+        }
     }
 }
