@@ -61,19 +61,19 @@ public class TradfriDevice extends TradfriResource {
     }
 
     @SerializedName(value = TradfriBindingConstants.DEVICE_TYPE)
-    public int deviceType;
+    private int deviceType;
 
     @SerializedName(value = TradfriBindingConstants.REACHABILITY_STATE)
-    public int reachabilityState;
+    private int reachabilityState;
 
     @SerializedName(value = TradfriBindingConstants.TIMESTAMP_LAST_SEEN)
-    public long timestampLastSeen;
+    private long timestampLastSeen;
 
     @SerializedName(value = TradfriBindingConstants.OTA_UPDATE_STATE)
-    public int currentOtaUpdateState;
+    private int currentOtaUpdateState;
 
     @SerializedName(value = TradfriBindingConstants.DEVICE)
-    public TradfriDeviceInfo deviceInfo;
+    private TradfriDeviceInfo deviceInfo;
 
     public DeviceType getDeviceType() {
         switch (deviceType) {

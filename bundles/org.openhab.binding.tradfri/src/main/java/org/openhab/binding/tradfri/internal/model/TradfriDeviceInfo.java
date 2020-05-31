@@ -25,7 +25,7 @@ import com.google.gson.annotations.SerializedName;
 public class TradfriDeviceInfo {
 
     @SerializedName(value = TradfriBindingConstants.DEVICE_VENDOR)
-    public String vendor;
+    private String vendor;
     @SerializedName(value = TradfriBindingConstants.DEVICE_MODEL)
     private String model;
     @SerializedName(value = TradfriBindingConstants.DEVICE_SERIAL_NUMBER)

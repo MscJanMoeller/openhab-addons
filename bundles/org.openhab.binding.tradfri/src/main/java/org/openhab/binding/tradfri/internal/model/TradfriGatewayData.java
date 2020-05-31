@@ -81,7 +81,7 @@ public class TradfriGatewayData {
     @SerializedName(value = TradfriBindingConstants.TIMESTAMP_CURRENT_FORMAT_ISO_8601)
     private String timestampCurrentFormatISO8601;
     @SerializedName(value = TradfriBindingConstants.TIMESTAMP_LAST_MODIFICATION)
-    public long timestampLastModification;
+    private long timestampLastModification;
     @SerializedName(value = TradfriBindingConstants.TIMESTAMP_UPDATE_ACCEPTED)
     private long timestampUpdateAccepted;
     @SerializedName(value = TradfriBindingConstants.VERSION)

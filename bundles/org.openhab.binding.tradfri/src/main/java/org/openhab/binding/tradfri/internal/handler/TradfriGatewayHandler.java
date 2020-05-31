@@ -53,6 +53,7 @@ import org.openhab.binding.tradfri.internal.discovery.TradfriDiscoveryService;
 import org.openhab.binding.tradfri.internal.handler.TradfriResourceListEventListener.ResourceListEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriDevice;
 import org.openhab.binding.tradfri.internal.model.TradfriGatewayData;
+import org.openhab.binding.tradfri.internal.model.TradfriGroup;
 import org.openhab.binding.tradfri.internal.model.TradfriVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -384,7 +385,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
                 TradfriResourceObserver<TradfriDevice> observer = new TradfriDeviceObserver(
                         getGatewayURI() + "/" + ENDPOINT_DEVICES + "/" + id, getEndpoint(), scheduler);
                 observer.registerListener((resourceData) -> {
-                    this.discoveryService.onDeviceUpdate(getThing(), resourceData.getInstanceID(),
+                    this.discoveryService.onDeviceUpdate(getThing(), resourceData.getInstanceId(),
                             gson.toJsonTree(resourceData).getAsJsonObject());
                 });
                 observer.observe();
@@ -394,6 +395,16 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
 
         this.groupListObserver = new TradfriResourceListObserver(getGatewayURI() + "/" + ENDPOINT_GROUPS, getEndpoint(),
                 scheduler);
+        this.groupListObserver.registerListener((event, id) -> {
+            if (event == ResourceListEvent.RESOURCE_ADDED) {
+                TradfriResourceObserver<TradfriGroup> observer = new TradfriGroupObserver(
+                        getGatewayURI() + "/" + ENDPOINT_GROUPS + "/" + id, getEndpoint(), scheduler);
+                observer.registerListener((group) -> {
+                    this.discoveryService.onGroupUpdate(getThing(), group);
+                });
+                observer.observe();
+            }
+        });
         this.groupListObserver.observe();
 
         this.sceneListObserver = new TradfriResourceListObserver(getGatewayURI() + "/" + ENDPOINT_SCENES, getEndpoint(),

@@ -12,35 +12,36 @@
  */
 package org.openhab.binding.tradfri.internal.model;
 
+import java.util.Set;
+
 import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 
 import com.google.gson.annotations.SerializedName;
 
 /**
- * The {@link TradfriResource} class is a base Java wrapper for raw JSON data related to devices, groups and scenes.
+ * The {@link TradfriResourceIdList} class is a Java wrapper for raw JSON data
+ * and represents a list of links to devices, groups or scenes based on the instance id.
  *
  * @author Jan Möller - Initial contribution
  */
 
-public class TradfriResource {
-
-    @SerializedName(value = TradfriBindingConstants.RESOURCE_NAME)
-    private String name;
-    @SerializedName(value = TradfriBindingConstants.RESOURCE_TIMESTAMP_CREATED_AT)
-    private long timestampCreatedAt;
+public class TradfriResourceIdList {
     @SerializedName(value = TradfriBindingConstants.RESOURCE_INSTANCE_ID)
-    private String instanceId;
+    private Set<String> instanceIDs;
 
-    public String getName() {
-        return name;
+    public int size() {
+        return instanceIDs.size();
     }
 
-    public long getTimestampCreatedAt() {
-        return timestampCreatedAt;
+    public boolean isEmpty() {
+        return instanceIDs.isEmpty();
     }
 
-    public String getInstanceId() {
-        return instanceId;
+    public boolean contains(String id) {
+        return instanceIDs.contains(id);
     }
 
+    public Set<String> toSet() {
+        return instanceIDs;
+    }
 }

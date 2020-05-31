@@ -35,6 +35,7 @@ import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.ThingUID;
 import org.openhab.binding.tradfri.internal.handler.TradfriGatewayHandler;
+import org.openhab.binding.tradfri.internal.model.TradfriGroup;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -204,6 +205,23 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService {
         } catch (JsonSyntaxException e) {
             logger.debug("JSON error during discovery: {}", e.getMessage());
         }
+    }
+
+    public void onGroupUpdate(Bridge bridge, TradfriGroup group) {
+        ThingUID thingId = new ThingUID(THING_TYPE_GROUP, bridge.getUID(), group.getInstanceId());
+
+        String label = group.getName();
+
+        Map<String, Object> properties = new HashMap<>(1);
+        properties.put(PROPERTY_VENDOR, TRADFRI_VENDOR_NAME);
+        properties.put(PROPERTY_MODEL_ID, "TRADFRI group of devices");
+        properties.put(RESOURCE_INSTANCE_ID, group.getInstanceId());
+
+        logger.debug("Adding group {} to inbox", thingId);
+        DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(thingId).withBridge(bridge.getUID())
+                .withLabel(label).withProperties(properties).withRepresentationProperty(RESOURCE_INSTANCE_ID).build();
+
+        thingDiscovered(discoveryResult);
     }
 
     public void registerTradfriGatewayHandler(TradfriGatewayHandler gatewayHandler) {

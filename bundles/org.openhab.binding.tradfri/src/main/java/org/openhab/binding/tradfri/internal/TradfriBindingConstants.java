@@ -36,6 +36,8 @@ public class TradfriBindingConstants {
     // List of all Thing Type UIDs
     public static final ThingTypeUID GATEWAY_TYPE_UID = new ThingTypeUID(BINDING_ID, "gateway");
 
+    public static final ThingTypeUID THING_TYPE_GROUP = new ThingTypeUID(BINDING_ID, "group");
+
     public static final ThingTypeUID THING_TYPE_ONOFF_PLUG = new ThingTypeUID(BINDING_ID, "0010");
     public static final ThingTypeUID THING_TYPE_DIMMABLE_LIGHT = new ThingTypeUID(BINDING_ID, "0100");
     public static final ThingTypeUID THING_TYPE_COLOR_TEMP_LIGHT = new ThingTypeUID(BINDING_ID, "0220");
@@ -45,6 +47,8 @@ public class TradfriBindingConstants {
     public static final ThingTypeUID THING_TYPE_MOTION_SENSOR = new ThingTypeUID(BINDING_ID, "0107");
     public static final ThingTypeUID THING_TYPE_BLINDS = new ThingTypeUID(BINDING_ID, "0202");
     public static final ThingTypeUID THING_TYPE_OPEN_CLOSE_REMOTE_CONTROL = new ThingTypeUID(BINDING_ID, "0203");
+
+    public static final Set<ThingTypeUID> SUPPORTED_GROUP_TYPES_UIDS = Collections.singleton(THING_TYPE_GROUP);
 
     public static final Set<ThingTypeUID> SUPPORTED_LIGHT_TYPES_UIDS = Collections
             .unmodifiableSet(Stream.of(THING_TYPE_DIMMABLE_LIGHT, THING_TYPE_COLOR_TEMP_LIGHT, THING_TYPE_COLOR_LIGHT)
@@ -73,9 +77,10 @@ public class TradfriBindingConstants {
                     SUPPORTED_PLUG_TYPES_UIDS.stream(), SUPPORTED_BLINDS_TYPES_UIDS.stream())
             .reduce(Stream::concat).orElseGet(Stream::empty).collect(Collectors.toSet()));
 
-    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Collections
-            .unmodifiableSet(Stream.concat(SUPPORTED_BRIDGE_TYPES_UIDS.stream(), SUPPORTED_DEVICE_TYPES_UIDS.stream())
-                    .collect(Collectors.toSet()));
+    public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Collections.unmodifiableSet(Stream
+            .of(SUPPORTED_BRIDGE_TYPES_UIDS.stream(), SUPPORTED_GROUP_TYPES_UIDS.stream(),
+                    SUPPORTED_DEVICE_TYPES_UIDS.stream())
+            .reduce(Stream::concat).orElseGet(Stream::empty).collect(Collectors.toSet()));
 
     // List of all Channel IDs
     public static final String CHANNEL_POWER = "power";
@@ -143,13 +148,13 @@ public class TradfriBindingConstants {
     public static final String GATEWAY_UPDATE_DETAILS_URL = "9056";
     public static final String GATEWAY_UPDATE_PROGRESS = "9055";
     public static final String GOOGLE_HOME_PAIR_STATUS = "9105";
+    public static final String GROUP_DEVICE_LINKS = "9018";
     public static final String GROUP_ID = "9038";
     public static final String GROUP_LINK_ARRAY = "9995";
     public static final String GROUP_SETTINGS = "9045";
+    public static final String GROUP_TYPE = "9108";
     public static final String HOME_KIT_PAIRING_STATUS = "9107";
     public static final String HOME_KIT_SETUP_CODE = "9083";
-    public static final String HS_ACCESSORY_LINK = "9018";
-    public static final String HS_LINK = "15002";
     public static final String IKEA_MOODS = "9068";
     public static final String IOT_ENDPOINT = "9103";
     public static final String LIGHT = "3311";
@@ -188,6 +193,7 @@ public class TradfriBindingConstants {
     public static final String RESOURCE_NAME = "9001";
     public static final String RESOURCE_TIMESTAMP_CREATED_AT = "9002";
     public static final String RESOURCE_INSTANCE_ID = "9003";
+    public static final String RESOURCE_LINKS = "15002";
     public static final String REBOOT = "9030";
     public static final String REPEAT_DAYS = "9041";
     public static final String REPEATER = "15014";
@@ -232,4 +238,7 @@ public class TradfriBindingConstants {
     public static final String USE_CURRENT_LIGHT_SETTINGS = "9070";
     public static final String VERSION = "9029";
     public static final int WAKE_UP_SMART_TASK = 3;
+
+    // List of fixed string
+    public static final String TRADFRI_VENDOR_NAME = "IKEA of Sweden";
 }

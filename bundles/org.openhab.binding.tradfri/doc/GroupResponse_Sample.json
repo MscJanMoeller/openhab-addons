@@ -2,7 +2,7 @@
     "9001": "Wohnzimmer", // Name of the group
     "9002": 1538424941,   // Creation date
     "9003": 131073,       // Instance ID
-    "5850": 1,            // On/Off
+    "5850": 0,            // On/Off
     "5851": 0,            // Brightness
     "9039": 196612,       // Scene ID
     "9108": 0,            // Group type

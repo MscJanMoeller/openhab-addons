@@ -40,7 +40,7 @@ public class TradfriDeviceTest {
         TradfriDevice dev = this.gson.fromJson(json, TradfriDevice.class);
 
         // Check data of class TradfriResource
-        assertThat(dev.getInstanceID(), is("65553"));
+        assertThat(dev.getInstanceId(), is("65553"));
         assertThat(dev.getName(), is("Dining Table center"));
         assertThat(dev.getTimestampCreatedAt(), is(1545594514L));
 
