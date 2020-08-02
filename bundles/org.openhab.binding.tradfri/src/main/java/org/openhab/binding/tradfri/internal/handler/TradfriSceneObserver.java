@@ -13,35 +13,34 @@
 
 package org.openhab.binding.tradfri.internal.handler;
 
-import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.ENDPOINT_DEVICES;
+import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.ENDPOINT_SCENES;
 
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.californium.core.network.Endpoint;
-import org.openhab.binding.tradfri.internal.model.TradfriDevice;
+import org.openhab.binding.tradfri.internal.model.TradfriScene;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 
 /**
- * {@link TradfriDeviceObserver} observes changes of a single device
+ * {@link TradfriSceneObserver} observes changes of a single scene
  *
  * @author Jan Möller - Initial contribution
  *
  */
-public class TradfriDeviceObserver extends TradfriResourceObserver<TradfriDevice> {
+public class TradfriSceneObserver extends TradfriResourceObserver<TradfriScene> {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-    public TradfriDeviceObserver(String gatewayUri, String deviceId, Endpoint endpoint,
+    public TradfriSceneObserver(String gatewayUri, String groupId, Endpoint endpoint,
             ScheduledExecutorService scheduler) {
-        super(gatewayUri + "/" + ENDPOINT_DEVICES + "/" + deviceId, endpoint, scheduler);
+        super(gatewayUri + "/" + ENDPOINT_SCENES + "/" + groupId, endpoint, scheduler);
     }
 
     @Override
-    protected TradfriDevice convert(JsonElement data) {
-        return gson.fromJson(data, TradfriDevice.class);
+    protected TradfriScene convert(JsonElement data) {
+        return gson.fromJson(data, TradfriScene.class);
     }
-
 }

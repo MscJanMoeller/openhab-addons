@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -28,7 +29,7 @@ import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.openhab.binding.tradfri.internal.CoapCallback;
 import org.openhab.binding.tradfri.internal.TradfriCoapClient;
-import org.openhab.binding.tradfri.internal.handler.TradfriResourceListEventListener.ResourceListEvent;
+import org.openhab.binding.tradfri.internal.handler.TradfriResourceListEventHandler.ResourceListEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,10 +54,13 @@ public class TradfriResourceListObserver implements CoapCallback {
 
     private TradfriCoapClient coapClient;
     private @Nullable CoapObserveRelation observeRelation;
+    private @Nullable ScheduledFuture<?> updateJob;
 
-    private final Set<TradfriResourceListEventListener> updateListeners = new CopyOnWriteArraySet<>();
+    private final Set<TradfriResourceListEventHandler> updateHandler = new CopyOnWriteArraySet<>();
 
     private Set<String> cachedResources = Collections.emptySet();
+
+    private int POLL_PERIOD = 60;
 
     public TradfriResourceListObserver(String uri, Endpoint endpoint, ScheduledExecutorService scheduler) {
         this.coapClient = new TradfriCoapClient(uri);
@@ -65,13 +69,33 @@ public class TradfriResourceListObserver implements CoapCallback {
     }
 
     public void observe() {
-        scheduler.schedule(() -> {
-            observeRelation = coapClient.startObserve(this);
-        }, 1, TimeUnit.SECONDS);
+        /**
+         * The native CoAP observe mechanism is currently not supported by the TRADFRI gateway
+         * for lists of devices, groups and scenes. Therefore the ResourceListObserver are polling
+         * the gateway every POLL_PERIOD seconds for changes.
+         */
+        if (this.updateJob != null) {
+            this.updateJob = this.scheduler.scheduleWithFixedDelay(this::triggerUpdate, 1, POLL_PERIOD,
+                    TimeUnit.SECONDS);
+        }
+
+        /**
+         * The following code can be enabled if the TRADFRI gateway will support the
+         * native CoAP observe mechanism for lists of devices, groups and scenes.
+         *
+         * this.scheduler.schedule(() -> {
+         * this.observeRelation = this.coapClient.startObserve(this);
+         * }, 1, TimeUnit.SECONDS);
+         *
+         */
+    }
+
+    public void triggerUpdate() {
+        this.coapClient.asyncGet(this);
     }
 
     @Override
-    public void onUpdate(JsonElement data) {
+    public synchronized void onUpdate(JsonElement data) {
         logger.debug("onUpdate response: {}", data);
 
         if (data.isJsonArray()) {
@@ -79,15 +103,15 @@ public class TradfriResourceListObserver implements CoapCallback {
             }.getType();
             Set<String> currentResources = gson.fromJson(data, setType);
 
-            Set<String> addedResources = currentResources.stream().filter(s -> !cachedResources.contains(s))
+            Set<String> addedResources = currentResources.stream().filter(r -> !cachedResources.contains(r))
                     .collect(Collectors.toSet());
-            Set<String> removedResources = cachedResources.stream().filter(s -> !currentResources.contains(s))
+            Set<String> removedResources = cachedResources.stream().filter(r -> !currentResources.contains(r))
                     .collect(Collectors.toSet());
 
             addedResources.forEach(
-                    id -> updateListeners.forEach(listener -> listener.onUpdate(ResourceListEvent.RESOURCE_ADDED, id)));
+                    id -> updateHandler.forEach(listener -> listener.onUpdate(ResourceListEvent.RESOURCE_ADDED, id)));
 
-            removedResources.forEach(id -> updateListeners
+            removedResources.forEach(id -> updateHandler
                     .forEach(listener -> listener.onUpdate(ResourceListEvent.RESOURCE_REMOVED, id)));
 
             this.cachedResources = currentResources;
@@ -100,30 +124,35 @@ public class TradfriResourceListObserver implements CoapCallback {
     }
 
     public void dispose() {
-        if (observeRelation != null) {
-            observeRelation.reactiveCancel();
-            observeRelation = null;
+        if (this.updateJob != null) {
+            this.updateJob.cancel(true);
+            this.updateJob = null;
         }
-        if (coapClient != null) {
-            coapClient.shutdown();
+
+        if (this.observeRelation != null) {
+            this.observeRelation.reactiveCancel();
+            this.observeRelation = null;
+        }
+        if (this.coapClient != null) {
+            this.coapClient.shutdown();
         }
     }
 
     /**
-     * Registers a listener, which is informed about resource list changes.
+     * Registers a handler, which will be informed about resource list changes.
      *
-     * @param listener the listener to register
+     * @param handler the handler to register
      */
-    public void registerListener(TradfriResourceListEventListener listener) {
-        this.updateListeners.add(listener);
+    public void registerHandler(TradfriResourceListEventHandler handler) {
+        this.updateHandler.add(handler);
     }
 
     /**
-     * Unregisters a given listener.
+     * Unregisters a given handler.
      *
-     * @param listener the listener to unregister
+     * @param handler the handler to unregister
      */
-    public void unregisterListener(TradfriResourceListEventListener listener) {
-        this.updateListeners.remove(listener);
+    public void unregisterHandler(TradfriResourceListEventHandler handler) {
+        this.updateHandler.remove(handler);
     }
 }

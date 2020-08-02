@@ -50,7 +50,9 @@ public abstract class TradfriResourceObserver<T> implements CoapCallback {
     private TradfriCoapClient coapClient;
     private @Nullable CoapObserveRelation observeRelation;
 
-    private final Set<TradfriResourceEventListener<T>> updateListeners = new CopyOnWriteArraySet<>();
+    private final Set<TradfriResourceEventHandler<T>> updateHandler = new CopyOnWriteArraySet<>();
+
+    private @Nullable T cachedData;
 
     public TradfriResourceObserver(String uri, Endpoint endpoint, ScheduledExecutorService scheduler) {
         this.coapClient = new TradfriCoapClient(uri);
@@ -64,12 +66,21 @@ public abstract class TradfriResourceObserver<T> implements CoapCallback {
         }, 1, TimeUnit.SECONDS);
     }
 
+    public T getData() {
+        return cachedData;
+    }
+
+    protected void updateData(T data) {
+        this.cachedData = data;
+    }
+
     @Override
     public void onUpdate(JsonElement data) {
         logger.debug("onUpdate response: {}", data);
 
         try {
-            updateListeners.forEach(listener -> listener.onUpdate(convert(data)));
+            updateData(convert(data));
+            updateHandler.forEach(listener -> listener.onUpdate(getData()));
         } catch (JsonSyntaxException ex) {
             logger.error("Unexpected data response: {}", data);
         }
@@ -91,21 +102,21 @@ public abstract class TradfriResourceObserver<T> implements CoapCallback {
     }
 
     /**
-     * Registers a listener, which is informed about resource updates.
+     * Registers a handler, which is informed about resource updates.
      *
-     * @param listener the listener to register
+     * @param handler the handler to register
      */
-    public void registerListener(TradfriResourceEventListener<T> listener) {
-        this.updateListeners.add(listener);
+    public void registerHandler(TradfriResourceEventHandler<T> handler) {
+        this.updateHandler.add(handler);
     }
 
     /**
-     * Unregisters a given listener.
+     * Unregisters a given handler.
      *
-     * @param listener the listener to unregister
+     * @param handler the handler to unregister
      */
-    public void unregisterListener(TradfriResourceEventListener<T> listener) {
-        this.updateListeners.remove(listener);
+    public void unregisterHandler(TradfriResourceEventHandler<T> handler) {
+        this.updateHandler.remove(handler);
     }
 
     protected abstract T convert(JsonElement data) throws JsonSyntaxException;

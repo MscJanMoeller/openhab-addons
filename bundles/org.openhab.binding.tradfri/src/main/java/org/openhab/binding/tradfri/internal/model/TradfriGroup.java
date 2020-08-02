@@ -17,7 +17,7 @@ import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * The {@link TradfriGroupTest} class is a base Java wrapper for raw JSON data related to a device.
+ * The {@link TradfriGroup} class is a base Java wrapper for raw JSON data related to a group.
  *
  * @author Jan Möller - Initial contribution
  */

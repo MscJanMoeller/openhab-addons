@@ -21,7 +21,7 @@ import org.openhab.binding.tradfri.internal.model.TradfriDevice.DeviceType;
 import com.google.gson.Gson;
 
 /**
- * Tests for {@link TradfriDeviceTest}.
+ * Tests for {@link TradfriDevice}.
  *
  * @author Jan Möller - Initial contribution
  */

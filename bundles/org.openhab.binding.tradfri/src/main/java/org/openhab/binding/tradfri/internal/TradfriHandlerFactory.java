@@ -47,7 +47,6 @@ public class TradfriHandlerFactory extends BaseThingHandlerFactory {
     private @NonNullByDefault({}) TradfriDiscoveryService discoveryService;
 
     @Reference(target = "(service.pid=discovery.tradfri)")
-    // @Reference
     protected void setDiscoveryService(final DiscoveryService discoveryService) {
         this.discoveryService = (TradfriDiscoveryService) discoveryService;
     }

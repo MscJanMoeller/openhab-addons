@@ -19,7 +19,9 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -50,10 +52,11 @@ import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import org.openhab.binding.tradfri.internal.TradfriCoapClient;
 import org.openhab.binding.tradfri.internal.config.TradfriGatewayConfig;
 import org.openhab.binding.tradfri.internal.discovery.TradfriDiscoveryService;
-import org.openhab.binding.tradfri.internal.handler.TradfriResourceListEventListener.ResourceListEvent;
+import org.openhab.binding.tradfri.internal.handler.TradfriResourceListEventHandler.ResourceListEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriDevice;
 import org.openhab.binding.tradfri.internal.model.TradfriGatewayData;
 import org.openhab.binding.tradfri.internal.model.TradfriGroup;
+import org.openhab.binding.tradfri.internal.model.TradfriScene;
 import org.openhab.binding.tradfri.internal.model.TradfriVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +81,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
 
     private static final TradfriVersion MIN_SUPPORTED_VERSION = new TradfriVersion("1.2.42");
 
-    private static final int ACCEPTED_PING_LOSSES = 1;
+    private static final int ACCEPTED_COAP_ERRORS = 1;
 
     private static final Gson gson = new Gson();
 
@@ -94,18 +97,44 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     private @NonNullByDefault({}) TradfriResourceListObserver groupListObserver;
     private @NonNullByDefault({}) TradfriResourceListObserver sceneListObserver;
 
-    private final TradfriDiscoveryService discoveryService;
+    private final @NonNullByDefault({}) Map<String, TradfriResourceObserver<TradfriDevice>> deviceObserverMap;
+    private final @NonNullByDefault({}) Map<String, TradfriResourceObserver<TradfriGroup>> groupObserverMap;
+    private final @NonNullByDefault({}) Map<String, TradfriResourceObserver<TradfriScene>> sceneObserverMap;
+
+    private final @NonNullByDefault({}) TradfriResourceEventHandler<TradfriDevice> deviceDiscoveryListener;
+    private final @NonNullByDefault({}) TradfriResourceEventHandler<TradfriGroup> groupDiscoveryListener;
+
+    private final @NonNullByDefault({}) TradfriResourceEventHandler<TradfriGroup> discoveryGroupRemovedAdapter;
 
     private @Nullable ScheduledFuture<?> supvJob;
 
     private int pingLosses = 0;
+    private int coapErrors = 0;
 
     private @Nullable TradfriGatewayData gatewayData;
 
     public TradfriGatewayHandler(Bridge bridge, TradfriDiscoveryService ds) {
         super(bridge);
-        this.discoveryService = ds;
-    }
+
+        this.deviceObserverMap = new ConcurrentHashMap<String, TradfriResourceObserver<TradfriDevice>>();
+        this.groupObserverMap = new ConcurrentHashMap<String, TradfriResourceObserver<TradfriGroup>>();
+        this.sceneObserverMap = new ConcurrentHashMap<String, TradfriResourceObserver<TradfriScene>>();
+
+        this.deviceDiscoveryListener = (data) -> {
+            String id = data.getInstanceId();
+            // TODO inform discovery service only if relevant data changed (like name of device)
+            ds.onDeviceUpdate(getThing(), id, gson.toJsonTree(data).getAsJsonObject());
+        };
+
+        this.groupDiscoveryListener = (data) -> {
+            // TODO inform discovery service only if relevant data changed (like name of group)
+            ds.onGroupUpdated(getThing(), data);
+        };
+
+        this.discoveryGroupRemovedAdapter = (data) -> {
+            ds.onGroupRemoved(getThing(), data);
+        };
+    };
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
@@ -141,7 +170,9 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
                         "Either security code or identity and pre-shared key must be provided in the configuration!");
                 return;
             } else {
-                establishConnection();
+                initializeConnection();
+                initializeResourceListObserver();
+
             }
         } else {
             String currentFirmware = thing.getProperties().get(Thing.PROPERTY_FIRMWARE_VERSION);
@@ -159,10 +190,13 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
             scheduler.execute(() -> {
                 boolean success = obtainIdentityAndPreSharedKey();
                 if (success) {
-                    establishConnection();
+                    initializeConnection();
+                    initializeResourceListObserver();
                 }
             });
         }
+
+        updateStatus(ThingStatus.UNKNOWN);
     }
 
     /**
@@ -257,7 +291,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         return false;
     }
 
-    private void establishConnection() {
+    private void initializeConnection() {
         TradfriGatewayConfig configuration = getConfigAs(TradfriGatewayConfig.class);
 
         DtlsConnectorConfig.Builder builder = new DtlsConnectorConfig.Builder();
@@ -279,31 +313,41 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
 
         // Schedule a CoAP ping every minute to check the connection
         supvJob = scheduler.scheduleWithFixedDelay(this::checkConnection, 0, 1, TimeUnit.MINUTES);
+    }
 
-        updateStatus(ThingStatus.UNKNOWN);
+    /**
+     * Initialize all observer to requests the lists of available devices, groups and scenes.
+     * Hint: The native CoAP observe mechanism is currently not supported by the TRADFRI gateway
+     * for lists of devices, groups and scenes. Therefore the ResourceListObserver are polling
+     * the gateway every 60 seconds for changes.
+     */
+    private void initializeResourceListObserver() {
+        // Create observer for devices, groups and scenes and observe lists
+
+        this.deviceListObserver = new TradfriResourceListObserver(getGatewayURI() + "/" + ENDPOINT_DEVICES,
+                getEndpoint(), scheduler);
+        this.deviceListObserver.registerHandler(this::handleDeviceListChange);
+
+        this.groupListObserver = new TradfriResourceListObserver(getGatewayURI() + "/" + ENDPOINT_GROUPS, getEndpoint(),
+                scheduler);
+        this.groupListObserver.registerHandler(this::handleGroupListChange);
+
+        this.sceneListObserver = new TradfriResourceListObserver(getGatewayURI() + "/" + ENDPOINT_SCENES, getEndpoint(),
+                scheduler);
+        this.sceneListObserver.registerHandler(this::handleSceneListChange);
     }
 
     private void checkConnection() {
         if (this.gatewayClient != null && getEndpoint() != null) {
             if (!this.gatewayClient.ping(TradfriCoapClient.TIMEOUT)) {
-                tryResumeConnection();
-                if (this.pingLosses++ > ACCEPTED_PING_LOSSES) {
-                    String detailedError = MessageFormat.format("{0} CoAP pings lost. Gateway seems to be down.",
-                            this.pingLosses);
-                    onConnectionError(detailedError);
-                }
-            } else {
-                this.pingLosses = 0;
+                String detailedError = MessageFormat.format("{0} CoAP pings lost. Gateway seems to be down.",
+                        this.pingLosses);
+                onConnectionError(detailedError);
             }
+        } else {
+            this.pingLosses = 0;
+            updateStatus(ThingStatus.ONLINE, ThingStatusDetail.NONE);
         }
-    }
-
-    private void tryResumeConnection() {
-        // To fix connection issues after a gateway reboot, a session resume is forced for the next CoAP message
-        logger.debug("Gateway communication error. Forcing session resume on next command.");
-        TradfriGatewayConfig configuration = getConfigAs(TradfriGatewayConfig.class);
-        InetSocketAddress peerAddress = new InetSocketAddress(configuration.host, configuration.port);
-        this.dtlsConnector.forceResumeSessionFor(peerAddress);
     }
 
     @Override
@@ -312,16 +356,52 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
 
         // Requesting info about the gateway and add firmware version
         requestGatewayInfo();
+
+        // Start observation of devices, groups and scenes
+        this.deviceListObserver.observe();
+        this.groupListObserver.observe();
+        this.sceneListObserver.observe();
     }
 
     @Override
     public void onConnectionRemoved(@Nullable Connection connection) {
         logger.debug("DTLS connection removed");
+        resumeConnection();
+    }
+
+    @Override
+    public void onAlert(@Nullable InetSocketAddress peer, @Nullable AlertMessage alert) {
+        if (peer != null && alert != null) {
+            String detailedError = MessageFormat.format("Failed connecting to {0}: {1}", peer.toString(),
+                    alert.getDescription());
+            onConnectionError(detailedError, false);
+        }
+    }
+
+    public void onConnectionError(String detailedError) {
+        onConnectionError(detailedError, true);
+    }
+
+    public void onConnectionError(String detailedError, boolean resume) {
+        if (this.coapErrors > ACCEPTED_COAP_ERRORS || !resume) {
+            if (!isNullOrEmpty(detailedError)) {
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, detailedError);
+            } else {
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
+            }
+            if (resume) {
+                resumeConnection();
+            }
+        }
+    }
+
+    private void resumeConnection() {
         // Restart endpoint
         if (this.endPoint != null) {
             try {
                 this.endPoint.stop();
                 this.endPoint.start();
+                this.coapErrors = 0;
                 logger.debug("Started CoAP endpoint {}", this.endPoint.getAddress());
             } catch (IOException e) {
                 logger.error("Could not start CoAP endpoint", e);
@@ -330,26 +410,10 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     }
 
     @Override
-    public void onAlert(@Nullable InetSocketAddress peer, @Nullable AlertMessage alert) {
-        if (peer != null && alert != null) {
-            String detailedError = MessageFormat.format("Failed connecting to {0}: {1}", peer.toString(),
-                    alert.getDescription());
-            onConnectionError(detailedError);
-        }
-    }
-
-    public void onConnectionError(String detailedError) {
-        if (!isNullOrEmpty(detailedError)) {
-            logger.warn(detailedError);
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, detailedError);
-        } else {
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
-        }
-    }
-
-    @Override
     public void dispose() {
         stopScan();
+
+        disposeResourceListObserver();
 
         if (supvJob != null) {
             supvJob.cancel(true);
@@ -370,49 +434,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         super.dispose();
     }
 
-    /**
-     * Does requests to the gateway to list all available devices, groups and scenes.
-     */
-    public synchronized void startScan() {
-        stopScan();
-
-        // Create observer for devices, groups and scenes and observe lists
-
-        this.deviceListObserver = new TradfriResourceListObserver(getGatewayURI() + "/" + ENDPOINT_DEVICES,
-                getEndpoint(), scheduler);
-        this.deviceListObserver.registerListener((event, id) -> {
-            if (event == ResourceListEvent.RESOURCE_ADDED) {
-                TradfriResourceObserver<TradfriDevice> observer = new TradfriDeviceObserver(
-                        getGatewayURI() + "/" + ENDPOINT_DEVICES + "/" + id, getEndpoint(), scheduler);
-                observer.registerListener((resourceData) -> {
-                    this.discoveryService.onDeviceUpdate(getThing(), resourceData.getInstanceId(),
-                            gson.toJsonTree(resourceData).getAsJsonObject());
-                });
-                observer.observe();
-            }
-        });
-        this.deviceListObserver.observe();
-
-        this.groupListObserver = new TradfriResourceListObserver(getGatewayURI() + "/" + ENDPOINT_GROUPS, getEndpoint(),
-                scheduler);
-        this.groupListObserver.registerListener((event, id) -> {
-            if (event == ResourceListEvent.RESOURCE_ADDED) {
-                TradfriResourceObserver<TradfriGroup> observer = new TradfriGroupObserver(
-                        getGatewayURI() + "/" + ENDPOINT_GROUPS + "/" + id, getEndpoint(), scheduler);
-                observer.registerListener((group) -> {
-                    this.discoveryService.onGroupUpdate(getThing(), group);
-                });
-                observer.observe();
-            }
-        });
-        this.groupListObserver.observe();
-
-        this.sceneListObserver = new TradfriResourceListObserver(getGatewayURI() + "/" + ENDPOINT_SCENES, getEndpoint(),
-                scheduler);
-        this.sceneListObserver.observe();
-    }
-
-    public synchronized void stopScan() {
+    private void disposeResourceListObserver() {
 
         if (this.deviceListObserver != null) {
             this.deviceListObserver.dispose();
@@ -427,6 +449,31 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
             this.sceneListObserver = null;
         }
 
+    }
+
+    /**
+     * Forces to scan all available devices, groups and scenes
+     */
+    public synchronized void startScan() {
+    }
+
+    /**
+     * Stops the scan of devices, groups and scene
+     */
+    public synchronized void stopScan() {
+    }
+
+    @Override
+    public void thingUpdated(Thing thing) {
+        super.thingUpdated(thing);
+
+        logger.info("Bridge configuration updated. Updating paired things (if any).");
+        for (Thing t : getThing().getThings()) {
+            final ThingHandler thingHandler = t.getHandler();
+            if (thingHandler != null) {
+                thingHandler.thingUpdated(t);
+            }
+        }
     }
 
     /**
@@ -467,21 +514,76 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         });
     }
 
-    private boolean isNullOrEmpty(@Nullable String string) {
-        return string == null || string.isEmpty();
-    }
-
-    @Override
-    public void thingUpdated(Thing thing) {
-        super.thingUpdated(thing);
-
-        logger.info("Bridge configuration updated. Updating paired things (if any).");
-        for (Thing t : getThing().getThings()) {
-            final ThingHandler thingHandler = t.getHandler();
-            if (thingHandler != null) {
-                thingHandler.thingUpdated(t);
+    private synchronized void handleDeviceListChange(ResourceListEvent event, String id) {
+        if (event == ResourceListEvent.RESOURCE_ADDED) {
+            if (!this.deviceObserverMap.containsKey(id)) {
+                // A device was added. Create new observer for that device
+                TradfriResourceObserver<TradfriDevice> observer = new TradfriDeviceObserver(getGatewayURI(), id,
+                        getEndpoint(), scheduler);
+                // Add this observer to list of device observers
+                this.deviceObserverMap.put(id, observer);
+                // Register handler to update discovery results
+                observer.registerHandler(deviceDiscoveryListener);
+                // Start observation of device updates
+                observer.observe();
+            }
+        } else if (event == ResourceListEvent.RESOURCE_REMOVED) {
+            if (this.deviceObserverMap.containsKey(id)) {
+                // A device was removed. Remove observer for that device
+                TradfriResourceObserver<TradfriDevice> observer = this.deviceObserverMap.remove(id);
+                // Destroy observer
+                observer.dispose();
             }
         }
+    }
+
+    private synchronized void handleGroupListChange(ResourceListEvent event, String id) {
+        if (event == ResourceListEvent.RESOURCE_ADDED) {
+            if (!this.groupObserverMap.containsKey(id)) {
+                // A group was added. Create new observer for that group
+                TradfriResourceObserver<TradfriGroup> observer = new TradfriGroupObserver(getGatewayURI(), id,
+                        getEndpoint(), scheduler);
+                // Add this observer to list of group observers
+                this.groupObserverMap.put(id, observer);
+                // Register handler to update discovery results
+                observer.registerHandler(groupDiscoveryListener);
+                // Start observation of group updates
+                observer.observe();
+            }
+        } else if (event == ResourceListEvent.RESOURCE_REMOVED) {
+            if (this.groupObserverMap.containsKey(id)) {
+                // A group was removed. Remove observer for that group
+                TradfriResourceObserver<TradfriGroup> observer = this.groupObserverMap.remove(id);
+                this.discoveryGroupRemovedAdapter.onUpdate(observer.getData());
+                // Destroy observer
+                observer.dispose();
+            }
+        }
+    }
+
+    private synchronized void handleSceneListChange(ResourceListEvent event, String id) {
+        if (event == ResourceListEvent.RESOURCE_ADDED) {
+            if (!this.sceneObserverMap.containsKey(id)) {
+                // A scene was added. Create new observer for that scene
+                TradfriResourceObserver<TradfriScene> observer = new TradfriSceneObserver(getGatewayURI(), id,
+                        getEndpoint(), scheduler);
+                // Add this observer to list of scene observers
+                this.sceneObserverMap.put(id, observer);
+                // Start observation of scene updates
+                observer.observe();
+            }
+        } else if (event == ResourceListEvent.RESOURCE_REMOVED) {
+            if (this.sceneObserverMap.containsKey(id)) {
+                // A scene was removed. Remove observer for that scene
+                TradfriResourceObserver<TradfriScene> observer = this.sceneObserverMap.remove(id);
+                // Destroy observer
+                observer.dispose();
+            }
+        }
+    }
+
+    private boolean isNullOrEmpty(@Nullable String string) {
+        return string == null || string.isEmpty();
     }
 
 }

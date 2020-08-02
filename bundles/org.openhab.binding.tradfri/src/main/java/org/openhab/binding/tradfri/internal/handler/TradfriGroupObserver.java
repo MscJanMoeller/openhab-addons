@@ -13,6 +13,8 @@
 
 package org.openhab.binding.tradfri.internal.handler;
 
+import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.ENDPOINT_GROUPS;
+
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.californium.core.network.Endpoint;
@@ -32,8 +34,9 @@ public class TradfriGroupObserver extends TradfriResourceObserver<TradfriGroup> 
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-    public TradfriGroupObserver(String uri, Endpoint endpoint, ScheduledExecutorService scheduler) {
-        super(uri, endpoint, scheduler);
+    public TradfriGroupObserver(String gatewayUri, String groupId, Endpoint endpoint,
+            ScheduledExecutorService scheduler) {
+        super(gatewayUri + "/" + ENDPOINT_GROUPS + "/" + groupId, endpoint, scheduler);
     }
 
     @Override

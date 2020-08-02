@@ -15,18 +15,14 @@ package org.openhab.binding.tradfri.internal.handler;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 
 /**
- * {@link TradfriResourceEventListener} can register at the {@link TradfriResourceObserver}
+ * {@link TradfriResourceEventHandler} can register at the {@link TradfriResourceObserver}
  * to be informed about updates of resources like devices, groups or scenes.
  *
  * @author Jan Möller - Initial contribution
  */
 @NonNullByDefault
-public interface TradfriResourceEventListener<T> {
-
-    enum ResourceListEvent {
-        RESOURCE_ADDED,
-        RESOURCE_REMOVED
-    }
+@FunctionalInterface
+public interface TradfriResourceEventHandler<T> {
 
     /**
      * This method is called when resource data has been updated.

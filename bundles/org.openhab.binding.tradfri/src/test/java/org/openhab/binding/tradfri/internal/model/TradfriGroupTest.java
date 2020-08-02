@@ -20,7 +20,7 @@ import org.junit.Test;
 import com.google.gson.Gson;
 
 /**
- * Tests for {@link TradfriGroupTest}.
+ * Tests for {@link TradfriGroup}.
  *
  * @author Jan Möller - Initial contribution
  */
