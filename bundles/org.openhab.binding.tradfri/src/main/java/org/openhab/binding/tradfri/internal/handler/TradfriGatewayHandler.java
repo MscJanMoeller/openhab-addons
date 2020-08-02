@@ -101,9 +101,8 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     private final @NonNullByDefault({}) Map<String, TradfriResourceObserver<TradfriGroup>> groupObserverMap;
     private final @NonNullByDefault({}) Map<String, TradfriResourceObserver<TradfriScene>> sceneObserverMap;
 
-    private final @NonNullByDefault({}) TradfriResourceEventHandler<TradfriDevice> deviceDiscoveryListener;
-    private final @NonNullByDefault({}) TradfriResourceEventHandler<TradfriGroup> groupDiscoveryListener;
-
+    private final @NonNullByDefault({}) TradfriResourceEventHandler<TradfriDevice> discoveryDeviceUpdatedAdapter;
+    private final @NonNullByDefault({}) TradfriResourceEventHandler<TradfriGroup> discoveryGroupUpdatedAdapter;
     private final @NonNullByDefault({}) TradfriResourceEventHandler<TradfriGroup> discoveryGroupRemovedAdapter;
 
     private @Nullable ScheduledFuture<?> supvJob;
@@ -120,20 +119,18 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         this.groupObserverMap = new ConcurrentHashMap<String, TradfriResourceObserver<TradfriGroup>>();
         this.sceneObserverMap = new ConcurrentHashMap<String, TradfriResourceObserver<TradfriScene>>();
 
-        this.deviceDiscoveryListener = (data) -> {
+        this.discoveryDeviceUpdatedAdapter = (data) -> {
             String id = data.getInstanceId();
             // TODO inform discovery service only if relevant data changed (like name of device)
             ds.onDeviceUpdate(getThing(), id, gson.toJsonTree(data).getAsJsonObject());
         };
 
-        this.groupDiscoveryListener = (data) -> {
+        this.discoveryGroupUpdatedAdapter = (data) -> {
             // TODO inform discovery service only if relevant data changed (like name of group)
             ds.onGroupUpdated(getThing(), data);
         };
 
-        this.discoveryGroupRemovedAdapter = (data) -> {
-            ds.onGroupRemoved(getThing(), data);
-        };
+        this.discoveryGroupRemovedAdapter = (data) -> ds.onGroupRemoved(getThing(), data);
     };
 
     @Override
@@ -455,6 +452,9 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
      * Forces to scan all available devices, groups and scenes
      */
     public synchronized void startScan() {
+        this.deviceListObserver.triggerUpdate();
+        this.groupListObserver.triggerUpdate();
+        this.sceneListObserver.triggerUpdate();
     }
 
     /**
@@ -523,7 +523,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
                 // Add this observer to list of device observers
                 this.deviceObserverMap.put(id, observer);
                 // Register handler to update discovery results
-                observer.registerHandler(deviceDiscoveryListener);
+                observer.registerHandler(discoveryDeviceUpdatedAdapter);
                 // Start observation of device updates
                 observer.observe();
             }
@@ -546,7 +546,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
                 // Add this observer to list of group observers
                 this.groupObserverMap.put(id, observer);
                 // Register handler to update discovery results
-                observer.registerHandler(groupDiscoveryListener);
+                observer.registerHandler(discoveryGroupUpdatedAdapter);
                 // Start observation of group updates
                 observer.observe();
             }
