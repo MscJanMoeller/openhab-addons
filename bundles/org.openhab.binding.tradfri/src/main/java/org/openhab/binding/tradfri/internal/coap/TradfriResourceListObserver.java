@@ -11,7 +11,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.openhab.binding.tradfri.internal.handler;
+package org.openhab.binding.tradfri.internal.coap;
 
 import java.lang.reflect.Type;
 import java.util.Collections;
@@ -27,9 +27,7 @@ import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
-import org.openhab.binding.tradfri.internal.CoapCallback;
-import org.openhab.binding.tradfri.internal.TradfriCoapClient;
-import org.openhab.binding.tradfri.internal.handler.TradfriResourceListEventHandler.ResourceListEvent;
+import org.openhab.binding.tradfri.internal.coap.TradfriResourceListEventHandler.ResourceListEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

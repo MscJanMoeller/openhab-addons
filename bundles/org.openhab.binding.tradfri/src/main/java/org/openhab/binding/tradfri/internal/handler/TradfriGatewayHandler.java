@@ -47,12 +47,17 @@ import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.binding.BaseBridgeHandler;
 import org.eclipse.smarthome.core.thing.binding.ThingHandler;
 import org.eclipse.smarthome.core.types.Command;
-import org.openhab.binding.tradfri.internal.CoapCallback;
 import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
-import org.openhab.binding.tradfri.internal.TradfriCoapClient;
+import org.openhab.binding.tradfri.internal.coap.CoapCallback;
+import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
+import org.openhab.binding.tradfri.internal.coap.TradfriDeviceProxy;
+import org.openhab.binding.tradfri.internal.coap.TradfriGroupProxy;
+import org.openhab.binding.tradfri.internal.coap.TradfriResourceListObserver;
+import org.openhab.binding.tradfri.internal.coap.TradfriResourceProxy;
+import org.openhab.binding.tradfri.internal.coap.TradfriSceneProxy;
+import org.openhab.binding.tradfri.internal.coap.TradfriResourceListEventHandler.ResourceListEvent;
 import org.openhab.binding.tradfri.internal.config.TradfriGatewayConfig;
 import org.openhab.binding.tradfri.internal.discovery.TradfriDiscoveryService;
-import org.openhab.binding.tradfri.internal.handler.TradfriResourceListEventHandler.ResourceListEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriDevice;
 import org.openhab.binding.tradfri.internal.model.TradfriGatewayData;
 import org.openhab.binding.tradfri.internal.model.TradfriGroup;
@@ -97,9 +102,9 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     private @NonNullByDefault({}) TradfriResourceListObserver groupListObserver;
     private @NonNullByDefault({}) TradfriResourceListObserver sceneListObserver;
 
-    private final @NonNullByDefault({}) Map<String, TradfriResourceObserver<TradfriDevice>> deviceObserverMap;
-    private final @NonNullByDefault({}) Map<String, TradfriResourceObserver<TradfriGroup>> groupObserverMap;
-    private final @NonNullByDefault({}) Map<String, TradfriResourceObserver<TradfriScene>> sceneObserverMap;
+    private final @NonNullByDefault({}) Map<String, TradfriResourceProxy<TradfriDevice>> deviceProxyMap;
+    private final @NonNullByDefault({}) Map<String, TradfriResourceProxy<TradfriGroup>> groupProxyMap;
+    private final @NonNullByDefault({}) Map<String, TradfriResourceProxy<TradfriScene>> sceneProxyMap;
 
     private final @NonNullByDefault({}) TradfriResourceEventHandler<TradfriDevice> discoveryDeviceUpdatedAdapter;
     private final @NonNullByDefault({}) TradfriResourceEventHandler<TradfriGroup> discoveryGroupUpdatedAdapter;
@@ -115,9 +120,9 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     public TradfriGatewayHandler(Bridge bridge, TradfriDiscoveryService ds) {
         super(bridge);
 
-        this.deviceObserverMap = new ConcurrentHashMap<String, TradfriResourceObserver<TradfriDevice>>();
-        this.groupObserverMap = new ConcurrentHashMap<String, TradfriResourceObserver<TradfriGroup>>();
-        this.sceneObserverMap = new ConcurrentHashMap<String, TradfriResourceObserver<TradfriScene>>();
+        this.deviceProxyMap = new ConcurrentHashMap<String, TradfriResourceProxy<TradfriDevice>>();
+        this.groupProxyMap = new ConcurrentHashMap<String, TradfriResourceProxy<TradfriGroup>>();
+        this.sceneProxyMap = new ConcurrentHashMap<String, TradfriResourceProxy<TradfriScene>>();
 
         this.discoveryDeviceUpdatedAdapter = (data) -> {
             String id = data.getInstanceId();
@@ -516,21 +521,21 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
 
     private synchronized void handleDeviceListChange(ResourceListEvent event, String id) {
         if (event == ResourceListEvent.RESOURCE_ADDED) {
-            if (!this.deviceObserverMap.containsKey(id)) {
+            if (!this.deviceProxyMap.containsKey(id)) {
                 // A device was added. Create new observer for that device
-                TradfriResourceObserver<TradfriDevice> observer = new TradfriDeviceObserver(getGatewayURI(), id,
+                TradfriResourceProxy<TradfriDevice> observer = new TradfriDeviceProxy(getGatewayURI(), id,
                         getEndpoint(), scheduler);
                 // Add this observer to list of device observers
-                this.deviceObserverMap.put(id, observer);
+                this.deviceProxyMap.put(id, observer);
                 // Register handler to update discovery results
                 observer.registerHandler(discoveryDeviceUpdatedAdapter);
                 // Start observation of device updates
                 observer.observe();
             }
         } else if (event == ResourceListEvent.RESOURCE_REMOVED) {
-            if (this.deviceObserverMap.containsKey(id)) {
+            if (this.deviceProxyMap.containsKey(id)) {
                 // A device was removed. Remove observer for that device
-                TradfriResourceObserver<TradfriDevice> observer = this.deviceObserverMap.remove(id);
+                TradfriResourceProxy<TradfriDevice> observer = this.deviceProxyMap.remove(id);
                 // Destroy observer
                 observer.dispose();
             }
@@ -539,21 +544,21 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
 
     private synchronized void handleGroupListChange(ResourceListEvent event, String id) {
         if (event == ResourceListEvent.RESOURCE_ADDED) {
-            if (!this.groupObserverMap.containsKey(id)) {
+            if (!this.groupProxyMap.containsKey(id)) {
                 // A group was added. Create new observer for that group
-                TradfriResourceObserver<TradfriGroup> observer = new TradfriGroupObserver(getGatewayURI(), id,
+                TradfriResourceProxy<TradfriGroup> observer = new TradfriGroupProxy(getGatewayURI(), id,
                         getEndpoint(), scheduler);
                 // Add this observer to list of group observers
-                this.groupObserverMap.put(id, observer);
+                this.groupProxyMap.put(id, observer);
                 // Register handler to update discovery results
                 observer.registerHandler(discoveryGroupUpdatedAdapter);
                 // Start observation of group updates
                 observer.observe();
             }
         } else if (event == ResourceListEvent.RESOURCE_REMOVED) {
-            if (this.groupObserverMap.containsKey(id)) {
+            if (this.groupProxyMap.containsKey(id)) {
                 // A group was removed. Remove observer for that group
-                TradfriResourceObserver<TradfriGroup> observer = this.groupObserverMap.remove(id);
+                TradfriResourceProxy<TradfriGroup> observer = this.groupProxyMap.remove(id);
                 this.discoveryGroupRemovedAdapter.onUpdate(observer.getData());
                 // Destroy observer
                 observer.dispose();
@@ -563,19 +568,19 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
 
     private synchronized void handleSceneListChange(ResourceListEvent event, String id) {
         if (event == ResourceListEvent.RESOURCE_ADDED) {
-            if (!this.sceneObserverMap.containsKey(id)) {
+            if (!this.sceneProxyMap.containsKey(id)) {
                 // A scene was added. Create new observer for that scene
-                TradfriResourceObserver<TradfriScene> observer = new TradfriSceneObserver(getGatewayURI(), id,
+                TradfriResourceProxy<TradfriScene> observer = new TradfriSceneProxy(getGatewayURI(), id,
                         getEndpoint(), scheduler);
                 // Add this observer to list of scene observers
-                this.sceneObserverMap.put(id, observer);
+                this.sceneProxyMap.put(id, observer);
                 // Start observation of scene updates
                 observer.observe();
             }
         } else if (event == ResourceListEvent.RESOURCE_REMOVED) {
-            if (this.sceneObserverMap.containsKey(id)) {
+            if (this.sceneProxyMap.containsKey(id)) {
                 // A scene was removed. Remove observer for that scene
-                TradfriResourceObserver<TradfriScene> observer = this.sceneObserverMap.remove(id);
+                TradfriResourceProxy<TradfriScene> observer = this.sceneProxyMap.remove(id);
                 // Destroy observer
                 observer.dispose();
             }

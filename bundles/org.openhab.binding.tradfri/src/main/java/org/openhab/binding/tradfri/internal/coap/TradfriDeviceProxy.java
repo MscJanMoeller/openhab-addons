@@ -11,36 +11,37 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.openhab.binding.tradfri.internal.handler;
+package org.openhab.binding.tradfri.internal.coap;
 
-import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.ENDPOINT_SCENES;
+import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.ENDPOINT_DEVICES;
 
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.californium.core.network.Endpoint;
-import org.openhab.binding.tradfri.internal.model.TradfriScene;
+import org.openhab.binding.tradfri.internal.model.TradfriDevice;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 
 /**
- * {@link TradfriSceneObserver} observes changes of a single scene
+ * {@link TradfriDeviceProxy} observes changes of a single device
  *
  * @author Jan Möller - Initial contribution
  *
  */
-public class TradfriSceneObserver extends TradfriResourceObserver<TradfriScene> {
+public class TradfriDeviceProxy extends TradfriResourceProxy<TradfriDevice> {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-    public TradfriSceneObserver(String gatewayUri, String groupId, Endpoint endpoint,
+    public TradfriDeviceProxy(String gatewayUri, String deviceId, Endpoint endpoint,
             ScheduledExecutorService scheduler) {
-        super(gatewayUri + "/" + ENDPOINT_SCENES + "/" + groupId, endpoint, scheduler);
+        super(gatewayUri + "/" + ENDPOINT_DEVICES + "/" + deviceId, endpoint, scheduler);
     }
 
     @Override
-    protected TradfriScene convert(JsonElement data) {
-        return gson.fromJson(data, TradfriScene.class);
+    protected TradfriDevice convert(JsonElement data) {
+        return gson.fromJson(data, TradfriDevice.class);
     }
+
 }

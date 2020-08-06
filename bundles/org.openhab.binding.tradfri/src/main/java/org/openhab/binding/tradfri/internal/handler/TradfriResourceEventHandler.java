@@ -13,9 +13,10 @@
 package org.openhab.binding.tradfri.internal.handler;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.openhab.binding.tradfri.internal.coap.TradfriResourceProxy;
 
 /**
- * {@link TradfriResourceEventHandler} can register at the {@link TradfriResourceObserver}
+ * {@link TradfriResourceEventHandler} can register at the {@link TradfriResourceProxy}
  * to be informed about updates of resources like devices, groups or scenes.
  *
  * @author Jan Möller - Initial contribution

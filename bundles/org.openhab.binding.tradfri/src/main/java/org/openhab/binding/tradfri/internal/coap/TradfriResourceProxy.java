@@ -11,7 +11,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.openhab.binding.tradfri.internal.handler;
+package org.openhab.binding.tradfri.internal.coap;
 
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -23,8 +23,7 @@ import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
-import org.openhab.binding.tradfri.internal.CoapCallback;
-import org.openhab.binding.tradfri.internal.TradfriCoapClient;
+import org.openhab.binding.tradfri.internal.handler.TradfriResourceEventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,13 +32,13 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonSyntaxException;
 
 /**
- * {@link TradfriResourceObserver} observes changes of a single
+ * {@link TradfriResourceProxy} observes changes of a single
  * resource like a device, group or scene.
  *
  * @author Jan Möller - Initial contribution
  *
  */
-public abstract class TradfriResourceObserver<T> implements CoapCallback {
+public abstract class TradfriResourceProxy<T> implements CoapCallback {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -54,7 +53,7 @@ public abstract class TradfriResourceObserver<T> implements CoapCallback {
 
     private @Nullable T cachedData;
 
-    public TradfriResourceObserver(String uri, Endpoint endpoint, ScheduledExecutorService scheduler) {
+    public TradfriResourceProxy(String uri, Endpoint endpoint, ScheduledExecutorService scheduler) {
         this.coapClient = new TradfriCoapClient(uri);
         this.coapClient.setEndpoint(endpoint);
         this.scheduler = scheduler;

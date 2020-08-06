@@ -10,7 +10,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.tradfri.internal.handler;
+package org.openhab.binding.tradfri.internal.coap;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 
