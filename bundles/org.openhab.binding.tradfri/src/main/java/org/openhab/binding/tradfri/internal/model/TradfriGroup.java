@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.tradfri.internal.model;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 
 import com.google.gson.annotations.SerializedName;
@@ -22,11 +24,12 @@ import com.google.gson.annotations.SerializedName;
  * @author Jan Möller - Initial contribution
  */
 
+@NonNullByDefault
 public class TradfriGroup extends TradfriResource {
 
     private class DeviceLinks {
         @SerializedName(value = TradfriBindingConstants.RESOURCE_LINKS)
-        private TradfriResourceIdList resourceLinks;
+        private @Nullable TradfriResourceIdList resourceLinks;
     }
 
     /**
@@ -39,13 +42,13 @@ public class TradfriGroup extends TradfriResource {
     private int brightness;
 
     @SerializedName(value = TradfriBindingConstants.SCENE_ID)
-    private String sceneId;
+    private @Nullable String sceneId;
     @SerializedName(value = TradfriBindingConstants.GROUP_TYPE)
     private int groupType;
     @SerializedName(value = TradfriBindingConstants.GROUP_DEVICE_LINKS)
-    private DeviceLinks deviceLinks;
+    private @Nullable DeviceLinks deviceLinks;
 
-    public String getSceneId() {
+    public @Nullable String getSceneId() {
         return sceneId;
     }
 
@@ -53,8 +56,11 @@ public class TradfriGroup extends TradfriResource {
         return groupType;
     }
 
-    public TradfriResourceIdList getMembers() {
-        return deviceLinks.resourceLinks;
+    public @Nullable TradfriResourceIdList getMembers() {
+        if (this.deviceLinks != null) {
+            return this.deviceLinks.resourceLinks;
+        }
+        return null;
     }
 
 }

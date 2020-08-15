@@ -12,6 +12,7 @@
  */
 package org.openhab.binding.tradfri.internal.model;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 
 import com.google.gson.annotations.SerializedName;
@@ -22,6 +23,7 @@ import com.google.gson.annotations.SerializedName;
  * @author Jan Möller - Initial contribution
  */
 
+@NonNullByDefault
 public class TradfriScene extends TradfriResource {
 
     @SerializedName(value = TradfriBindingConstants.SCENE_INDEX)

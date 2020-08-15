@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.tradfri.internal.model;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 
 import com.google.gson.annotations.SerializedName;
@@ -22,6 +24,7 @@ import com.google.gson.annotations.SerializedName;
  * @author Jan Möller - Initial contribution
  */
 
+@NonNullByDefault
 public class TradfriGatewayData {
 
     @SerializedName(value = TradfriBindingConstants.ALEXA_PAIR_STATUS)
@@ -49,13 +52,13 @@ public class TradfriGatewayData {
     @SerializedName(value = TradfriBindingConstants.DST_TIME_OFF_SET)
     private int dstTimeOffSet;
     @SerializedName(value = TradfriBindingConstants.GATEWAY_NAME)
-    private String gatewayName;
+    private @Nullable String gatewayName;
     @SerializedName(value = TradfriBindingConstants.GATEWAY_TIME_SOURCE)
     private int gatewayTimeSource = -1;
     @SerializedName(value = TradfriBindingConstants.GATEWAY_UNIQUE_ID)
-    private String gatewayUniqueId;
+    private @Nullable String gatewayUniqueId;
     @SerializedName(value = TradfriBindingConstants.GATEWAY_UPDATE_DETAILS_URL)
-    private String gatewayUpdateDetailsUrl;
+    private @Nullable String gatewayUpdateDetailsUrl;
     @SerializedName(value = TradfriBindingConstants.GATEWAY_UPDATE_PROGRESS)
     private int gatewayUpdateProgress;
     @SerializedName(value = TradfriBindingConstants.GOOGLE_HOME_PAIR_STATUS)
@@ -63,13 +66,13 @@ public class TradfriGatewayData {
     @SerializedName(value = TradfriBindingConstants.HOME_KIT_PAIRING_STATUS)
     private int homeKitPairingStatus = -1;
     @SerializedName(value = TradfriBindingConstants.HOME_KIT_SETUP_CODE)
-    private String homekitSetupCode;
+    private @Nullable String homekitSetupCode;
     @SerializedName(value = TradfriBindingConstants.IOT_ENDPOINT)
-    private String iotEndpoint;
+    private @Nullable String iotEndpoint;
     @SerializedName(value = TradfriBindingConstants.NTP_SERVER_URL)
-    private String ntpServerUrl;
+    private @Nullable String ntpServerUrl;
     @SerializedName(value = TradfriBindingConstants.OTA_FORCE_CHECK_UPDATE)
-    private String otaForceCheckUpdate;
+    private @Nullable String otaForceCheckUpdate;
     @SerializedName(value = TradfriBindingConstants.OTA_UPDATE_STATE)
     private int otaUpdateState;
     @SerializedName(value = TradfriBindingConstants.OTA_UPDATE_TYPE)
@@ -79,13 +82,13 @@ public class TradfriGatewayData {
     @SerializedName(value = TradfriBindingConstants.TIMESTAMP_CURRENT_FORMAT_UNIX)
     private long timestampCurrentFormatUnix;
     @SerializedName(value = TradfriBindingConstants.TIMESTAMP_CURRENT_FORMAT_ISO_8601)
-    private String timestampCurrentFormatISO8601;
+    private @Nullable String timestampCurrentFormatISO8601;
     @SerializedName(value = TradfriBindingConstants.TIMESTAMP_LAST_MODIFICATION)
     private long timestampLastModification;
     @SerializedName(value = TradfriBindingConstants.TIMESTAMP_UPDATE_ACCEPTED)
     private long timestampUpdateAccepted;
     @SerializedName(value = TradfriBindingConstants.VERSION)
-    private String version;
+    private @Nullable String version;
 
     public int getAlexaPairStatus() {
         return this.alexaPairStatus;
@@ -135,7 +138,7 @@ public class TradfriGatewayData {
         return dstTimeOffSet;
     }
 
-    public String getGatewayName() {
+    public @Nullable String getGatewayName() {
         return gatewayName;
     }
 
@@ -143,11 +146,11 @@ public class TradfriGatewayData {
         return gatewayTimeSource;
     }
 
-    public String getGatewayUniqueId() {
+    public @Nullable String getGatewayUniqueId() {
         return gatewayUniqueId;
     }
 
-    public String getGatewayUpdateDetailsUrl() {
+    public @Nullable String getGatewayUpdateDetailsUrl() {
         return gatewayUpdateDetailsUrl;
     }
 
@@ -163,19 +166,19 @@ public class TradfriGatewayData {
         return this.homeKitPairingStatus;
     }
 
-    public String getHomekitSetupCode() {
+    public @Nullable String getHomekitSetupCode() {
         return homekitSetupCode;
     }
 
-    public String getIotEndpoint() {
+    public @Nullable String getIotEndpoint() {
         return this.iotEndpoint;
     }
 
-    public String getNtpServerUrl() {
+    public @Nullable String getNtpServerUrl() {
         return ntpServerUrl;
     }
 
-    public String getOtaForceCheckUpdate() {
+    public @Nullable String getOtaForceCheckUpdate() {
         return otaForceCheckUpdate;
     }
 
@@ -195,7 +198,7 @@ public class TradfriGatewayData {
         return timestampCurrentFormatUnix;
     }
 
-    public String getTimestampCurrentFormatISO8601() {
+    public @Nullable String getTimestampCurrentFormatISO8601() {
         return timestampCurrentFormatISO8601;
     }
 
@@ -207,7 +210,7 @@ public class TradfriGatewayData {
         return this.timestampUpdateAccepted;
     }
 
-    public String getVersion() {
+    public @Nullable String getVersion() {
         return this.version;
     }
 }

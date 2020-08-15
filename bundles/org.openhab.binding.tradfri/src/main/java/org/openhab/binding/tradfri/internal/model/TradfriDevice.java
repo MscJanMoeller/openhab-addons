@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.tradfri.internal.model;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 
 import com.google.gson.annotations.SerializedName;
@@ -22,32 +24,8 @@ import com.google.gson.annotations.SerializedName;
  * @author Jan Möller - Initial contribution
  */
 
+@NonNullByDefault
 public class TradfriDevice extends TradfriResource {
-
-    // type OnOff struct {
-    // On *YesNo `json:"5850,omitempty"`
-    // }
-
-    // type Dimmable struct {
-    // OnOff
-    // Dim *uint8 `json:"5851,omitempty"`
-    // }
-
-    // LightSetting
-    // Color string `json:"5706,omitempty"`
-    // Hue int `json:"5707,omitempty"`
-    // Saturation int `json:"5708,omitempty"`
-    // ColorX int `json:"5709,omitempty"`
-    // ColorY int `json:"5710,omitempty"`
-
-    // type Light struct {
-    // LightSetting
-    // TransitionTime *int `json:"5712,omitempty"`
-    // CumulativeActivePower *float64 `json:"5805,omitempty"`
-    // OnTime *int64 `json:"5852,omitempty"`
-    // PowerFactor *float64 `json:"5820,omitempty"`
-    // Unit *string `json:"5701,omitempty"`
-    // }
 
     public enum DeviceType {
         SWITCH,
@@ -73,7 +51,7 @@ public class TradfriDevice extends TradfriResource {
     private int currentOtaUpdateState;
 
     @SerializedName(value = TradfriBindingConstants.DEVICE)
-    private TradfriDeviceInfo deviceInfo;
+    private @Nullable TradfriDeviceInfo deviceInfo;
 
     public DeviceType getDeviceType() {
         switch (deviceType) {
@@ -107,7 +85,7 @@ public class TradfriDevice extends TradfriResource {
         return currentOtaUpdateState;
     }
 
-    public TradfriDeviceInfo getDeviceInfo() {
+    public @Nullable TradfriDeviceInfo getDeviceInfo() {
         return deviceInfo;
     }
 

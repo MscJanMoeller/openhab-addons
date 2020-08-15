@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.tradfri.internal.model;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 
 import com.google.gson.annotations.SerializedName;
@@ -22,34 +24,35 @@ import com.google.gson.annotations.SerializedName;
  * @author Jan Möller - Initial contribution
  */
 
+@NonNullByDefault
 public class TradfriDeviceInfo {
 
     @SerializedName(value = TradfriBindingConstants.DEVICE_VENDOR)
-    private String vendor;
+    private @Nullable String vendor;
     @SerializedName(value = TradfriBindingConstants.DEVICE_MODEL)
-    private String model;
+    private @Nullable String model;
     @SerializedName(value = TradfriBindingConstants.DEVICE_SERIAL_NUMBER)
-    private String serialNumber;
+    private @Nullable String serialNumber;
     @SerializedName(value = TradfriBindingConstants.DEVICE_FIRMWARE)
-    private String firmware;
+    private @Nullable String firmware;
     @SerializedName(value = TradfriBindingConstants.DEVICE_POWER_SOURCE)
     private int powerSource = -1;
     @SerializedName(value = TradfriBindingConstants.DEVICE_BATTERY_LEVEL)
     private int batteryLevel = -1;
 
-    public String getVendor() {
+    public @Nullable String getVendor() {
         return vendor;
     }
 
-    public String getModel() {
+    public @Nullable String getModel() {
         return model;
     }
 
-    public String getSerialNumber() {
+    public @Nullable String getSerialNumber() {
         return serialNumber;
     }
 
-    public String getFirmware() {
+    public @Nullable String getFirmware() {
         return firmware;
     }
 

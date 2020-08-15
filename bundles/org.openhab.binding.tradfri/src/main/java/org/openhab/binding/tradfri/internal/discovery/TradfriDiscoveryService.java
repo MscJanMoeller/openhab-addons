@@ -215,11 +215,15 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService {
         Map<String, Object> properties = new HashMap<>(1);
         properties.put(PROPERTY_VENDOR, TRADFRI_VENDOR_NAME);
         properties.put(PROPERTY_MODEL_ID, "TRADFRI group of devices");
-        properties.put(RESOURCE_INSTANCE_ID, group.getInstanceId());
+
+        String id = group.getInstanceId();
+        if (id != null) {
+            properties.put("id", id);
+        }
 
         logger.debug("Inbox change: adding or updating group {}", thingId);
         DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(thingId).withBridge(bridge.getUID())
-                .withLabel(label).withProperties(properties).withRepresentationProperty(RESOURCE_INSTANCE_ID).build();
+                .withLabel(label).withProperties(properties).withRepresentationProperty("id").build();
         thingDiscovered(discoveryResult);
     }
 

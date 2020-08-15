@@ -20,6 +20,7 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
  *
  * @author Jan Möller - Initial contribution
  */
+
 @NonNullByDefault
 @FunctionalInterface
 public interface TradfriResourceListEventHandler {

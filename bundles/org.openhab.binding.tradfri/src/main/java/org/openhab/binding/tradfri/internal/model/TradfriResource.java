@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.tradfri.internal.model;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 
 import com.google.gson.annotations.SerializedName;
@@ -22,16 +24,17 @@ import com.google.gson.annotations.SerializedName;
  * @author Jan Möller - Initial contribution
  */
 
+@NonNullByDefault
 public class TradfriResource {
 
     @SerializedName(value = TradfriBindingConstants.RESOURCE_NAME)
-    private String name;
+    private @Nullable String name;
     @SerializedName(value = TradfriBindingConstants.RESOURCE_TIMESTAMP_CREATED_AT)
     private long timestampCreatedAt;
     @SerializedName(value = TradfriBindingConstants.RESOURCE_INSTANCE_ID)
-    private String instanceId;
+    private @Nullable String instanceId;
 
-    public String getName() {
+    public @Nullable String getName() {
         return name;
     }
 
@@ -39,7 +42,7 @@ public class TradfriResource {
         return timestampCreatedAt;
     }
 
-    public String getInstanceId() {
+    public @Nullable String getInstanceId() {
         return instanceId;
     }
 

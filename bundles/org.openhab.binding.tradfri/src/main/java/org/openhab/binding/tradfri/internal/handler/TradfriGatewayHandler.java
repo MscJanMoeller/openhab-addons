@@ -37,6 +37,7 @@ import org.eclipse.californium.scandium.config.DtlsConnectorConfig;
 import org.eclipse.californium.scandium.dtls.AlertMessage;
 import org.eclipse.californium.scandium.dtls.Connection;
 import org.eclipse.californium.scandium.dtls.pskstore.StaticPskStore;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.config.core.Configuration;
@@ -51,17 +52,18 @@ import org.eclipse.smarthome.core.types.Command;
 import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import org.openhab.binding.tradfri.internal.coap.CoapCallback;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
-import org.openhab.binding.tradfri.internal.coap.TradfriDeviceProxy;
-import org.openhab.binding.tradfri.internal.coap.TradfriGroupProxy;
+import org.openhab.binding.tradfri.internal.coap.TradfriCoapDeviceProxy;
+import org.openhab.binding.tradfri.internal.coap.TradfriCoapGroupProxy;
+import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceProxy;
+import org.openhab.binding.tradfri.internal.coap.TradfriCoapSceneProxy;
 import org.openhab.binding.tradfri.internal.coap.TradfriResourceListEventHandler.ResourceListEvent;
 import org.openhab.binding.tradfri.internal.coap.TradfriResourceListObserver;
-import org.openhab.binding.tradfri.internal.coap.TradfriResourceProxy;
-import org.openhab.binding.tradfri.internal.coap.TradfriSceneProxy;
 import org.openhab.binding.tradfri.internal.config.TradfriGatewayConfig;
 import org.openhab.binding.tradfri.internal.discovery.TradfriDiscoveryService;
 import org.openhab.binding.tradfri.internal.model.TradfriDevice;
 import org.openhab.binding.tradfri.internal.model.TradfriGatewayData;
 import org.openhab.binding.tradfri.internal.model.TradfriGroup;
+import org.openhab.binding.tradfri.internal.model.TradfriResource;
 import org.openhab.binding.tradfri.internal.model.TradfriScene;
 import org.openhab.binding.tradfri.internal.model.TradfriVersion;
 import org.slf4j.Logger;
@@ -104,13 +106,11 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     private @NonNullByDefault({}) TradfriResourceListObserver groupListObserver;
     private @NonNullByDefault({}) TradfriResourceListObserver sceneListObserver;
 
-    private final @NonNullByDefault({}) Map<String, TradfriResourceProxy<TradfriDevice>> deviceProxyMap;
-    private final @NonNullByDefault({}) Map<String, TradfriResourceProxy<TradfriGroup>> groupProxyMap;
-    private final @NonNullByDefault({}) Map<String, TradfriResourceProxy<TradfriScene>> sceneProxyMap;
+    private final @NonNullByDefault({}) Map<String, TradfriCoapResourceProxy<? extends TradfriResource>> proxyMap;
 
-    private final @NonNullByDefault({}) TradfriResourceEventHandler<TradfriDevice> discoveryDeviceUpdatedAdapter;
-    private final @NonNullByDefault({}) TradfriResourceEventHandler<TradfriGroup> discoveryGroupUpdatedAdapter;
-    private final @NonNullByDefault({}) TradfriResourceEventHandler<TradfriGroup> discoveryGroupRemovedAdapter;
+    private final @NonNullByDefault({}) TradfriResourceEventHandler<@NonNull TradfriDevice> discoveryDeviceUpdatedAdapter;
+    private final @NonNullByDefault({}) TradfriResourceEventHandler<@NonNull TradfriGroup> discoveryGroupUpdatedAdapter;
+    private final @NonNullByDefault({}) TradfriResourceEventHandler<@NonNull TradfriGroup> discoveryGroupRemovedAdapter;
 
     private final AtomicInteger activeScans = new AtomicInteger(0);
 
@@ -124,9 +124,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     public TradfriGatewayHandler(Bridge bridge, TradfriDiscoveryService ds) {
         super(bridge);
 
-        this.deviceProxyMap = new ConcurrentHashMap<String, TradfriResourceProxy<TradfriDevice>>();
-        this.groupProxyMap = new ConcurrentHashMap<String, TradfriResourceProxy<TradfriGroup>>();
-        this.sceneProxyMap = new ConcurrentHashMap<String, TradfriResourceProxy<TradfriScene>>();
+        this.proxyMap = new ConcurrentHashMap<String, TradfriCoapResourceProxy<? extends TradfriResource>>();
 
         this.discoveryDeviceUpdatedAdapter = (data) -> {
             if (mustNotifyDiscoveryService()) {
@@ -322,7 +320,8 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         }
 
         // Schedule a CoAP ping every minute to check the connection
-        supvJob = scheduler.scheduleWithFixedDelay(this::checkConnection, 0, 1, TimeUnit.MINUTES);
+        supvJob = scheduler.scheduleWithFixedDelay(this::checkConnection, 1, 1, TimeUnit.MINUTES);
+
     }
 
     /**
@@ -349,14 +348,14 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
 
     private void checkConnection() {
         if (this.gatewayClient != null && getEndpoint() != null) {
-            if (!this.gatewayClient.ping(TradfriCoapClient.TIMEOUT)) {
+            if (this.gatewayClient.ping(TradfriCoapClient.TIMEOUT)) {
+                this.pingLosses = 0;
+                updateOnlineStatus();
+            } else {
                 String detailedError = MessageFormat.format("{0} CoAP pings lost. Gateway seems to be down.",
                         this.pingLosses);
                 onConnectionError(detailedError);
             }
-        } else {
-            this.pingLosses = 0;
-            updateStatus(ThingStatus.ONLINE, ThingStatusDetail.NONE);
         }
     }
 
@@ -392,14 +391,14 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         onConnectionError(detailedError, true);
     }
 
-    public void onConnectionError(String detailedError, boolean resume) {
-        if (this.coapErrors > ACCEPTED_COAP_ERRORS || !resume) {
+    public void onConnectionError(String detailedError, boolean resumeConnection) {
+        if (this.coapErrors > ACCEPTED_COAP_ERRORS || !resumeConnection) {
             if (!isNullOrEmpty(detailedError)) {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, detailedError);
             } else {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
             }
-            if (resume) {
+            if (resumeConnection) {
                 resumeConnection();
             }
         }
@@ -413,6 +412,9 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
                 this.endPoint.start();
                 this.coapErrors = 0;
                 logger.debug("Started CoAP endpoint {}", this.endPoint.getAddress());
+
+                // TODO Invalidate all resource proxies?
+
             } catch (IOException e) {
                 logger.error("Could not start CoAP endpoint", e);
             }
@@ -461,6 +463,10 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
 
     }
 
+    public <T extends TradfriResource> @Nullable TradfriResourceProxy<T> getTradfriResource(String id) {
+        return (TradfriResourceProxy<T>) this.proxyMap.get(id);
+    }
+
     /**
      * Enables background discovery of devices, groups and scenes
      */
@@ -485,8 +491,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         this.groupListObserver.triggerUpdate();
         this.sceneListObserver.triggerUpdate();
 
-        this.deviceProxyMap.forEach((id, proxy) -> proxy.triggerUpdate());
-        this.groupProxyMap.forEach((id, proxy) -> proxy.triggerUpdate());
+        this.proxyMap.forEach((id, proxy) -> proxy.triggerUpdate());
     }
 
     /**
@@ -527,6 +532,21 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         return endPoint;
     }
 
+    private void updateOnlineStatus() {
+        Bridge gateway = getThing();
+        ThingStatus status = gateway.getStatus();
+        if (status != ThingStatus.ONLINE) {
+            boolean hasFwVersion = gateway.getProperties().containsKey(Thing.PROPERTY_FIRMWARE_VERSION);
+
+            boolean observerInitialzed = this.deviceListObserver.isInitialized()
+                    && this.groupListObserver.isInitialized() && this.sceneListObserver.isInitialized();
+
+            if (hasFwVersion && observerInitialzed) {
+                updateStatus(ThingStatus.ONLINE, ThingStatusDetail.NONE);
+            }
+        }
+    }
+
     private synchronized void requestGatewayInfo() {
         gatewayInfoClient.asyncGet(new CoapCallback() {
             @Override
@@ -535,6 +555,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
                 try {
                     gatewayData = gson.fromJson(data, TradfriGatewayData.class);
                     getThing().setProperty(Thing.PROPERTY_FIRMWARE_VERSION, gatewayData.getVersion());
+                    updateOnlineStatus();
                 } catch (JsonSyntaxException ex) {
                     logger.error("Unexpected requestGatewayInfo response: {}", data);
                 }
@@ -549,72 +570,82 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
 
     private synchronized void handleDeviceListChange(ResourceListEvent event, String id) {
         if (event == ResourceListEvent.RESOURCE_ADDED) {
-            if (!this.deviceProxyMap.containsKey(id)) {
+            if (!this.proxyMap.containsKey(id)) {
                 // A device was added. Create new proxy for that device
-                TradfriResourceProxy<TradfriDevice> proxy = new TradfriDeviceProxy(getGatewayURI(), id, getEndpoint(),
-                        scheduler);
-                // Add this proxy to the list of device proxies
-                this.deviceProxyMap.put(id, proxy);
+                TradfriCoapResourceProxy<TradfriDevice> proxy = new TradfriCoapDeviceProxy(getGatewayURI(), id,
+                        getEndpoint(), scheduler);
+                // Add this proxy to the list of proxies
+                this.proxyMap.put(id, proxy);
                 // Register handler to update discovery results
                 proxy.registerHandler(discoveryDeviceUpdatedAdapter);
                 // Start observation of device updates
                 proxy.observe();
             }
         } else if (event == ResourceListEvent.RESOURCE_REMOVED) {
-            if (this.deviceProxyMap.containsKey(id)) {
+            if (this.proxyMap.containsKey(id)) {
                 // A device was removed. Remove proxy of that device
-                TradfriResourceProxy<TradfriDevice> proxy = this.deviceProxyMap.remove(id);
+                TradfriCoapResourceProxy<? extends TradfriResource> proxy = this.proxyMap.remove(id);
+                // TODO: check if there is a configured thing for that proxy
                 // Destroy proxy
                 proxy.dispose();
             }
         }
+
+        updateOnlineStatus();
     }
 
     private synchronized void handleGroupListChange(ResourceListEvent event, String id) {
         if (event == ResourceListEvent.RESOURCE_ADDED) {
-            if (!this.groupProxyMap.containsKey(id)) {
+            if (!this.proxyMap.containsKey(id)) {
                 // A group was added. Create new proxy for that group
-                TradfriResourceProxy<TradfriGroup> proxy = new TradfriGroupProxy(getGatewayURI(), id, getEndpoint(),
-                        scheduler);
-                // Add this proxy to the list of group proxies
-                this.groupProxyMap.put(id, proxy);
+                TradfriCoapResourceProxy<TradfriGroup> proxy = new TradfriCoapGroupProxy(getGatewayURI(), id,
+                        getEndpoint(), scheduler);
+                // Add this proxy to the list of proxies
+                this.proxyMap.put(id, proxy);
                 // Register handler to update discovery results
                 proxy.registerHandler(discoveryGroupUpdatedAdapter);
                 // Start observation of group updates
                 proxy.observe();
             }
         } else if (event == ResourceListEvent.RESOURCE_REMOVED) {
-            if (this.groupProxyMap.containsKey(id)) {
+            if (this.proxyMap.containsKey(id)) {
                 // A group was removed. Remove proxy of that group
-                TradfriResourceProxy<TradfriGroup> proxy = this.groupProxyMap.remove(id);
+                TradfriCoapResourceProxy<? extends TradfriResource> proxy = this.proxyMap.remove(id);
                 if (mustNotifyDiscoveryService()) {
-                    this.discoveryGroupRemovedAdapter.onUpdate(proxy.getData());
+                    TradfriGroup data = (TradfriGroup) proxy.getData();
+                    if (data != null) {
+                        this.discoveryGroupRemovedAdapter.onUpdate(data);
+                    }
                 }
+                // TODO: check if there is a configured thing for that proxy
                 // Destroy proxy
                 proxy.dispose();
             }
         }
+
+        updateOnlineStatus();
     }
 
     private synchronized void handleSceneListChange(ResourceListEvent event, String id) {
         if (event == ResourceListEvent.RESOURCE_ADDED) {
-            if (!this.sceneProxyMap.containsKey(id)) {
+            if (!this.proxyMap.containsKey(id)) {
                 // A scene was added. Create new proxy for that scene
-                TradfriResourceProxy<TradfriScene> proxy = new TradfriSceneProxy(getGatewayURI(), id, getEndpoint(),
-                        scheduler);
-                // Add this proxy to the list of scene proxies
-                this.sceneProxyMap.put(id, proxy);
+                TradfriCoapResourceProxy<TradfriScene> proxy = new TradfriCoapSceneProxy(getGatewayURI(), id,
+                        getEndpoint(), scheduler);
+                // Add this proxy to the list of proxies
+                this.proxyMap.put(id, proxy);
                 // Start observation of scene updates
                 proxy.observe();
             }
         } else if (event == ResourceListEvent.RESOURCE_REMOVED) {
-            if (this.sceneProxyMap.containsKey(id)) {
+            if (this.proxyMap.containsKey(id)) {
                 // A scene was removed. Remove proxy of that scene
-                TradfriResourceProxy<TradfriScene> proxy = this.sceneProxyMap.remove(id);
+                TradfriCoapResourceProxy<? extends TradfriResource> proxy = this.proxyMap.remove(id);
                 // Destroy proxy
                 proxy.dispose();
             }
         }
+        updateOnlineStatus();
     }
 
     private boolean mustNotifyDiscoveryService() {

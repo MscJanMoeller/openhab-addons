@@ -20,10 +20,13 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.californium.core.CoapObserveRelation;
 import org.eclipse.californium.core.network.Endpoint;
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.openhab.binding.tradfri.internal.handler.TradfriResourceEventHandler;
+import org.openhab.binding.tradfri.internal.handler.TradfriResourceProxy;
+import org.openhab.binding.tradfri.internal.model.TradfriResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,13 +35,16 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonSyntaxException;
 
 /**
- * {@link TradfriResourceProxy} observes changes of a single
+ * {@link TradfriCoapResourceProxy} observes changes of a single
  * resource like a device, group or scene.
  *
  * @author Jan Möller - Initial contribution
  *
  */
-public abstract class TradfriResourceProxy<T> implements CoapCallback {
+
+@NonNullByDefault
+public abstract class TradfriCoapResourceProxy<T extends TradfriResource>
+        implements CoapCallback, TradfriResourceProxy<T> {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -53,13 +59,14 @@ public abstract class TradfriResourceProxy<T> implements CoapCallback {
 
     private @Nullable T cachedData;
 
-    public TradfriResourceProxy(String uri, Endpoint endpoint, ScheduledExecutorService scheduler) {
+    public TradfriCoapResourceProxy(String uri, Endpoint endpoint, ScheduledExecutorService scheduler) {
         this.coapClient = new TradfriCoapClient(uri);
         this.coapClient.setEndpoint(endpoint);
         this.scheduler = scheduler;
     }
 
-    public T getData() {
+    @Override
+    public @Nullable T getData() {
         return cachedData;
     }
 
@@ -75,17 +82,18 @@ public abstract class TradfriResourceProxy<T> implements CoapCallback {
 
     protected void updateData(T data) {
         this.cachedData = data;
+        updateHandler.forEach(listener -> listener.onUpdate(data));
     }
 
     @Override
-    public void onUpdate(JsonElement data) {
-        logger.debug("onUpdate response: {}", data);
+    public void onUpdate(JsonElement jsonData) {
+        logger.debug("onUpdate response: {}", jsonData);
 
         try {
-            updateData(convert(data));
-            updateHandler.forEach(listener -> listener.onUpdate(getData()));
+            T data = convert(jsonData);
+            updateData(data);
         } catch (JsonSyntaxException ex) {
-            logger.error("Unexpected data response: {}", data);
+            logger.error("Unexpected data response: {}", jsonData);
         }
     }
 
@@ -99,9 +107,7 @@ public abstract class TradfriResourceProxy<T> implements CoapCallback {
             observeRelation.reactiveCancel();
             observeRelation = null;
         }
-        if (coapClient != null) {
-            coapClient.shutdown();
-        }
+        coapClient.shutdown();
     }
 
     /**
@@ -109,6 +115,7 @@ public abstract class TradfriResourceProxy<T> implements CoapCallback {
      *
      * @param handler the handler to register
      */
+    @Override
     public void registerHandler(TradfriResourceEventHandler<T> handler) {
         this.updateHandler.add(handler);
     }
@@ -118,6 +125,7 @@ public abstract class TradfriResourceProxy<T> implements CoapCallback {
      *
      * @param handler the handler to unregister
      */
+    @Override
     public void unregisterHandler(TradfriResourceEventHandler<T> handler) {
         this.updateHandler.remove(handler);
     }

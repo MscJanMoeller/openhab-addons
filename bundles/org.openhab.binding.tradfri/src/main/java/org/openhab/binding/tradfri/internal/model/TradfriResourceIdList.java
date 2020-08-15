@@ -14,6 +14,8 @@ package org.openhab.binding.tradfri.internal.model;
 
 import java.util.Set;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 
 import com.google.gson.annotations.SerializedName;
@@ -25,23 +27,33 @@ import com.google.gson.annotations.SerializedName;
  * @author Jan Möller - Initial contribution
  */
 
+@NonNullByDefault
 public class TradfriResourceIdList {
     @SerializedName(value = TradfriBindingConstants.RESOURCE_INSTANCE_ID)
-    private Set<String> instanceIDs;
+    private @Nullable Set<String> instanceIDs;
 
     public int size() {
-        return instanceIDs.size();
+        if (this.instanceIDs != null) {
+            this.instanceIDs.size();
+        }
+        return 0;
     }
 
     public boolean isEmpty() {
-        return instanceIDs.isEmpty();
+        if (this.instanceIDs != null) {
+            this.instanceIDs.isEmpty();
+        }
+        return true;
     }
 
     public boolean contains(String id) {
-        return instanceIDs.contains(id);
+        if (this.instanceIDs != null) {
+            this.instanceIDs.contains(id);
+        }
+        return false;
     }
 
-    public Set<String> toSet() {
+    public @Nullable Set<String> toSet() {
         return instanceIDs;
     }
 }

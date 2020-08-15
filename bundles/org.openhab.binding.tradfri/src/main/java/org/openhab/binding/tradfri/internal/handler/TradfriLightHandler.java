@@ -26,6 +26,7 @@ import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
+import org.openhab.binding.tradfri.internal.model.TradfriLight;
 import org.openhab.binding.tradfri.internal.model.TradfriLightData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +41,8 @@ import com.google.gson.JsonElement;
  * @author Christoph Weitkamp - Restructuring and refactoring of the binding
  */
 @NonNullByDefault
-public class TradfriLightHandler extends TradfriThingHandler {
+public class TradfriLightHandler extends TradfriDeviceHandler<TradfriLight>
+        implements TradfriResourceEventHandler<TradfriLight> {
 
     private final Logger logger = LoggerFactory.getLogger(TradfriLightHandler.class);
 
@@ -55,8 +57,17 @@ public class TradfriLightHandler extends TradfriThingHandler {
     }
 
     @Override
+    protected TradfriResourceEventHandler<TradfriLight> getEventHandler() {
+        return this;
+    }
+
+    @Override
+    public void onUpdate(TradfriLight resourceData) {
+        // TODO Auto-generated method stub
+    }
+
     public void onUpdate(JsonElement data) {
-        if (active && !(data.isJsonNull())) {
+        if (!(data.isJsonNull())) {
             TradfriLightData state = new TradfriLightData(data);
             updateStatus(state.getReachabilityStatus() ? ThingStatus.ONLINE : ThingStatus.OFFLINE);
 
@@ -126,10 +137,10 @@ public class TradfriLightHandler extends TradfriThingHandler {
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
         Bridge gateway = getBridge();
-        if (active && gateway != null && gateway.getStatus() == ThingStatus.ONLINE) {
+        if (gateway != null && gateway.getStatus() == ThingStatus.ONLINE) {
             if (command instanceof RefreshType) {
                 logger.debug("Refreshing channel {}", channelUID);
-                coapClient.asyncGet(this);
+                // TODO: coapClient.asyncGet(this);
                 return;
             }
 

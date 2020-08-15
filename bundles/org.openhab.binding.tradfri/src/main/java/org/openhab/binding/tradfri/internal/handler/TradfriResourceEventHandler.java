@@ -13,7 +13,7 @@
 package org.openhab.binding.tradfri.internal.handler;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.openhab.binding.tradfri.internal.coap.TradfriResourceProxy;
+import org.openhab.binding.tradfri.internal.model.TradfriResource;
 
 /**
  * {@link TradfriResourceEventHandler} can register at the {@link TradfriResourceProxy}
@@ -21,14 +21,16 @@ import org.openhab.binding.tradfri.internal.coap.TradfriResourceProxy;
  *
  * @author Jan Möller - Initial contribution
  */
+
 @NonNullByDefault
 @FunctionalInterface
-public interface TradfriResourceEventHandler<T> {
+public interface TradfriResourceEventHandler<T extends TradfriResource> {
 
     /**
      * This method is called when resource data has been updated.
      *
      * @param resourceData contains all updated data of the resource
      */
+
     public void onUpdate(T resourceData);
 }
