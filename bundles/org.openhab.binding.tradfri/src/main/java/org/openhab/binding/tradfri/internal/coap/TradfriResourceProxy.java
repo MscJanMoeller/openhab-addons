@@ -59,14 +59,18 @@ public abstract class TradfriResourceProxy<T> implements CoapCallback {
         this.scheduler = scheduler;
     }
 
+    public T getData() {
+        return cachedData;
+    }
+
     public void observe() {
         scheduler.schedule(() -> {
             observeRelation = coapClient.startObserve(this);
         }, 1, TimeUnit.SECONDS);
     }
 
-    public T getData() {
-        return cachedData;
+    public void triggerUpdate() {
+        this.coapClient.asyncGet(this);
     }
 
     protected void updateData(T data) {

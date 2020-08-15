@@ -103,7 +103,7 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService {
     @Override
     protected void startBackgroundDiscovery() {
         for (TradfriGatewayHandler gh : gatewayHandlers) {
-            gh.startScan();
+            gh.startBackgroundDiscovery();
         }
     }
 
@@ -115,7 +115,7 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService {
     @Override
     protected void stopBackgroundDiscovery() {
         for (TradfriGatewayHandler gh : gatewayHandlers) {
-            gh.stopScan();
+            gh.stopBackgroundDiscovery();
         }
     }
 

@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapResponse;
@@ -52,10 +53,10 @@ import org.openhab.binding.tradfri.internal.coap.CoapCallback;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
 import org.openhab.binding.tradfri.internal.coap.TradfriDeviceProxy;
 import org.openhab.binding.tradfri.internal.coap.TradfriGroupProxy;
+import org.openhab.binding.tradfri.internal.coap.TradfriResourceListEventHandler.ResourceListEvent;
 import org.openhab.binding.tradfri.internal.coap.TradfriResourceListObserver;
 import org.openhab.binding.tradfri.internal.coap.TradfriResourceProxy;
 import org.openhab.binding.tradfri.internal.coap.TradfriSceneProxy;
-import org.openhab.binding.tradfri.internal.coap.TradfriResourceListEventHandler.ResourceListEvent;
 import org.openhab.binding.tradfri.internal.config.TradfriGatewayConfig;
 import org.openhab.binding.tradfri.internal.discovery.TradfriDiscoveryService;
 import org.openhab.binding.tradfri.internal.model.TradfriDevice;
@@ -78,6 +79,7 @@ import com.google.gson.JsonSyntaxException;
  * sent to one of the channels.
  *
  * @author Kai Kreuzer - Initial contribution
+ * @author Jan Möller - Refactoring to increase stability and support of native TRADFRI groups and scenes
  */
 @NonNullByDefault
 public class TradfriGatewayHandler extends BaseBridgeHandler implements ConnectionListener, AlertHandler {
@@ -110,6 +112,8 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     private final @NonNullByDefault({}) TradfriResourceEventHandler<TradfriGroup> discoveryGroupUpdatedAdapter;
     private final @NonNullByDefault({}) TradfriResourceEventHandler<TradfriGroup> discoveryGroupRemovedAdapter;
 
+    private final AtomicInteger activeScans = new AtomicInteger(0);
+
     private @Nullable ScheduledFuture<?> supvJob;
 
     private int pingLosses = 0;
@@ -125,14 +129,18 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         this.sceneProxyMap = new ConcurrentHashMap<String, TradfriResourceProxy<TradfriScene>>();
 
         this.discoveryDeviceUpdatedAdapter = (data) -> {
-            String id = data.getInstanceId();
-            // TODO inform discovery service only if relevant data changed (like name of device)
-            ds.onDeviceUpdate(getThing(), id, gson.toJsonTree(data).getAsJsonObject());
+            if (mustNotifyDiscoveryService()) {
+                String id = data.getInstanceId();
+                // TODO inform discovery service only if relevant data changed (like name of device)
+                ds.onDeviceUpdate(getThing(), id, gson.toJsonTree(data).getAsJsonObject());
+            }
         };
 
         this.discoveryGroupUpdatedAdapter = (data) -> {
-            // TODO inform discovery service only if relevant data changed (like name of group)
-            ds.onGroupUpdated(getThing(), data);
+            if (mustNotifyDiscoveryService()) {
+                // TODO inform discovery service only if relevant data changed (like name of group)
+                ds.onGroupUpdated(getThing(), data);
+            }
         };
 
         this.discoveryGroupRemovedAdapter = (data) -> ds.onGroupRemoved(getThing(), data);
@@ -454,18 +462,38 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     }
 
     /**
-     * Forces to scan all available devices, groups and scenes
+     * Enables background discovery of devices, groups and scenes
      */
-    public synchronized void startScan() {
-        this.deviceListObserver.triggerUpdate();
-        this.groupListObserver.triggerUpdate();
-        this.sceneListObserver.triggerUpdate();
+    public void startBackgroundDiscovery() {
+        this.activeScans.getAndIncrement();
     }
 
     /**
-     * Stops the scan of devices, groups and scene
+     * Disables background discovery of devices, groups and scenes
+     */
+    public void stopBackgroundDiscovery() {
+        this.activeScans.getAndDecrement();
+    }
+
+    /**
+     * Forces to scan devices, groups and scenes
+     */
+    public synchronized void startScan() {
+        this.activeScans.getAndIncrement();
+
+        this.deviceListObserver.triggerUpdate();
+        this.groupListObserver.triggerUpdate();
+        this.sceneListObserver.triggerUpdate();
+
+        this.deviceProxyMap.forEach((id, proxy) -> proxy.triggerUpdate());
+        this.groupProxyMap.forEach((id, proxy) -> proxy.triggerUpdate());
+    }
+
+    /**
+     * Stops the scan of devices, groups and scenes
      */
     public synchronized void stopScan() {
+        this.activeScans.getAndDecrement();
     }
 
     @Override
@@ -522,22 +550,22 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     private synchronized void handleDeviceListChange(ResourceListEvent event, String id) {
         if (event == ResourceListEvent.RESOURCE_ADDED) {
             if (!this.deviceProxyMap.containsKey(id)) {
-                // A device was added. Create new observer for that device
-                TradfriResourceProxy<TradfriDevice> observer = new TradfriDeviceProxy(getGatewayURI(), id,
-                        getEndpoint(), scheduler);
-                // Add this observer to list of device observers
-                this.deviceProxyMap.put(id, observer);
+                // A device was added. Create new proxy for that device
+                TradfriResourceProxy<TradfriDevice> proxy = new TradfriDeviceProxy(getGatewayURI(), id, getEndpoint(),
+                        scheduler);
+                // Add this proxy to the list of device proxies
+                this.deviceProxyMap.put(id, proxy);
                 // Register handler to update discovery results
-                observer.registerHandler(discoveryDeviceUpdatedAdapter);
+                proxy.registerHandler(discoveryDeviceUpdatedAdapter);
                 // Start observation of device updates
-                observer.observe();
+                proxy.observe();
             }
         } else if (event == ResourceListEvent.RESOURCE_REMOVED) {
             if (this.deviceProxyMap.containsKey(id)) {
-                // A device was removed. Remove observer for that device
-                TradfriResourceProxy<TradfriDevice> observer = this.deviceProxyMap.remove(id);
-                // Destroy observer
-                observer.dispose();
+                // A device was removed. Remove proxy of that device
+                TradfriResourceProxy<TradfriDevice> proxy = this.deviceProxyMap.remove(id);
+                // Destroy proxy
+                proxy.dispose();
             }
         }
     }
@@ -545,23 +573,25 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     private synchronized void handleGroupListChange(ResourceListEvent event, String id) {
         if (event == ResourceListEvent.RESOURCE_ADDED) {
             if (!this.groupProxyMap.containsKey(id)) {
-                // A group was added. Create new observer for that group
-                TradfriResourceProxy<TradfriGroup> observer = new TradfriGroupProxy(getGatewayURI(), id,
-                        getEndpoint(), scheduler);
-                // Add this observer to list of group observers
-                this.groupProxyMap.put(id, observer);
+                // A group was added. Create new proxy for that group
+                TradfriResourceProxy<TradfriGroup> proxy = new TradfriGroupProxy(getGatewayURI(), id, getEndpoint(),
+                        scheduler);
+                // Add this proxy to the list of group proxies
+                this.groupProxyMap.put(id, proxy);
                 // Register handler to update discovery results
-                observer.registerHandler(discoveryGroupUpdatedAdapter);
+                proxy.registerHandler(discoveryGroupUpdatedAdapter);
                 // Start observation of group updates
-                observer.observe();
+                proxy.observe();
             }
         } else if (event == ResourceListEvent.RESOURCE_REMOVED) {
             if (this.groupProxyMap.containsKey(id)) {
-                // A group was removed. Remove observer for that group
-                TradfriResourceProxy<TradfriGroup> observer = this.groupProxyMap.remove(id);
-                this.discoveryGroupRemovedAdapter.onUpdate(observer.getData());
-                // Destroy observer
-                observer.dispose();
+                // A group was removed. Remove proxy of that group
+                TradfriResourceProxy<TradfriGroup> proxy = this.groupProxyMap.remove(id);
+                if (mustNotifyDiscoveryService()) {
+                    this.discoveryGroupRemovedAdapter.onUpdate(proxy.getData());
+                }
+                // Destroy proxy
+                proxy.dispose();
             }
         }
     }
@@ -569,22 +599,26 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     private synchronized void handleSceneListChange(ResourceListEvent event, String id) {
         if (event == ResourceListEvent.RESOURCE_ADDED) {
             if (!this.sceneProxyMap.containsKey(id)) {
-                // A scene was added. Create new observer for that scene
-                TradfriResourceProxy<TradfriScene> observer = new TradfriSceneProxy(getGatewayURI(), id,
-                        getEndpoint(), scheduler);
-                // Add this observer to list of scene observers
-                this.sceneProxyMap.put(id, observer);
+                // A scene was added. Create new proxy for that scene
+                TradfriResourceProxy<TradfriScene> proxy = new TradfriSceneProxy(getGatewayURI(), id, getEndpoint(),
+                        scheduler);
+                // Add this proxy to the list of scene proxies
+                this.sceneProxyMap.put(id, proxy);
                 // Start observation of scene updates
-                observer.observe();
+                proxy.observe();
             }
         } else if (event == ResourceListEvent.RESOURCE_REMOVED) {
             if (this.sceneProxyMap.containsKey(id)) {
-                // A scene was removed. Remove observer for that scene
-                TradfriResourceProxy<TradfriScene> observer = this.sceneProxyMap.remove(id);
-                // Destroy observer
-                observer.dispose();
+                // A scene was removed. Remove proxy of that scene
+                TradfriResourceProxy<TradfriScene> proxy = this.sceneProxyMap.remove(id);
+                // Destroy proxy
+                proxy.dispose();
             }
         }
+    }
+
+    private boolean mustNotifyDiscoveryService() {
+        return this.activeScans.get() > 0;
     }
 
     private boolean isNullOrEmpty(@Nullable String string) {
