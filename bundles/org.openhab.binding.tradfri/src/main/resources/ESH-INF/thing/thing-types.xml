@@ -12,6 +12,27 @@
 
 		<config-description-ref uri="bridge-type:tradfri:gateway"/>
 	</bridge-type>
+	
+	<!-- Generic thing for Groups/Rooms -->
+    <thing-type id="group">
+        <supported-bridge-type-refs>
+            <bridge-type-ref id="bridge"/>
+        </supported-bridge-type-refs>
+
+        <label>TRÅDFRI Group/Room/</label>
+        <description>A group of lights that could be controlled (e.g. switched on and off).</description>
+
+        <channels>
+            <channel id="brightness" typeId="brightness"/>
+            <channel id="color_temperature" typeId="color_temperature"/>
+            <channel id="color" typeId="color"/>
+            <channel id="scene" typeId="scene" />
+        </channels>
+
+        <representation-property>id</representation-property>
+        
+        <config-description-ref uri="thing-type:tradfri:group"/>
+    </thing-type>
 
 	<!-- thing types for devices -->
 	<!-- their IDs refer to the Zigbee Lightlink device ids (see chapter 2.2 in https://www.nxp.com/documents/user_manual/JN-UG-3091.pdf) -->
@@ -179,7 +200,7 @@
 	<channel-type id="brightness">
 		<item-type>Dimmer</item-type>
 		<label>Brightness</label>
-		<description>Control the brightness and switch the light on and off.</description>
+		<description>Control the brightness of the light or a group of lights and switch the light or a group of lights on and off.</description>
 		<category>DimmableLight</category>
 		<tags>
 			<tag>Lighting</tag>
@@ -196,15 +217,21 @@
 	<channel-type id="color_temperature">
 		<item-type>Dimmer</item-type>
 		<label>Color Temperature</label>
-		<description>Control the color temperature of the light.</description>
+		<description>Control the color temperature of the light or a group of lights.</description>
 		<category>ColorLight</category>
 	</channel-type>
 
 	<channel-type id="color">
 		<item-type>Color</item-type>
 		<label>Color</label>
-		<description>Control the color of the light.</description>
+		<description>Control the color of the light or a group of lights.</description>
 		<category>ColorLight</category>
 	</channel-type>
+
+    <channel-type id="scene">
+        <item-type>String</item-type>
+        <label>Scene</label>
+        <description>Allows to recall a scene of a group or a room.</description>
+    </channel-type>
 
 </thing:thing-descriptions>
