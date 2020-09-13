@@ -32,5 +32,5 @@ public interface TradfriResourceEventHandler<T extends TradfriResource> {
      * @param resourceData contains all updated data of the resource
      */
 
-    public void onUpdate(T resourceData);
+    void onUpdate(T resourceData);
 }

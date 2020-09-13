@@ -30,5 +30,6 @@ import org.openhab.binding.tradfri.internal.model.TradfriGroup;
 @NonNullByDefault
 public interface TradfriGroupProxy extends TradfriResourceProxy<TradfriGroup> {
 
-    public @Nullable TradfriSceneProxy getSceneById(String id);
+    @Nullable
+    TradfriSceneProxy getSceneById(String id);
 }

@@ -101,7 +101,6 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
 
     private @NonNullByDefault({}) TradfriResourceListObserver deviceListObserver;
     private @NonNullByDefault({}) TradfriResourceListObserver groupListObserver;
-    private @NonNullByDefault({}) TradfriResourceListObserver sceneListObserver;
 
     private final @NonNullByDefault({}) Map<String, TradfriCoapResourceProxy<? extends TradfriResource>> proxyMap;
 
@@ -359,10 +358,9 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         // Requesting info about the gateway and add firmware version
         requestGatewayInfo();
 
-        // Start observation of devices, groups and scenes
+        // Start observation of devices and groups
         this.deviceListObserver.observe();
         this.groupListObserver.observe();
-        this.sceneListObserver.observe();
     }
 
     @Override
@@ -449,11 +447,6 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
             this.groupListObserver.dispose();
             this.groupListObserver = null;
         }
-        if (this.sceneListObserver != null) {
-            this.sceneListObserver.dispose();
-            this.sceneListObserver = null;
-        }
-
     }
 
     public <T extends TradfriResource> @Nullable TradfriResourceProxy<T> getTradfriResource(String id) {
@@ -482,7 +475,6 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
 
         this.deviceListObserver.triggerUpdate();
         this.groupListObserver.triggerUpdate();
-        this.sceneListObserver.triggerUpdate();
 
         this.proxyMap.forEach((id, proxy) -> proxy.triggerUpdate());
     }
@@ -532,7 +524,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
             boolean hasFwVersion = gateway.getProperties().containsKey(Thing.PROPERTY_FIRMWARE_VERSION);
 
             boolean observerInitialzed = this.deviceListObserver.isInitialized()
-                    && this.groupListObserver.isInitialized() && this.sceneListObserver.isInitialized();
+                    && this.groupListObserver.isInitialized();
 
             if (hasFwVersion && observerInitialzed) {
                 updateStatus(ThingStatus.ONLINE, ThingStatusDetail.NONE);

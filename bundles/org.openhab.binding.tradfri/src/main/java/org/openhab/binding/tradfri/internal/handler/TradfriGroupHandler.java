@@ -149,7 +149,7 @@ public class TradfriGroupHandler extends TradfriResourceHandler<TradfriGroup>
     }
 
     private void handleSceneCommand(Command command) {
-        // TODO: implement command to scene of group
+        // TODO: implement command to set scene of group
         if (command instanceof StringType) {
             logger.info("Command {} for channel {} not implemented yet.", command, CHANNEL_SCENE);
         } else {

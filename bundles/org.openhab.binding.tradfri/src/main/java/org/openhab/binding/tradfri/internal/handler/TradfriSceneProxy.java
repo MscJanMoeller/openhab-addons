@@ -29,5 +29,6 @@ import org.openhab.binding.tradfri.internal.model.TradfriScene;
 
 @NonNullByDefault
 public interface TradfriSceneProxy extends TradfriResourceProxy<TradfriScene> {
-    public @Nullable String getSceneName();
+    @Nullable
+    String getSceneName();
 }

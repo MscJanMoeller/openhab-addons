@@ -48,8 +48,9 @@ public class TradfriCoapGroupProxy extends TradfriCoapResourceProxy<@NonNull Tra
     private final Endpoint endpoint;
     private final ScheduledExecutorService scheduler;
 
-    private final @NonNullByDefault({}) TradfriResourceListObserver sceneListObserver;
     private final @NonNullByDefault({}) Map<String, TradfriSceneProxy> sceneProxyMap;
+
+    private @Nullable TradfriResourceListObserver sceneListObserver;
 
     public TradfriCoapGroupProxy(String gatewayUri, String groupId, Endpoint endpoint,
             ScheduledExecutorService scheduler) {
@@ -59,11 +60,11 @@ public class TradfriCoapGroupProxy extends TradfriCoapResourceProxy<@NonNull Tra
         this.endpoint = endpoint;
         this.scheduler = scheduler;
 
+        this.sceneProxyMap = new ConcurrentHashMap<String, TradfriSceneProxy>();
+
         this.sceneListObserver = new TradfriResourceListObserver(gatewayUri + "/" + ENDPOINT_SCENES + "/" + groupId,
                 endpoint, scheduler);
         this.sceneListObserver.registerHandler(this::handleSceneListChange);
-
-        this.sceneProxyMap = new ConcurrentHashMap<String, TradfriSceneProxy>();
     }
 
     @Override
@@ -73,8 +74,27 @@ public class TradfriCoapGroupProxy extends TradfriCoapResourceProxy<@NonNull Tra
 
     @Override
     public void dispose() {
-        this.sceneListObserver.dispose();
+        if (this.sceneListObserver != null) {
+            this.sceneListObserver.dispose();
+            this.sceneListObserver = null;
+        }
         super.dispose();
+    }
+
+    @Override
+    public void observe() {
+        super.observe();
+        if (this.sceneListObserver != null) {
+            sceneListObserver.observe();
+        }
+    }
+
+    @Override
+    public void triggerUpdate() {
+        super.observe();
+        if (this.sceneListObserver != null) {
+            sceneListObserver.triggerUpdate();
+        }
     }
 
     @Override

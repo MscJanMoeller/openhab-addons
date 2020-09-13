@@ -34,7 +34,7 @@ public interface TradfriResourceProxy<T extends TradfriResource> {
     @Nullable
     T getData();
 
-    public void triggerUpdate();
+    void triggerUpdate();
 
     /**
      * Registers a handler, which is informed about resource updates.
