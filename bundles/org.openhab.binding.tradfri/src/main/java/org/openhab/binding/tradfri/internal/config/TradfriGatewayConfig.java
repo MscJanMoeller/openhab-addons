@@ -16,8 +16,16 @@ package org.openhab.binding.tradfri.internal.config;
  * Configuration class for the gateway.
  *
  * @author Kai Kreuzer - Initial contribution
+ * @author Jan Möller - moved configuration property names from TradfriBindingConstants to this class
  */
 public class TradfriGatewayConfig {
+
+    // List of all gateway configuration properties
+    public static final String CONFIG_HOST = "host";
+    public static final String CONFIG_PORT = "port";
+    public static final String CONFIG_CODE = "code";
+    public static final String CONFIG_IDENTITY = "identity";
+    public static final String CONFIG_PRE_SHARED_KEY = "preSharedKey";
 
     public String host;
     public int port = 5684; // default port

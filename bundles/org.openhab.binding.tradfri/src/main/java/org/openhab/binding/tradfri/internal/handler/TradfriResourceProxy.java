@@ -18,8 +18,8 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.model.TradfriResource;
 
 /**
- * {@link TradfriResourceProxy} represents of a single resource
- * like a device, group or scene and provides:
+ * {@link TradfriResourceProxy} is a base class of a single resource
+ * like a device, group or scene to provide:
  * - access to the data
  * - notifies about changes
  * - forwards commands
@@ -33,6 +33,8 @@ public interface TradfriResourceProxy<T extends TradfriResource> {
 
     @Nullable
     T getData();
+
+    public void triggerUpdate();
 
     /**
      * Registers a handler, which is informed about resource updates.

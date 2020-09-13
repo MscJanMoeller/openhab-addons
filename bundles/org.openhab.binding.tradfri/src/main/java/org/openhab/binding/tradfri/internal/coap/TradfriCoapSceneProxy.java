@@ -19,6 +19,9 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
+import org.openhab.binding.tradfri.internal.handler.TradfriSceneProxy;
 import org.openhab.binding.tradfri.internal.model.TradfriScene;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,13 +34,24 @@ import com.google.gson.JsonElement;
  * @author Jan Möller - Initial contribution
  *
  */
-public class TradfriCoapSceneProxy extends TradfriCoapResourceProxy<@NonNull TradfriScene> {
+@NonNullByDefault
+public class TradfriCoapSceneProxy extends TradfriCoapResourceProxy<@NonNull TradfriScene>
+        implements TradfriSceneProxy {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     public TradfriCoapSceneProxy(String gatewayUri, String groupId, Endpoint endpoint,
             ScheduledExecutorService scheduler) {
         super(gatewayUri + "/" + ENDPOINT_SCENES + "/" + groupId, endpoint, scheduler);
+    }
+
+    @Override
+    public @Nullable String getSceneName() {
+        TradfriScene sceneData = getData();
+        if (sceneData != null) {
+            return sceneData.getName();
+        }
+        return null;
     }
 
     @Override

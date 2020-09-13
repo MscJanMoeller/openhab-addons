@@ -76,6 +76,7 @@ public abstract class TradfriCoapResourceProxy<T extends TradfriResource>
         }, 1, TimeUnit.SECONDS);
     }
 
+    @Override
     public void triggerUpdate() {
         this.coapClient.asyncGet(this);
     }

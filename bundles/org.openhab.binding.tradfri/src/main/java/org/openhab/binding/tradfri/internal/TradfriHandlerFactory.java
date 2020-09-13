@@ -27,6 +27,7 @@ import org.openhab.binding.tradfri.internal.discovery.TradfriDiscoveryService;
 import org.openhab.binding.tradfri.internal.handler.TradfriBlindHandler;
 import org.openhab.binding.tradfri.internal.handler.TradfriControllerHandler;
 import org.openhab.binding.tradfri.internal.handler.TradfriGatewayHandler;
+import org.openhab.binding.tradfri.internal.handler.TradfriGroupHandler;
 import org.openhab.binding.tradfri.internal.handler.TradfriLightHandler;
 import org.openhab.binding.tradfri.internal.handler.TradfriPlugHandler;
 import org.openhab.binding.tradfri.internal.handler.TradfriSensorHandler;
@@ -39,6 +40,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Kai Kreuzer - Initial contribution
  * @author Christoph Weitkamp - Added support for remote controller and motion sensor devices (read-only battery level)
  * @author Manuel Raffel - Added support for blinds
+ * @author Jan Möller - Added support for groups
  */
 @Component(service = ThingHandlerFactory.class, configurationPid = "binding.tradfri")
 @NonNullByDefault
@@ -68,6 +70,8 @@ public class TradfriHandlerFactory extends BaseThingHandlerFactory {
             TradfriGatewayHandler handler = new TradfriGatewayHandler((Bridge) thing, this.discoveryService);
             this.discoveryService.registerTradfriGatewayHandler(handler);
             return handler;
+        } else if (THING_TYPE_GROUP.equals(thingTypeUID)) {
+            return new TradfriGroupHandler(thing);
         } else if (THING_TYPE_DIMMER.equals(thingTypeUID) || THING_TYPE_REMOTE_CONTROL.equals(thingTypeUID)
                 || THING_TYPE_OPEN_CLOSE_REMOTE_CONTROL.equals(thingTypeUID)) {
             return new TradfriControllerHandler(thing);

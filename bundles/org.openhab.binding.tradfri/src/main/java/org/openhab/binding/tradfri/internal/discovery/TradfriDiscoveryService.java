@@ -34,6 +34,7 @@ import org.eclipse.smarthome.config.discovery.DiscoveryService;
 import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.ThingUID;
+import org.openhab.binding.tradfri.internal.config.TradfriGroupConfig;
 import org.openhab.binding.tradfri.internal.handler.TradfriGatewayHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriGroup;
 import org.osgi.service.component.annotations.Component;
@@ -218,12 +219,13 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService {
 
         String id = group.getInstanceId();
         if (id != null) {
-            properties.put("id", id);
+            properties.put(TradfriGroupConfig.CONFIG_ID, id);
         }
 
         logger.debug("Inbox change: adding or updating group {}", thingId);
         DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(thingId).withBridge(bridge.getUID())
-                .withLabel(label).withProperties(properties).withRepresentationProperty("id").build();
+                .withLabel(label).withProperties(properties).withRepresentationProperty(TradfriGroupConfig.CONFIG_ID)
+                .build();
         thingDiscovered(discoveryResult);
     }
 

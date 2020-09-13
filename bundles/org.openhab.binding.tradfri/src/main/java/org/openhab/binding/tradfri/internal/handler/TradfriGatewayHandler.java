@@ -49,13 +49,11 @@ import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.binding.BaseBridgeHandler;
 import org.eclipse.smarthome.core.thing.binding.ThingHandler;
 import org.eclipse.smarthome.core.types.Command;
-import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import org.openhab.binding.tradfri.internal.coap.CoapCallback;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapDeviceProxy;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapGroupProxy;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceProxy;
-import org.openhab.binding.tradfri.internal.coap.TradfriCoapSceneProxy;
 import org.openhab.binding.tradfri.internal.coap.TradfriResourceListEventHandler.ResourceListEvent;
 import org.openhab.binding.tradfri.internal.coap.TradfriResourceListObserver;
 import org.openhab.binding.tradfri.internal.config.TradfriGatewayConfig;
@@ -64,7 +62,6 @@ import org.openhab.binding.tradfri.internal.model.TradfriDevice;
 import org.openhab.binding.tradfri.internal.model.TradfriGatewayData;
 import org.openhab.binding.tradfri.internal.model.TradfriGroup;
 import org.openhab.binding.tradfri.internal.model.TradfriResource;
-import org.openhab.binding.tradfri.internal.model.TradfriScene;
 import org.openhab.binding.tradfri.internal.model.TradfriVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -268,9 +265,9 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
                     logger.debug("Using identity '{}' with pre-shared key '{}'.", identity, preSharedKey);
 
                     Configuration editedConfig = editConfiguration();
-                    editedConfig.put(TradfriBindingConstants.GATEWAY_CONFIG_CODE, null);
-                    editedConfig.put(TradfriBindingConstants.GATEWAY_CONFIG_IDENTITY, identity);
-                    editedConfig.put(TradfriBindingConstants.GATEWAY_CONFIG_PRE_SHARED_KEY, preSharedKey);
+                    editedConfig.put(TradfriGatewayConfig.CONFIG_CODE, null);
+                    editedConfig.put(TradfriGatewayConfig.CONFIG_IDENTITY, identity);
+                    editedConfig.put(TradfriGatewayConfig.CONFIG_PRE_SHARED_KEY, preSharedKey);
                     updateConfiguration(editedConfig);
 
                     return true;
@@ -325,9 +322,9 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     }
 
     /**
-     * Initialize all observer to requests the lists of available devices, groups and scenes.
+     * Initialize all observer to requests the lists of available devices and groups.
      * Hint: The native CoAP observe mechanism is currently not supported by the TRADFRI gateway
-     * for lists of devices, groups and scenes. Therefore the ResourceListObserver are polling
+     * for lists of devices and groups. Therefore the ResourceListObserver are polling
      * the gateway every 60 seconds for changes.
      */
     private void initializeResourceListObserver() {
@@ -340,10 +337,6 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         this.groupListObserver = new TradfriResourceListObserver(getGatewayURI() + "/" + ENDPOINT_GROUPS, getEndpoint(),
                 scheduler);
         this.groupListObserver.registerHandler(this::handleGroupListChange);
-
-        this.sceneListObserver = new TradfriResourceListObserver(getGatewayURI() + "/" + ENDPOINT_SCENES, getEndpoint(),
-                scheduler);
-        this.sceneListObserver.registerHandler(this::handleSceneListChange);
     }
 
     private void checkConnection() {
@@ -569,21 +562,29 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     }
 
     private synchronized void handleDeviceListChange(ResourceListEvent event, String id) {
+        // A device was added.
         if (event == ResourceListEvent.RESOURCE_ADDED) {
             if (!this.proxyMap.containsKey(id)) {
-                // A device was added. Create new proxy for that device
-                TradfriCoapResourceProxy<TradfriDevice> proxy = new TradfriCoapDeviceProxy(getGatewayURI(), id,
-                        getEndpoint(), scheduler);
-                // Add this proxy to the list of proxies
-                this.proxyMap.put(id, proxy);
-                // Register handler to update discovery results
-                proxy.registerHandler(discoveryDeviceUpdatedAdapter);
-                // Start observation of device updates
-                proxy.observe();
+                CoapEndpoint endpoint = getEndpoint();
+                if (endpoint != null) {
+                    // Create new proxy for added device
+                    TradfriCoapResourceProxy<TradfriDevice> proxy = new TradfriCoapDeviceProxy(getGatewayURI(), id,
+                            endpoint, scheduler);
+                    // Add this proxy to the list of proxies
+                    this.proxyMap.put(id, proxy);
+                    // Register handler to update discovery results
+                    proxy.registerHandler(discoveryDeviceUpdatedAdapter);
+                    // Start observation of device updates
+                    proxy.observe();
+                } else {
+                    logger.error("Unexpected error. No coap endpoint available. Device with ID {} couldn't be added.",
+                            id);
+                }
             }
+            // A device was removed
         } else if (event == ResourceListEvent.RESOURCE_REMOVED) {
             if (this.proxyMap.containsKey(id)) {
-                // A device was removed. Remove proxy of that device
+                // Remove proxy of removed device
                 TradfriCoapResourceProxy<? extends TradfriResource> proxy = this.proxyMap.remove(id);
                 // TODO: check if there is a configured thing for that proxy
                 // Destroy proxy
@@ -595,21 +596,29 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     }
 
     private synchronized void handleGroupListChange(ResourceListEvent event, String id) {
+        // A group was added
         if (event == ResourceListEvent.RESOURCE_ADDED) {
             if (!this.proxyMap.containsKey(id)) {
-                // A group was added. Create new proxy for that group
-                TradfriCoapResourceProxy<TradfriGroup> proxy = new TradfriCoapGroupProxy(getGatewayURI(), id,
-                        getEndpoint(), scheduler);
-                // Add this proxy to the list of proxies
-                this.proxyMap.put(id, proxy);
-                // Register handler to update discovery results
-                proxy.registerHandler(discoveryGroupUpdatedAdapter);
-                // Start observation of group updates
-                proxy.observe();
+                CoapEndpoint endpoint = getEndpoint();
+                if (endpoint != null) {
+                    // Create new proxy for added group
+                    TradfriCoapResourceProxy<TradfriGroup> proxy = new TradfriCoapGroupProxy(getGatewayURI(), id,
+                            endpoint, scheduler);
+                    // Add this proxy to the list of proxies
+                    this.proxyMap.put(id, proxy);
+                    // Register handler to update discovery results
+                    proxy.registerHandler(discoveryGroupUpdatedAdapter);
+                    // Start observation of group updates
+                    proxy.observe();
+                } else {
+                    logger.error("Unexpected error. No coap endpoint available. Group with ID {} couldn't be added.",
+                            id);
+                }
             }
+            // A group was removed
         } else if (event == ResourceListEvent.RESOURCE_REMOVED) {
             if (this.proxyMap.containsKey(id)) {
-                // A group was removed. Remove proxy of that group
+                // Remove proxy of removed group
                 TradfriCoapResourceProxy<? extends TradfriResource> proxy = this.proxyMap.remove(id);
                 if (mustNotifyDiscoveryService()) {
                     TradfriGroup data = (TradfriGroup) proxy.getData();
@@ -623,28 +632,6 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
             }
         }
 
-        updateOnlineStatus();
-    }
-
-    private synchronized void handleSceneListChange(ResourceListEvent event, String id) {
-        if (event == ResourceListEvent.RESOURCE_ADDED) {
-            if (!this.proxyMap.containsKey(id)) {
-                // A scene was added. Create new proxy for that scene
-                TradfriCoapResourceProxy<TradfriScene> proxy = new TradfriCoapSceneProxy(getGatewayURI(), id,
-                        getEndpoint(), scheduler);
-                // Add this proxy to the list of proxies
-                this.proxyMap.put(id, proxy);
-                // Start observation of scene updates
-                proxy.observe();
-            }
-        } else if (event == ResourceListEvent.RESOURCE_REMOVED) {
-            if (this.proxyMap.containsKey(id)) {
-                // A scene was removed. Remove proxy of that scene
-                TradfriCoapResourceProxy<? extends TradfriResource> proxy = this.proxyMap.remove(id);
-                // Destroy proxy
-                proxy.dispose();
-            }
-        }
         updateOnlineStatus();
     }
 

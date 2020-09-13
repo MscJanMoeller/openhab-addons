@@ -13,12 +13,19 @@
 
 package org.openhab.binding.tradfri.internal.coap;
 
-import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.ENDPOINT_GROUPS;
+import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
+import org.openhab.binding.tradfri.internal.coap.TradfriResourceListEventHandler.ResourceListEvent;
+import org.openhab.binding.tradfri.internal.handler.TradfriGroupProxy;
+import org.openhab.binding.tradfri.internal.handler.TradfriSceneProxy;
 import org.openhab.binding.tradfri.internal.model.TradfriGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,22 +33,72 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.JsonElement;
 
 /**
- * {@link TradfriCoapGroupProxy} observes changes of a single group
+ * {@link TradfriCoapGroupProxy} observes changes of a single group and related scenes
  *
  * @author Jan Möller - Initial contribution
  *
  */
-public class TradfriCoapGroupProxy extends TradfriCoapResourceProxy<@NonNull TradfriGroup> {
+@NonNullByDefault
+public class TradfriCoapGroupProxy extends TradfriCoapResourceProxy<@NonNull TradfriGroup>
+        implements TradfriGroupProxy {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
+
+    private final String gatewayUri;
+    private final Endpoint endpoint;
+    private final ScheduledExecutorService scheduler;
+
+    private final @NonNullByDefault({}) TradfriResourceListObserver sceneListObserver;
+    private final @NonNullByDefault({}) Map<String, TradfriSceneProxy> sceneProxyMap;
 
     public TradfriCoapGroupProxy(String gatewayUri, String groupId, Endpoint endpoint,
             ScheduledExecutorService scheduler) {
         super(gatewayUri + "/" + ENDPOINT_GROUPS + "/" + groupId, endpoint, scheduler);
+
+        this.gatewayUri = gatewayUri;
+        this.endpoint = endpoint;
+        this.scheduler = scheduler;
+
+        this.sceneListObserver = new TradfriResourceListObserver(gatewayUri + "/" + ENDPOINT_SCENES + "/" + groupId,
+                endpoint, scheduler);
+        this.sceneListObserver.registerHandler(this::handleSceneListChange);
+
+        this.sceneProxyMap = new ConcurrentHashMap<String, TradfriSceneProxy>();
+    }
+
+    @Override
+    public @Nullable TradfriSceneProxy getSceneById(String id) {
+        return sceneProxyMap.get(id);
+    }
+
+    @Override
+    public void dispose() {
+        this.sceneListObserver.dispose();
+        super.dispose();
     }
 
     @Override
     protected TradfriGroup convert(JsonElement data) {
         return gson.fromJson(data, TradfriGroup.class);
+    }
+
+    private synchronized void handleSceneListChange(ResourceListEvent event, String id) {
+        if (event == ResourceListEvent.RESOURCE_ADDED) {
+            if (!this.sceneProxyMap.containsKey(id)) {
+                // A scene was added. Create new proxy for that scene
+                TradfriCoapSceneProxy proxy = new TradfriCoapSceneProxy(gatewayUri, id, endpoint, scheduler);
+                // Add this proxy to the list of proxies
+                this.sceneProxyMap.put(id, proxy);
+                // Start observation of scene updates
+                proxy.observe();
+            }
+        } else if (event == ResourceListEvent.RESOURCE_REMOVED) {
+            if (this.sceneProxyMap.containsKey(id)) {
+                // A scene was removed. Remove proxy of that scene
+                TradfriCoapSceneProxy proxy = (TradfriCoapSceneProxy) this.sceneProxyMap.remove(id);
+                // Destroy proxy
+                proxy.dispose();
+            }
+        }
     }
 }

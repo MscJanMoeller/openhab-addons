@@ -20,7 +20,6 @@ import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.ThingStatusInfo;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
-import org.openhab.binding.tradfri.internal.config.TradfriDeviceConfig;
 import org.openhab.binding.tradfri.internal.model.TradfriResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,9 +34,6 @@ public abstract class TradfriResourceHandler<T extends TradfriResource> extends 
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    // the unique instance id of the device
-    protected @Nullable Integer id;
-
     private @Nullable TradfriResourceProxy<T> proxy;
 
     public TradfriResourceHandler(Thing thing) {
@@ -47,15 +43,20 @@ public abstract class TradfriResourceHandler<T extends TradfriResource> extends 
     @Override
     @SuppressWarnings("null")
     public synchronized void initialize() {
-        this.id = getConfigAs(TradfriDeviceConfig.class).id;
 
         updateStatus(ThingStatus.UNKNOWN);
+
+        String id = getResourceId();
+        if (id == null) {
+            logger.error("Unexpected initialization error");
+            return;
+        }
 
         Bridge tradfriGateway = getBridge();
         switch (tradfriGateway.getStatus()) {
             case ONLINE:
                 TradfriGatewayHandler handler = (TradfriGatewayHandler) tradfriGateway.getHandler();
-                this.proxy = handler.getTradfriResource(this.id.toString());
+                this.proxy = handler.getTradfriResource(id);
                 if (this.proxy != null) {
                     this.proxy.registerHandler(getEventHandler());
                 } else {
@@ -73,8 +74,6 @@ public abstract class TradfriResourceHandler<T extends TradfriResource> extends 
     @Override
     public synchronized void dispose() {
         super.dispose();
-
-        this.id = null;
 
         if (this.proxy != null) {
             this.proxy.unregisterHandler(getEventHandler());
@@ -97,4 +96,6 @@ public abstract class TradfriResourceHandler<T extends TradfriResource> extends 
     }
 
     protected abstract TradfriResourceEventHandler<T> getEventHandler();
+
+    protected abstract @Nullable String getResourceId();
 }

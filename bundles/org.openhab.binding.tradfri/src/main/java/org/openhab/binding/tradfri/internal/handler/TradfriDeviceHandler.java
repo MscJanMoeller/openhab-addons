@@ -15,7 +15,9 @@ package org.openhab.binding.tradfri.internal.handler;
 import static org.eclipse.smarthome.core.thing.Thing.*;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.thing.Thing;
+import org.openhab.binding.tradfri.internal.config.TradfriDeviceConfig;
 import org.openhab.binding.tradfri.internal.model.TradfriDevice;
 import org.openhab.binding.tradfri.internal.model.TradfriDeviceData;
 import org.slf4j.Logger;
@@ -31,8 +33,30 @@ public abstract class TradfriDeviceHandler<T extends TradfriDevice> extends Trad
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    // the unique instance id of the device
+    protected @Nullable Integer id;
+
     public TradfriDeviceHandler(Thing thing) {
         super(thing);
+    }
+
+    @Override
+    public synchronized void initialize() {
+        this.id = getConfigAs(TradfriDeviceConfig.class).id;
+
+        super.initialize();
+    }
+
+    @Override
+    public synchronized void dispose() {
+        super.dispose();
+
+        this.id = null;
+    }
+
+    @Override
+    protected @Nullable String getResourceId() {
+        return this.id != null ? this.id.toString() : null;
     }
 
     protected void set(String payload) {

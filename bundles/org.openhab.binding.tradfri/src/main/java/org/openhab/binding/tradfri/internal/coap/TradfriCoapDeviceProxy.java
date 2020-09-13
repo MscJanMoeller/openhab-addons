@@ -19,6 +19,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.binding.tradfri.internal.model.TradfriDevice;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +32,7 @@ import com.google.gson.JsonElement;
  * @author Jan Möller - Initial contribution
  *
  */
+@NonNullByDefault
 public class TradfriCoapDeviceProxy extends TradfriCoapResourceProxy<@NonNull TradfriDevice> {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
