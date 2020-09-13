@@ -95,6 +95,7 @@ public class TradfriCoapGroupProxy extends TradfriCoapResourceProxy<@NonNull Tra
         if (this.sceneListObserver != null) {
             sceneListObserver.triggerUpdate();
         }
+        this.sceneProxyMap.forEach((id, proxy) -> proxy.triggerUpdate());
     }
 
     @Override
