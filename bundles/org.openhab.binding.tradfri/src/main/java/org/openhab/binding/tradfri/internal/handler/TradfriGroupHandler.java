@@ -28,8 +28,10 @@ import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
 import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import org.openhab.binding.tradfri.internal.config.TradfriGroupConfig;
-import org.openhab.binding.tradfri.internal.model.TradfriGroup;
-import org.openhab.binding.tradfri.internal.model.TradfriResource;
+import org.openhab.binding.tradfri.internal.model.TradfriGroupProxy;
+import org.openhab.binding.tradfri.internal.model.TradfriResourceEventHandler;
+import org.openhab.binding.tradfri.internal.model.TradfriResourceProxy;
+import org.openhab.binding.tradfri.internal.model.TradfriSceneProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,8 +41,7 @@ import org.slf4j.LoggerFactory;
  * @author Jan Möller - Initial contribution
  */
 @NonNullByDefault
-public class TradfriGroupHandler extends TradfriResourceHandler<TradfriGroup>
-        implements TradfriResourceEventHandler<TradfriGroup> {
+public class TradfriGroupHandler extends TradfriResourceHandler implements TradfriResourceEventHandler {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -66,7 +67,7 @@ public class TradfriGroupHandler extends TradfriResourceHandler<TradfriGroup>
     }
 
     @Override
-    protected TradfriResourceEventHandler<TradfriGroup> getEventHandler() {
+    protected TradfriResourceEventHandler getEventHandler() {
         return this;
     }
 
@@ -76,16 +77,23 @@ public class TradfriGroupHandler extends TradfriResourceHandler<TradfriGroup>
     }
 
     @Override
-    public void onUpdate(TradfriGroup groupData) {
+    public void onUpdate(TradfriResourceProxy proxy) {
 
-        String sceneId = groupData.getSceneId();
-        if (sceneId != null) {
-            StringType scene = new StringType(getSceneName(sceneId));
+        TradfriGroupProxy groupProxy = (TradfriGroupProxy) proxy;
+
+        TradfriSceneProxy activeScene = groupProxy.getActiveScene();
+        if (activeScene != null) {
+            String name = activeScene.getSceneName();
+            if (name == null) {
+                logger.debug("Unexpected error. Scene proxy with ID {} doesn't provide a name.",
+                        activeScene.getInstanceId());
+            }
+            StringType scene = new StringType(name);
             updateState(TradfriBindingConstants.CHANNEL_SCENE, scene);
-        }
 
-        logger.debug("Updating group \"{}\" with ID {}. Current scene ID: {}", groupData.getName(),
-                groupData.getInstanceId(), groupData.getSceneId());
+            logger.debug("Updating group \"{}\" with ID {}. Current scene: {}", groupProxy.getName(),
+                    groupProxy.getInstanceId(), activeScene.getInstanceId());
+        }
     }
 
     @Override
@@ -95,7 +103,7 @@ public class TradfriGroupHandler extends TradfriResourceHandler<TradfriGroup>
         if (gateway != null && gateway.getStatus() == ThingStatus.ONLINE) {
             if (command instanceof RefreshType) {
                 logger.debug("Refreshing channel {}", channelUID);
-                TradfriResourceProxy<? extends TradfriResource> proxy = getProxy();
+                TradfriResourceProxy proxy = getProxy();
                 if (proxy != null) {
                     proxy.triggerUpdate();
                 } else {

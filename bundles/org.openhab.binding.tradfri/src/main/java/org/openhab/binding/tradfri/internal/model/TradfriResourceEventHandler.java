@@ -10,10 +10,9 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.tradfri.internal.handler;
+package org.openhab.binding.tradfri.internal.model;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.openhab.binding.tradfri.internal.model.TradfriResource;
 
 /**
  * {@link TradfriResourceEventHandler} can register at the {@link TradfriResourceProxy}
@@ -24,13 +23,13 @@ import org.openhab.binding.tradfri.internal.model.TradfriResource;
 
 @NonNullByDefault
 @FunctionalInterface
-public interface TradfriResourceEventHandler<T extends TradfriResource> {
+public interface TradfriResourceEventHandler {
 
     /**
      * This method is called when resource data has been updated.
      *
-     * @param resourceData contains all updated data of the resource
+     * @param proxy representing the updated the resource
      */
 
-    void onUpdate(T resourceData);
+    void onUpdate(TradfriResourceProxy proxy);
 }

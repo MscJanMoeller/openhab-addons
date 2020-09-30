@@ -36,7 +36,7 @@ import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.ThingUID;
 import org.openhab.binding.tradfri.internal.config.TradfriGroupConfig;
 import org.openhab.binding.tradfri.internal.handler.TradfriGatewayHandler;
-import org.openhab.binding.tradfri.internal.model.TradfriGroup;
+import org.openhab.binding.tradfri.internal.model.TradfriResourceProxy;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -208,7 +208,7 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService {
         }
     }
 
-    public void onGroupUpdated(Bridge bridge, TradfriGroup group) {
+    public void onGroupUpdated(Bridge bridge, TradfriResourceProxy group) {
         ThingUID thingId = new ThingUID(THING_TYPE_GROUP, bridge.getUID(), group.getInstanceId());
 
         String label = group.getName();
@@ -229,7 +229,7 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService {
         thingDiscovered(discoveryResult);
     }
 
-    public void onGroupRemoved(Bridge bridge, TradfriGroup group) {
+    public void onGroupRemoved(Bridge bridge, TradfriResourceProxy group) {
         ThingUID thingId = new ThingUID(THING_TYPE_GROUP, bridge.getUID(), group.getInstanceId());
         logger.debug("Inbox change: removing group {}", thingId);
         thingRemoved(thingId);

@@ -16,7 +16,9 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 
 import org.junit.Test;
-import org.openhab.binding.tradfri.internal.model.TradfriDevice.DeviceType;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriDevice;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriDeviceInfo;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriDevice.DeviceType;
 
 import com.google.gson.Gson;
 

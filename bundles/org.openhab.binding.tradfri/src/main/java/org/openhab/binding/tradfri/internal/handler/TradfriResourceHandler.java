@@ -20,21 +20,22 @@ import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.ThingStatusInfo;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
-import org.openhab.binding.tradfri.internal.model.TradfriResource;
+import org.openhab.binding.tradfri.internal.model.TradfriResourceEventHandler;
+import org.openhab.binding.tradfri.internal.model.TradfriResourceProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The {@link TradfriResourceHandler} is the abstract base class for individual resource handlers.
+ * The {@link TradfriResourceHandler} is the abstract base class for specific resource handlers.
  *
  * @author Jan Möller - Initial contribution
  */
 @NonNullByDefault
-public abstract class TradfriResourceHandler<T extends TradfriResource> extends BaseThingHandler {
+public abstract class TradfriResourceHandler extends BaseThingHandler {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private @Nullable TradfriResourceProxy<T> proxy;
+    private @Nullable TradfriResourceProxy proxy;
 
     public TradfriResourceHandler(Thing thing) {
         super(thing);
@@ -91,11 +92,11 @@ public abstract class TradfriResourceHandler<T extends TradfriResource> extends 
         }
     }
 
-    protected @Nullable TradfriResourceProxy<? extends TradfriResource> getProxy() {
+    protected @Nullable TradfriResourceProxy getProxy() {
         return this.proxy;
     }
 
-    protected abstract TradfriResourceEventHandler<T> getEventHandler();
+    protected abstract TradfriResourceEventHandler getEventHandler();
 
     protected abstract @Nullable String getResourceId();
 }

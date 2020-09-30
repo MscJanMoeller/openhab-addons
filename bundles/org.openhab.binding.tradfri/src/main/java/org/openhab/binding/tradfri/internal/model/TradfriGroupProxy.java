@@ -11,14 +11,13 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.openhab.binding.tradfri.internal.handler;
+package org.openhab.binding.tradfri.internal.model;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.tradfri.internal.model.TradfriScene;
 
 /**
- * {@link TradfriSceneProxy} represents of a single scene and provides:
+ * {@link TradfriGroupProxy} represents a single group and provides:
  * - access to the data
  * - notifies about changes
  * - forwards commands
@@ -28,7 +27,11 @@ import org.openhab.binding.tradfri.internal.model.TradfriScene;
  */
 
 @NonNullByDefault
-public interface TradfriSceneProxy extends TradfriResourceProxy<TradfriScene> {
+public interface TradfriGroupProxy extends TradfriResourceProxy {
+
     @Nullable
-    String getSceneName();
+    TradfriSceneProxy getActiveScene();
+
+    @Nullable
+    TradfriSceneProxy getSceneById(String id);
 }

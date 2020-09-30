@@ -18,7 +18,6 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.thing.Thing;
 import org.openhab.binding.tradfri.internal.config.TradfriDeviceConfig;
-import org.openhab.binding.tradfri.internal.model.TradfriDevice;
 import org.openhab.binding.tradfri.internal.model.TradfriDeviceData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +28,7 @@ import org.slf4j.LoggerFactory;
  * @author Jan Möller - Initial contribution
  */
 @NonNullByDefault
-public abstract class TradfriDeviceHandler<T extends TradfriDevice> extends TradfriResourceHandler<T> {
+public abstract class TradfriDeviceHandler extends TradfriResourceHandler {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 

@@ -18,11 +18,10 @@ import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.ENDPO
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.californium.core.network.Endpoint;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.tradfri.internal.handler.TradfriSceneProxy;
-import org.openhab.binding.tradfri.internal.model.TradfriScene;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriScene;
+import org.openhab.binding.tradfri.internal.model.TradfriSceneProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,8 +34,7 @@ import com.google.gson.JsonElement;
  *
  */
 @NonNullByDefault
-public class TradfriCoapSceneProxy extends TradfriCoapResourceProxy<@NonNull TradfriScene>
-        implements TradfriSceneProxy {
+public class TradfriCoapSceneProxy extends TradfriCoapResourceProxy implements TradfriSceneProxy {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -47,7 +45,7 @@ public class TradfriCoapSceneProxy extends TradfriCoapResourceProxy<@NonNull Tra
 
     @Override
     public @Nullable String getSceneName() {
-        TradfriScene sceneData = getData();
+        TradfriScene sceneData = (TradfriScene) this.cachedData;
         if (sceneData != null) {
             return sceneData.getName();
         }

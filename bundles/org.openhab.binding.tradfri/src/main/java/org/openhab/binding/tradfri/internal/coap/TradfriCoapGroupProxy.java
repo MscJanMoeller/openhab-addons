@@ -20,13 +20,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.californium.core.network.Endpoint;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.coap.TradfriResourceListEventHandler.ResourceListEvent;
-import org.openhab.binding.tradfri.internal.handler.TradfriGroupProxy;
-import org.openhab.binding.tradfri.internal.handler.TradfriSceneProxy;
-import org.openhab.binding.tradfri.internal.model.TradfriGroup;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriGroup;
+import org.openhab.binding.tradfri.internal.model.TradfriGroupProxy;
+import org.openhab.binding.tradfri.internal.model.TradfriSceneProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,8 +38,7 @@ import com.google.gson.JsonElement;
  *
  */
 @NonNullByDefault
-public class TradfriCoapGroupProxy extends TradfriCoapResourceProxy<@NonNull TradfriGroup>
-        implements TradfriGroupProxy {
+public class TradfriCoapGroupProxy extends TradfriCoapResourceProxy implements TradfriGroupProxy {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -68,8 +66,22 @@ public class TradfriCoapGroupProxy extends TradfriCoapResourceProxy<@NonNull Tra
     }
 
     @Override
-    public @Nullable TradfriSceneProxy getSceneById(String id) {
+    public @Nullable TradfriSceneProxy getSceneById(@Nullable String id) {
         return sceneProxyMap.get(id);
+    }
+
+    @Override
+    public @Nullable TradfriSceneProxy getActiveScene() {
+        TradfriSceneProxy sceneProxy = null;
+
+        TradfriGroup groupData = (TradfriGroup) this.cachedData;
+        if (groupData != null) {
+            sceneProxy = getSceneById(groupData.getSceneId());
+        } else {
+            logger.debug("Unexpected error. Proxy object of group not initialized yet");
+        }
+
+        return sceneProxy;
     }
 
     @Override

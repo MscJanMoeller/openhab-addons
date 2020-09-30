@@ -37,7 +37,6 @@ import org.eclipse.californium.scandium.config.DtlsConnectorConfig;
 import org.eclipse.californium.scandium.dtls.AlertMessage;
 import org.eclipse.californium.scandium.dtls.Connection;
 import org.eclipse.californium.scandium.dtls.pskstore.StaticPskStore;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.config.core.Configuration;
@@ -58,10 +57,9 @@ import org.openhab.binding.tradfri.internal.coap.TradfriResourceListEventHandler
 import org.openhab.binding.tradfri.internal.coap.TradfriResourceListObserver;
 import org.openhab.binding.tradfri.internal.config.TradfriGatewayConfig;
 import org.openhab.binding.tradfri.internal.discovery.TradfriDiscoveryService;
-import org.openhab.binding.tradfri.internal.model.TradfriDevice;
 import org.openhab.binding.tradfri.internal.model.TradfriGatewayData;
-import org.openhab.binding.tradfri.internal.model.TradfriGroup;
-import org.openhab.binding.tradfri.internal.model.TradfriResource;
+import org.openhab.binding.tradfri.internal.model.TradfriResourceEventHandler;
+import org.openhab.binding.tradfri.internal.model.TradfriResourceProxy;
 import org.openhab.binding.tradfri.internal.model.TradfriVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +76,8 @@ import com.google.gson.JsonSyntaxException;
  * sent to one of the channels.
  *
  * @author Kai Kreuzer - Initial contribution
- * @author Jan Möller - Refactoring to increase stability and support of native TRADFRI groups and scenes
+ * @author Jan Möller - Refactoring to increase stability
+ * @author Jan Möller - Added support of native TRADFRI groups and scenes
  */
 @NonNullByDefault
 public class TradfriGatewayHandler extends BaseBridgeHandler implements ConnectionListener, AlertHandler {
@@ -102,11 +101,11 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     private @NonNullByDefault({}) TradfriResourceListObserver deviceListObserver;
     private @NonNullByDefault({}) TradfriResourceListObserver groupListObserver;
 
-    private final @NonNullByDefault({}) Map<String, TradfriCoapResourceProxy<? extends TradfriResource>> proxyMap;
+    private final @NonNullByDefault({}) Map<String, TradfriCoapResourceProxy> proxyMap;
 
-    private final @NonNullByDefault({}) TradfriResourceEventHandler<@NonNull TradfriDevice> discoveryDeviceUpdatedAdapter;
-    private final @NonNullByDefault({}) TradfriResourceEventHandler<@NonNull TradfriGroup> discoveryGroupUpdatedAdapter;
-    private final @NonNullByDefault({}) TradfriResourceEventHandler<@NonNull TradfriGroup> discoveryGroupRemovedAdapter;
+    private final @NonNullByDefault({}) TradfriResourceEventHandler discoveryDeviceUpdatedAdapter;
+    private final @NonNullByDefault({}) TradfriResourceEventHandler discoveryGroupUpdatedAdapter;
+    private final @NonNullByDefault({}) TradfriResourceEventHandler discoveryGroupRemovedAdapter;
 
     private final AtomicInteger activeScans = new AtomicInteger(0);
 
@@ -120,24 +119,25 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     public TradfriGatewayHandler(Bridge bridge, TradfriDiscoveryService ds) {
         super(bridge);
 
-        this.proxyMap = new ConcurrentHashMap<String, TradfriCoapResourceProxy<? extends TradfriResource>>();
+        this.proxyMap = new ConcurrentHashMap<String, TradfriCoapResourceProxy>();
 
-        this.discoveryDeviceUpdatedAdapter = (data) -> {
+        this.discoveryDeviceUpdatedAdapter = (proxy) -> {
             if (mustNotifyDiscoveryService()) {
-                String id = data.getInstanceId();
+                String id = proxy.getInstanceId();
                 // TODO inform discovery service only if relevant data changed (like name of device)
-                ds.onDeviceUpdate(getThing(), id, gson.toJsonTree(data).getAsJsonObject());
+                // TODO change interface: use proxy object instead of JsonObject
+                // ds.onDeviceUpdate(getThing(), id, gson.toJsonTree(data).getAsJsonObject());
             }
         };
 
-        this.discoveryGroupUpdatedAdapter = (data) -> {
+        this.discoveryGroupUpdatedAdapter = (proxy) -> {
             if (mustNotifyDiscoveryService()) {
                 // TODO inform discovery service only if relevant data changed (like name of group)
-                ds.onGroupUpdated(getThing(), data);
+                ds.onGroupUpdated(getThing(), proxy);
             }
         };
 
-        this.discoveryGroupRemovedAdapter = (data) -> ds.onGroupRemoved(getThing(), data);
+        this.discoveryGroupRemovedAdapter = (proxy) -> ds.onGroupRemoved(getThing(), proxy);
     };
 
     @Override
@@ -449,8 +449,8 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         }
     }
 
-    public <T extends TradfriResource> @Nullable TradfriResourceProxy<T> getTradfriResource(String id) {
-        return (TradfriResourceProxy<T>) this.proxyMap.get(id);
+    public TradfriResourceProxy getTradfriResource(String id) {
+        return this.proxyMap.get(id);
     }
 
     /**
@@ -560,8 +560,8 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
                 CoapEndpoint endpoint = getEndpoint();
                 if (endpoint != null) {
                     // Create new proxy for added device
-                    TradfriCoapResourceProxy<TradfriDevice> proxy = new TradfriCoapDeviceProxy(getGatewayURI(), id,
-                            endpoint, scheduler);
+                    TradfriCoapResourceProxy proxy = new TradfriCoapDeviceProxy(getGatewayURI(), id, endpoint,
+                            scheduler);
                     // Add this proxy to the list of proxies
                     this.proxyMap.put(id, proxy);
                     // Register handler to update discovery results
@@ -577,7 +577,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         } else if (event == ResourceListEvent.RESOURCE_REMOVED) {
             if (this.proxyMap.containsKey(id)) {
                 // Remove proxy of removed device
-                TradfriCoapResourceProxy<? extends TradfriResource> proxy = this.proxyMap.remove(id);
+                TradfriCoapResourceProxy proxy = this.proxyMap.remove(id);
                 // TODO: check if there is a configured thing for that proxy
                 // Destroy proxy
                 proxy.dispose();
@@ -594,8 +594,8 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
                 CoapEndpoint endpoint = getEndpoint();
                 if (endpoint != null) {
                     // Create new proxy for added group
-                    TradfriCoapResourceProxy<TradfriGroup> proxy = new TradfriCoapGroupProxy(getGatewayURI(), id,
-                            endpoint, scheduler);
+                    TradfriCoapResourceProxy proxy = new TradfriCoapGroupProxy(getGatewayURI(), id, endpoint,
+                            scheduler);
                     // Add this proxy to the list of proxies
                     this.proxyMap.put(id, proxy);
                     // Register handler to update discovery results
@@ -611,12 +611,9 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         } else if (event == ResourceListEvent.RESOURCE_REMOVED) {
             if (this.proxyMap.containsKey(id)) {
                 // Remove proxy of removed group
-                TradfriCoapResourceProxy<? extends TradfriResource> proxy = this.proxyMap.remove(id);
+                TradfriCoapResourceProxy proxy = this.proxyMap.remove(id);
                 if (mustNotifyDiscoveryService()) {
-                    TradfriGroup data = (TradfriGroup) proxy.getData();
-                    if (data != null) {
-                        this.discoveryGroupRemovedAdapter.onUpdate(data);
-                    }
+                    this.discoveryGroupRemovedAdapter.onUpdate(proxy);
                 }
                 // TODO: check if there is a configured thing for that proxy
                 // Destroy proxy

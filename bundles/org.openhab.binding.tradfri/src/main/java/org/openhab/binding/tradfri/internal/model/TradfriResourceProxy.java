@@ -11,11 +11,10 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.openhab.binding.tradfri.internal.handler;
+package org.openhab.binding.tradfri.internal.model;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.tradfri.internal.model.TradfriResource;
 
 /**
  * {@link TradfriResourceProxy} is a base class of a single resource
@@ -29,10 +28,13 @@ import org.openhab.binding.tradfri.internal.model.TradfriResource;
  */
 
 @NonNullByDefault
-public interface TradfriResourceProxy<T extends TradfriResource> {
+public interface TradfriResourceProxy {
 
     @Nullable
-    T getData();
+    String getInstanceId();
+
+    @Nullable
+    String getName();
 
     void triggerUpdate();
 
@@ -41,13 +43,13 @@ public interface TradfriResourceProxy<T extends TradfriResource> {
      *
      * @param handler the handler to register
      */
-    void registerHandler(TradfriResourceEventHandler<T> handler);
+    void registerHandler(TradfriResourceEventHandler handler);
 
     /**
      * Unregisters a given handler.
      *
      * @param handler the handler to unregister
      */
-    void unregisterHandler(TradfriResourceEventHandler<T> handler);
+    void unregisterHandler(TradfriResourceEventHandler handler);
 
 }

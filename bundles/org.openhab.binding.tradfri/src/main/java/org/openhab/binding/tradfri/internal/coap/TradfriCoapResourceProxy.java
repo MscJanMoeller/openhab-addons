@@ -24,9 +24,9 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
-import org.openhab.binding.tradfri.internal.handler.TradfriResourceEventHandler;
-import org.openhab.binding.tradfri.internal.handler.TradfriResourceProxy;
-import org.openhab.binding.tradfri.internal.model.TradfriResource;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriResource;
+import org.openhab.binding.tradfri.internal.model.TradfriResourceEventHandler;
+import org.openhab.binding.tradfri.internal.model.TradfriResourceProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,8 +43,7 @@ import com.google.gson.JsonSyntaxException;
  */
 
 @NonNullByDefault
-public abstract class TradfriCoapResourceProxy<T extends TradfriResource>
-        implements CoapCallback, TradfriResourceProxy<T> {
+public abstract class TradfriCoapResourceProxy implements CoapCallback, TradfriResourceProxy {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -55,9 +54,9 @@ public abstract class TradfriCoapResourceProxy<T extends TradfriResource>
     private TradfriCoapClient coapClient;
     private @Nullable CoapObserveRelation observeRelation;
 
-    private final Set<TradfriResourceEventHandler<T>> updateHandler = new CopyOnWriteArraySet<>();
+    private final Set<TradfriResourceEventHandler> updateHandler = new CopyOnWriteArraySet<>();
 
-    private @Nullable T cachedData;
+    protected @Nullable TradfriResource cachedData;
 
     public TradfriCoapResourceProxy(String uri, Endpoint endpoint, ScheduledExecutorService scheduler) {
         this.coapClient = new TradfriCoapClient(uri);
@@ -66,8 +65,21 @@ public abstract class TradfriCoapResourceProxy<T extends TradfriResource>
     }
 
     @Override
-    public @Nullable T getData() {
-        return cachedData;
+    public @Nullable String getInstanceId() {
+        String id = null;
+        if (this.cachedData != null) {
+            id = this.cachedData.getInstanceId();
+        }
+        return id;
+    }
+
+    @Override
+    public @Nullable String getName() {
+        String name = null;
+        if (this.cachedData != null) {
+            name = this.cachedData.getName();
+        }
+        return name;
     }
 
     public void observe() {
@@ -81,9 +93,9 @@ public abstract class TradfriCoapResourceProxy<T extends TradfriResource>
         this.coapClient.asyncGet(this);
     }
 
-    protected void updateData(T data) {
+    protected void updateData(TradfriResource data) {
         this.cachedData = data;
-        updateHandler.forEach(listener -> listener.onUpdate(data));
+        updateHandler.forEach(listener -> listener.onUpdate(this));
     }
 
     @Override
@@ -91,7 +103,7 @@ public abstract class TradfriCoapResourceProxy<T extends TradfriResource>
         logger.debug("onUpdate response: {}", jsonData);
 
         try {
-            T data = convert(jsonData);
+            TradfriResource data = convert(jsonData);
             updateData(data);
         } catch (JsonSyntaxException ex) {
             logger.error("Unexpected data response: {}", jsonData);
@@ -117,7 +129,7 @@ public abstract class TradfriCoapResourceProxy<T extends TradfriResource>
      * @param handler the handler to register
      */
     @Override
-    public void registerHandler(TradfriResourceEventHandler<T> handler) {
+    public void registerHandler(TradfriResourceEventHandler handler) {
         this.updateHandler.add(handler);
     }
 
@@ -127,9 +139,9 @@ public abstract class TradfriCoapResourceProxy<T extends TradfriResource>
      * @param handler the handler to unregister
      */
     @Override
-    public void unregisterHandler(TradfriResourceEventHandler<T> handler) {
+    public void unregisterHandler(TradfriResourceEventHandler handler) {
         this.updateHandler.remove(handler);
     }
 
-    protected abstract T convert(JsonElement data) throws JsonSyntaxException;
+    protected abstract TradfriResource convert(JsonElement data) throws JsonSyntaxException;
 }

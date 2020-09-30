@@ -26,8 +26,9 @@ import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
-import org.openhab.binding.tradfri.internal.model.TradfriLight;
 import org.openhab.binding.tradfri.internal.model.TradfriLightData;
+import org.openhab.binding.tradfri.internal.model.TradfriResourceEventHandler;
+import org.openhab.binding.tradfri.internal.model.TradfriResourceProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,8 +42,7 @@ import com.google.gson.JsonElement;
  * @author Christoph Weitkamp - Restructuring and refactoring of the binding
  */
 @NonNullByDefault
-public class TradfriLightHandler extends TradfriDeviceHandler<TradfriLight>
-        implements TradfriResourceEventHandler<TradfriLight> {
+public class TradfriLightHandler extends TradfriDeviceHandler implements TradfriResourceEventHandler {
 
     private final Logger logger = LoggerFactory.getLogger(TradfriLightHandler.class);
 
@@ -57,12 +57,12 @@ public class TradfriLightHandler extends TradfriDeviceHandler<TradfriLight>
     }
 
     @Override
-    protected TradfriResourceEventHandler<TradfriLight> getEventHandler() {
+    protected TradfriResourceEventHandler getEventHandler() {
         return this;
     }
 
     @Override
-    public void onUpdate(TradfriLight resourceData) {
+    public void onUpdate(TradfriResourceProxy proxy) {
         // TODO Auto-generated method stub
     }
 
