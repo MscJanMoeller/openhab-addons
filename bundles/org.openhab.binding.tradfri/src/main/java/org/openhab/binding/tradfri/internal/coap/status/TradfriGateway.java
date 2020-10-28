@@ -10,7 +10,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.tradfri.internal.model;
+package org.openhab.binding.tradfri.internal.coap.status;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
@@ -19,13 +19,13 @@ import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * The {@link TradfriGatewayData} class is a Java wrapper for raw JSON data related to the Tradfri gateway.
+ * The {@link TradfriGateway} class is a Java wrapper for raw JSON data related to the Tradfri gateway.
  *
  * @author Jan Möller - Initial contribution
  */
 
 @NonNullByDefault
-public class TradfriGatewayData {
+public class TradfriGateway {
 
     @SerializedName(value = TradfriBindingConstants.ALEXA_PAIR_STATUS)
     private int alexaPairStatus;

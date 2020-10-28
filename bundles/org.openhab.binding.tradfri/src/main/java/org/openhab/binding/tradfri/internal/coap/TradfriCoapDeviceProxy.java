@@ -13,17 +13,16 @@
 
 package org.openhab.binding.tradfri.internal.coap;
 
-import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.ENDPOINT_DEVICES;
-
 import java.util.concurrent.ScheduledExecutorService;
 
-import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriDevice;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriDeviceInfo;
+import org.openhab.binding.tradfri.internal.model.TradfriDeviceProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.gson.JsonElement;
 
 /**
  * {@link TradfriCoapDeviceProxy} observes changes of a single device
@@ -32,18 +31,95 @@ import com.google.gson.JsonElement;
  *
  */
 @NonNullByDefault
-public class TradfriCoapDeviceProxy extends TradfriCoapResourceProxy {
+public abstract class TradfriCoapDeviceProxy extends TradfriCoapResourceProxy implements TradfriDeviceProxy {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-    public TradfriCoapDeviceProxy(String gatewayUri, String deviceId, Endpoint endpoint,
+    private final ThingTypeUID thingType;
+
+    public TradfriCoapDeviceProxy(ThingTypeUID thingType, TradfriCoapClient coapClient,
             ScheduledExecutorService scheduler) {
-        super(gatewayUri + "/" + ENDPOINT_DEVICES + "/" + deviceId, endpoint, scheduler);
+        super(coapClient, scheduler);
+        this.thingType = thingType;
     }
 
     @Override
-    protected TradfriDevice convert(JsonElement data) {
-        return gson.fromJson(data, TradfriDevice.class);
+    protected TradfriDevice convert(String coapPayload) {
+        return gson.fromJson(coapPayload, TradfriDevice.class);
+    }
+
+    @Override
+    public ThingTypeUID getThingType() {
+        return this.thingType;
+    }
+
+    @Override
+    public @Nullable String getVendor() {
+        String vendor = null;
+        if (this.cachedData != null) {
+            TradfriDeviceInfo deviceInfo = ((TradfriDevice) this.cachedData).getDeviceInfo();
+            if (deviceInfo != null) {
+                vendor = deviceInfo.getVendor();
+            }
+        }
+        return vendor;
+    }
+
+    @Override
+    public @Nullable String getModel() {
+        String model = null;
+        if (this.cachedData != null) {
+            TradfriDeviceInfo deviceInfo = ((TradfriDevice) this.cachedData).getDeviceInfo();
+            if (deviceInfo != null) {
+                model = deviceInfo.getModel();
+            }
+        }
+        return model;
+    }
+
+    @Override
+    public @Nullable String getSerialNumber() {
+        String serialNumber = null;
+        if (this.cachedData != null) {
+            TradfriDeviceInfo deviceInfo = ((TradfriDevice) this.cachedData).getDeviceInfo();
+            if (deviceInfo != null) {
+                serialNumber = deviceInfo.getSerialNumber();
+            }
+        }
+        return serialNumber;
+    }
+
+    @Override
+    public @Nullable String getFirmware() {
+        String firmware = null;
+        if (this.cachedData != null) {
+            TradfriDeviceInfo deviceInfo = ((TradfriDevice) this.cachedData).getDeviceInfo();
+            if (deviceInfo != null) {
+                firmware = deviceInfo.getFirmware();
+            }
+        }
+        return firmware;
+    }
+
+    @Override
+    public boolean isAlive() {
+        boolean isAlive = false;
+        if (this.cachedData != null) {
+            isAlive = ((TradfriDevice) this.cachedData).isAlive();
+        }
+        return isAlive;
+    }
+
+    @Override
+    public int getBatteryLevel() {
+        int batteryLevel = 0;
+        if (this.cachedData != null) {
+            TradfriDeviceInfo deviceInfo = ((TradfriDevice) this.cachedData).getDeviceInfo();
+            if (deviceInfo != null) {
+                batteryLevel = deviceInfo.getBatteryLevel();
+            }
+        }
+        return batteryLevel;
     }
 
 }

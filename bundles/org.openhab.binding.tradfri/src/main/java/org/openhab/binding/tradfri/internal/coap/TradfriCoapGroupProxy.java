@@ -29,8 +29,6 @@ import org.openhab.binding.tradfri.internal.model.TradfriSceneProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.JsonElement;
-
 /**
  * {@link TradfriCoapGroupProxy} observes changes of a single group and related scenes
  *
@@ -42,11 +40,9 @@ public class TradfriCoapGroupProxy extends TradfriCoapResourceProxy implements T
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final String gatewayUri;
-    private final Endpoint endpoint;
-    private final ScheduledExecutorService scheduler;
+    private final TradfriCoapProxyFactory proxyFactory;
 
-    private final @NonNullByDefault({}) Map<String, TradfriSceneProxy> sceneProxyMap;
+    private final Map<String, TradfriCoapSceneProxy> sceneProxyMap;
 
     private @Nullable TradfriResourceListObserver sceneListObserver;
 
@@ -54,11 +50,9 @@ public class TradfriCoapGroupProxy extends TradfriCoapResourceProxy implements T
             ScheduledExecutorService scheduler) {
         super(gatewayUri + "/" + ENDPOINT_GROUPS + "/" + groupId, endpoint, scheduler);
 
-        this.gatewayUri = gatewayUri;
-        this.endpoint = endpoint;
-        this.scheduler = scheduler;
+        this.proxyFactory = new TradfriCoapProxyFactory(gatewayUri, endpoint, scheduler);
 
-        this.sceneProxyMap = new ConcurrentHashMap<String, TradfriSceneProxy>();
+        this.sceneProxyMap = new ConcurrentHashMap<String, TradfriCoapSceneProxy>();
 
         this.sceneListObserver = new TradfriResourceListObserver(gatewayUri + "/" + ENDPOINT_SCENES + "/" + groupId,
                 endpoint, scheduler);
@@ -111,15 +105,15 @@ public class TradfriCoapGroupProxy extends TradfriCoapResourceProxy implements T
     }
 
     @Override
-    protected TradfriGroup convert(JsonElement data) {
-        return gson.fromJson(data, TradfriGroup.class);
+    protected TradfriGroup convert(String coapPayload) {
+        return gson.fromJson(coapPayload, TradfriGroup.class);
     }
 
     private synchronized void handleSceneListChange(ResourceListEvent event, String id) {
         if (event == ResourceListEvent.RESOURCE_ADDED) {
             if (!this.sceneProxyMap.containsKey(id)) {
                 // A scene was added. Create new proxy for that scene
-                TradfriCoapSceneProxy proxy = new TradfriCoapSceneProxy(gatewayUri, id, endpoint, scheduler);
+                TradfriCoapSceneProxy proxy = this.proxyFactory.createSceneProxy(id);
                 // Add this proxy to the list of proxies
                 this.sceneProxyMap.put(id, proxy);
                 // Start observation of scene updates
@@ -128,7 +122,7 @@ public class TradfriCoapGroupProxy extends TradfriCoapResourceProxy implements T
         } else if (event == ResourceListEvent.RESOURCE_REMOVED) {
             if (this.sceneProxyMap.containsKey(id)) {
                 // A scene was removed. Remove proxy of that scene
-                TradfriCoapSceneProxy proxy = (TradfriCoapSceneProxy) this.sceneProxyMap.remove(id);
+                TradfriCoapSceneProxy proxy = this.sceneProxyMap.remove(id);
                 // Destroy proxy
                 proxy.dispose();
             }

@@ -16,11 +16,12 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 
 import org.junit.Test;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriGateway;
 
 import com.google.gson.Gson;
 
 /**
- * Tests for {@link TradfriGatewayData}.
+ * Tests for {@link TradfriGateway}.
  *
  * @author Jan Möller - Initial contribution
  */
@@ -41,7 +42,7 @@ public class TradfriGatwayDataTest {
                 + "\"9062\":0," + "\"9081\":\"7e24495204400179\"," + "\"9082\":false," + "\"9106\":0,"
                 + "\"9201\":1\"}";
 
-        TradfriGatewayData gw = this.gson.fromJson(json, TradfriGatewayData.class);
+        TradfriGateway gw = this.gson.fromJson(json, TradfriGateway.class);
 
         assertThat(gw.getAlexaPairStatus(), is(0));
         assertThat(gw.getCertificateProvisioned(), is(1));

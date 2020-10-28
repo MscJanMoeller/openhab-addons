@@ -16,14 +16,10 @@ import static org.eclipse.smarthome.core.thing.Thing.*;
 import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
@@ -34,8 +30,10 @@ import org.eclipse.smarthome.config.discovery.DiscoveryService;
 import org.eclipse.smarthome.core.thing.Bridge;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.ThingUID;
+import org.openhab.binding.tradfri.internal.config.TradfriDeviceConfig;
 import org.openhab.binding.tradfri.internal.config.TradfriGroupConfig;
 import org.openhab.binding.tradfri.internal.handler.TradfriGatewayHandler;
+import org.openhab.binding.tradfri.internal.model.TradfriDeviceProxy;
 import org.openhab.binding.tradfri.internal.model.TradfriResourceProxy;
 import org.osgi.service.component.annotations.Component;
 import org.slf4j.Logger;
@@ -58,17 +56,6 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService {
     private final Logger logger = LoggerFactory.getLogger(TradfriDiscoveryService.class);
 
     private final CopyOnWriteArrayList<TradfriGatewayHandler> gatewayHandlers = new CopyOnWriteArrayList<TradfriGatewayHandler>();
-
-    private static final String REMOTE_CONTROLLER_MODEL = "TRADFRI remote control";
-
-    private static final Set<String> COLOR_TEMP_MODELS = Collections
-            .unmodifiableSet(Stream
-                    .of("TRADFRI bulb E27 WS opal 980lm", "TRADFRI bulb E27 WS clear 950lm",
-                            "TRADFRI bulb GU10 WS 400lm", "TRADFRI bulb E14 WS opal 400lm", "FLOALT panel WS 30x30",
-                            "FLOALT panel WS 60x60", "FLOALT panel WS 30x90", "TRADFRI bulb E12 WS opal 400lm")
-                    .collect(Collectors.toSet()));
-
-    private static final String[] COLOR_MODEL_IDENTIFIER_HINTS = new String[] { "CWS", " C/WS " };
 
     public TradfriDiscoveryService() {
         super(SUPPORTED_DEVICE_TYPES_UIDS, 10, true);
@@ -206,6 +193,40 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService {
         } catch (JsonSyntaxException e) {
             logger.debug("JSON error during discovery: {}", e.getMessage());
         }
+    }
+
+    public void onDeviceUpdated(Bridge bridge, TradfriDeviceProxy device) {
+        ThingUID thingId = new ThingUID(device.getThingType(), bridge.getUID(), device.getInstanceId());
+
+        String label = device.getName();
+
+        Map<String, Object> properties = new HashMap<>(1);
+
+        String id = device.getInstanceId();
+        if (id != null) {
+            properties.put(TradfriDeviceConfig.CONFIG_ID, id);
+        }
+
+        String model = device.getModel();
+        if (model != null) {
+            properties.put(PROPERTY_MODEL_ID, model);
+        }
+
+        String vendor = device.getVendor();
+        if (vendor != null) {
+            properties.put(PROPERTY_VENDOR, vendor);
+        }
+
+        String firmware = device.getFirmware();
+        if (firmware != null) {
+            properties.put(PROPERTY_FIRMWARE_VERSION, firmware);
+        }
+
+        logger.debug("Adding device {} to inbox", thingId);
+        DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(thingId).withBridge(bridge.getUID())
+                .withLabel(label).withProperties(properties).withRepresentationProperty(TradfriDeviceConfig.CONFIG_ID)
+                .build();
+        thingDiscovered(discoveryResult);
     }
 
     public void onGroupUpdated(Bridge bridge, TradfriResourceProxy group) {

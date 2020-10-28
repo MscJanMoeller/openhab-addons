@@ -75,6 +75,18 @@ public class TradfriBindingConstants {
                     SUPPORTED_DEVICE_TYPES_UIDS.stream())
             .reduce(Stream::concat).orElseGet(Stream::empty).collect(Collectors.toSet()));
 
+    // Constants used to map Tradfri devices to thing types
+    public static final String REMOTE_CONTROLLER_MODEL = "TRADFRI remote control";
+
+    public static final Set<String> COLOR_TEMP_MODELS = Collections
+            .unmodifiableSet(Stream
+                    .of("TRADFRI bulb E27 WS opal 980lm", "TRADFRI bulb E27 WS clear 950lm",
+                            "TRADFRI bulb GU10 WS 400lm", "TRADFRI bulb E14 WS opal 400lm", "FLOALT panel WS 30x30",
+                            "FLOALT panel WS 60x60", "FLOALT panel WS 30x90", "TRADFRI bulb E12 WS opal 400lm")
+                    .collect(Collectors.toSet()));
+
+    public static final String[] COLOR_MODEL_IDENTIFIER_HINTS = new String[] { "CWS", " C/WS " };
+
     // List of all Channel IDs
     public static final String CHANNEL_POWER = "power";
     public static final String CHANNEL_BRIGHTNESS = "brightness";

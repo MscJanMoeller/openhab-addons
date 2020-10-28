@@ -25,8 +25,6 @@ import org.openhab.binding.tradfri.internal.model.TradfriSceneProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.JsonElement;
-
 /**
  * {@link TradfriCoapSceneProxy} observes changes of a single scene
  *
@@ -53,7 +51,7 @@ public class TradfriCoapSceneProxy extends TradfriCoapResourceProxy implements T
     }
 
     @Override
-    protected TradfriScene convert(JsonElement data) {
-        return gson.fromJson(data, TradfriScene.class);
+    protected TradfriScene convert(String coapPayload) {
+        return gson.fromJson(coapPayload, TradfriScene.class);
     }
 }
