@@ -10,13 +10,12 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.tradfri.internal.model;
+package org.openhab.binding.tradfri.internal.coap.status;
 
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 
 import org.junit.Test;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriGroup;
 
 import com.google.gson.Gson;
 
@@ -42,10 +41,12 @@ public class TradfriGroupTest {
         assertThat(grp.getName(), is("Living room dining table"));
         assertThat(grp.getTimestampCreatedAt(), is(1572085357L));
 
-        // Check data of class TradfriGroupTest
+        // Check data of class TradfriGroup
         assertThat(grp.getSceneId(), is("196635"));
         assertThat(grp.getGroupType(), is(0));
-        assertThat(grp.getMembers().size(), is(3));
-        assertThat(grp.getMembers().toSet(), contains("65552", "65553", "65554"));
+        TradfriResourceIdList idList = grp.getMembers();
+        assertNotNull(idList);
+        assertThat(idList.size(), is(3));
+        assertThat(idList.toSet(), contains("65552", "65553", "65554"));
     }
 }

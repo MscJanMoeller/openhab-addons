@@ -13,32 +13,30 @@
 package org.openhab.binding.tradfri.internal.coap.status;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 
 import com.google.gson.annotations.SerializedName;
 
 /**
- * The {@link TradfriScene} class is a Java wrapper for raw JSON data related to a scene.
+ * The {@link TradfriColorLight} class is a Java wrapper for raw JSON data related to a light bulb with
+ * color temperature settings and full colors support.
  *
  * @author Jan Möller - Initial contribution
  */
 
 @NonNullByDefault
-public class TradfriScene extends TradfriResource {
+public class TradfriColorLight extends TradfriDevice {
 
-    @SerializedName(value = TradfriBindingConstants.SCENE_INDEX)
-    private int sceneIndex;
+    @SerializedName(value = TradfriBindingConstants.LIGHT)
+    private TradfriColorLightSetting @Nullable [] lightSettings;
 
-    // TODO add light settings
-
-    @SerializedName(value = TradfriBindingConstants.IKEA_MOODS)
-    private int ikeaMood;
-
-    public int getSceneIndex() {
-        return sceneIndex;
-    }
-
-    public int getIkeaMood() {
-        return ikeaMood;
+    public @Nullable TradfriColorLightSetting getLightSetting() {
+        TradfriColorLightSetting[] lightSettingArray = this.lightSettings;
+        if (lightSettingArray != null && lightSettingArray.length > 0) {
+            return lightSettingArray[0];
+        } else {
+            return null;
+        }
     }
 }

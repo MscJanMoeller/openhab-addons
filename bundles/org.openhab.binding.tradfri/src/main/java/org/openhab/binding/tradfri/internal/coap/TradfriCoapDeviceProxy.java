@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 @NonNullByDefault
-public abstract class TradfriCoapDeviceProxy extends TradfriCoapResourceProxy implements TradfriDeviceProxy {
+public class TradfriCoapDeviceProxy extends TradfriCoapResourceProxy implements TradfriDeviceProxy {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -112,7 +112,7 @@ public abstract class TradfriCoapDeviceProxy extends TradfriCoapResourceProxy im
 
     @Override
     public int getBatteryLevel() {
-        int batteryLevel = 0;
+        int batteryLevel = -1;
         if (this.cachedData != null) {
             TradfriDeviceInfo deviceInfo = ((TradfriDevice) this.cachedData).getDeviceInfo();
             if (deviceInfo != null) {

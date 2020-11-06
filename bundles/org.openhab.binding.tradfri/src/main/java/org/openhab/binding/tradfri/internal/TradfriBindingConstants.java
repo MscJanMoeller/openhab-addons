@@ -104,6 +104,9 @@ public class TradfriBindingConstants {
     public static final String CERTIFICATE_PROVISIONED = "9092";
     public static final String CLIENT_IDENTITY_PROPOSED = "9090";
     public static final String COLOR = "5706";
+    public static final String COLOR_HUE = "5707";
+    public static final String COLOR_SATURATION = "5708";
+    public static final String COLOR_TEMPERATURE = "5711";
     public static final String COLOR_X = "5709";
     public static final String COLOR_Y = "5710";
     public static final String COMMISSIONING_MODE = "9061";

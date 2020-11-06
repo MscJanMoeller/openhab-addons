@@ -18,27 +18,29 @@ import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * The {@link TradfriScene} class is a Java wrapper for raw JSON data related to a scene.
+ * The {@link TradfriDimmableLightSetting} class is a base Java wrapper for raw JSON data related to a dimmable light
+ * bulb.
  *
  * @author Jan Möller - Initial contribution
  */
 
 @NonNullByDefault
-public class TradfriScene extends TradfriResource {
+public class TradfriDimmableLightSetting {
 
-    @SerializedName(value = TradfriBindingConstants.SCENE_INDEX)
-    private int sceneIndex;
+    @SerializedName(value = TradfriBindingConstants.RESOURCE_INSTANCE_ID)
+    public int instanceId;
 
-    // TODO add light settings
+    @SerializedName(value = TradfriBindingConstants.DIMMER)
+    private int dimmer;
 
-    @SerializedName(value = TradfriBindingConstants.IKEA_MOODS)
-    private int ikeaMood;
+    @SerializedName(value = TradfriBindingConstants.ONOFF)
+    private int onOff;
 
-    public int getSceneIndex() {
-        return sceneIndex;
+    public int getOnOff() {
+        return this.onOff;
     }
 
-    public int getIkeaMood() {
-        return ikeaMood;
+    public int getDimmer() {
+        return this.dimmer;
     }
 }

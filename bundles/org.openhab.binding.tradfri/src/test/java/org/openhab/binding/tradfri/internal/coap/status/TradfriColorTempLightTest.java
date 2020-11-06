@@ -10,14 +10,12 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.tradfri.internal.model;
+package org.openhab.binding.tradfri.internal.coap.status;
 
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 
 import org.junit.Test;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriDevice;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriDeviceInfo;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriDevice.DeviceType;
 
 import com.google.gson.Gson;
@@ -27,19 +25,19 @@ import com.google.gson.Gson;
  *
  * @author Jan Möller - Initial contribution
  */
-public class TradfriDeviceTest {
+public class TradfriColorTempLightTest {
 
     private final Gson gson = new Gson();
 
     @Test
-    public void testLightBulb() {
-        String json = "{\"9003\":65553," + "\"9001\":\"Dining Table center\"," + "\"5750\":2," + "\"9019\":1,"
+    public void testColorTempLightBulb() {
+        String json = "{\"9003\":65553," + "\"9001\":\"Dining Table\"," + "\"5750\":2," + "\"9019\":1,"
                 + "\"9002\":1545594514," + "\"9020\":1590864848," + "\"9054\":0," + "\"3\":{\"0\":\"IKEA of Sweden\","
                 + "\"1\":\"TRADFRI bulb E27 WS clear 950lm\"," + "\"2\":\"\"," + "\"3\":\"2.3.050\"," + "\"6\":1},"
                 + "\"3311\":[{\"5850\":1," + "\"5851\":50," + "\"5717\":0,\"5711\":454," + "\"5709\":30138,"
                 + "\"5710\":26909," + "\"5706\":\"f1e0b5\"," + "\"9003\":0}]}";
 
-        TradfriDevice dev = this.gson.fromJson(json, TradfriDevice.class);
+        TradfriColorTempLight dev = this.gson.fromJson(json, TradfriColorTempLight.class);
 
         // Check data of class TradfriResource
         assertThat(dev.getInstanceId(), is("65553"));
@@ -54,11 +52,18 @@ public class TradfriDeviceTest {
 
         // Check data of class TradfriDeviceInfo
         TradfriDeviceInfo devInfo = dev.getDeviceInfo();
+        assertNotNull(devInfo);
         assertThat(devInfo.getVendor(), is("IKEA of Sweden"));
         assertThat(devInfo.getModel(), is("TRADFRI bulb E27 WS clear 950lm"));
         assertThat(devInfo.getSerialNumber(), isEmptyString());
         assertThat(devInfo.getFirmware(), is("2.3.050"));
         assertThat(devInfo.getPowerSource(), is(1));
         assertThat(devInfo.getBatteryLevel(), is(-1)); // value is not available
+
+        // Check data of class TradfriDimmableLight
+        assertThat(dev.isOn(), is(true));
+        assertThat(dev.isOff(), is(false));
+        assertThat(dev.getOnOff(), is(1));
+        assertThat(dev.getDimmer(), is(50));
     }
 }
