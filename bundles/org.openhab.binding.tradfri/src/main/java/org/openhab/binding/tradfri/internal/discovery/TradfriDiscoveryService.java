@@ -58,7 +58,7 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService {
     private final CopyOnWriteArrayList<TradfriGatewayHandler> gatewayHandlers = new CopyOnWriteArrayList<TradfriGatewayHandler>();
 
     public TradfriDiscoveryService() {
-        super(SUPPORTED_DEVICE_TYPES_UIDS, 10, true);
+        super(DISCOVERABLE_TYPES_UIDS, 10, true);
     }
 
     @Override

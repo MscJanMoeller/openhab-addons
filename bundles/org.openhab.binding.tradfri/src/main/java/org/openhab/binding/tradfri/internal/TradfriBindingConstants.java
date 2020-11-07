@@ -70,6 +70,10 @@ public class TradfriBindingConstants {
                     SUPPORTED_PLUG_TYPES_UIDS.stream(), SUPPORTED_BLINDS_TYPES_UIDS.stream())
             .reduce(Stream::concat).orElseGet(Stream::empty).collect(Collectors.toSet()));
 
+    public static final Set<ThingTypeUID> DISCOVERABLE_TYPES_UIDS = Collections
+            .unmodifiableSet(Stream.of(SUPPORTED_GROUP_TYPES_UIDS.stream(), SUPPORTED_DEVICE_TYPES_UIDS.stream())
+                    .reduce(Stream::concat).orElseGet(Stream::empty).collect(Collectors.toSet()));
+
     public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Collections.unmodifiableSet(Stream
             .of(SUPPORTED_BRIDGE_TYPES_UIDS.stream(), SUPPORTED_GROUP_TYPES_UIDS.stream(),
                     SUPPORTED_DEVICE_TYPES_UIDS.stream())
@@ -77,7 +81,6 @@ public class TradfriBindingConstants {
 
     // Constants used to map Tradfri devices to thing types
     public static final String REMOTE_CONTROLLER_MODEL = "TRADFRI remote control";
-
     public static final Set<String> COLOR_TEMP_MODELS = Collections
             .unmodifiableSet(Stream
                     .of("TRADFRI bulb E27 WS opal 980lm", "TRADFRI bulb E27 WS clear 950lm",

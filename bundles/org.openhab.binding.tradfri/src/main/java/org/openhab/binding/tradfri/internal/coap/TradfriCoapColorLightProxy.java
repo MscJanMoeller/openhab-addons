@@ -72,7 +72,14 @@ public class TradfriCoapColorLightProxy extends TradfriCoapDimmableLightProxy im
 
     @Override
     public @Nullable HSBType getColor() {
-        // TODO Auto-generated method stub
+        // XY color coordinates plus brightness is needed for color calculation
+        int colorX = getColorX();
+        int colorY = getColorY();
+        int brightness = getDimmer();
+        if (colorX > -1 && colorY > -1 && brightness > -1) {
+            TradfriColor color = new TradfriColor(colorX, colorY, brightness);
+            return color.getHSB();
+        }
         return null;
     }
 

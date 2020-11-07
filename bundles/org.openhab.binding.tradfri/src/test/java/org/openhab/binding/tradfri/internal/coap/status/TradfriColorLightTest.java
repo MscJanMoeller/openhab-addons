@@ -25,50 +25,50 @@ import com.google.gson.Gson;
  *
  * @author Jan Möller - Initial contribution
  */
-public class TradfriColorTempLightTest {
+public class TradfriColorLightTest {
 
     private final Gson gson = new Gson();
 
     @Test
-    public void testColorTempLightBulb() {
-        String json = "{\"9003\":65553," + "\"9001\":\"Dining Table\"," + "\"5750\":2," + "\"9019\":1,"
-                + "\"9002\":1545594514," + "\"9020\":1590864848," + "\"9054\":0," + "\"3\":{\"0\":\"IKEA of Sweden\","
-                + "\"1\":\"TRADFRI bulb E27 WS clear 950lm\"," + "\"2\":\"\"," + "\"3\":\"2.3.050\"," + "\"6\":1},"
-                + "\"3311\":[{\"5850\":1," + "\"5851\":50," + "\"5717\":0,\"5711\":454," + "\"5709\":30138,"
-                + "\"5710\":26909," + "\"5706\":\"f1e0b5\"," + "\"9003\":0}]}";
+    public void testColorLightBulb() {
+        String json = "{\"3\":{\"0\":\"IKEA of Sweden\",\"6\":1,\"1\":\"TRADFRI bulb E27 CWS opal 600lm\","
+                + "\"2\":\"\",\"3\":\"1.3.013\"},\"9001\":\"LR Floor Lamp\",\"9003\":65539,\"9002\":1538425240,"
+                + "\"9020\":1603481417,\"9054\":0,\"9019\":1,\"5750\":2,\"3311\":[{\"5850\":1,\"5851\":254,\"5707\":1490,"
+                + "\"5708\":61206,\"5709\":40632,\"5710\":22282,\"5706\":\"da5d41\",\"9003\":0}]}";
 
-        TradfriColorTempLight bulb = this.gson.fromJson(json, TradfriColorTempLight.class);
+        TradfriColorLight bulb = this.gson.fromJson(json, TradfriColorLight.class);
 
         // Check data of class TradfriResource
-        assertThat(bulb.getInstanceId(), is("65553"));
-        assertThat(bulb.getName(), is("Dining Table"));
-        assertThat(bulb.getTimestampCreatedAt(), is(1545594514L));
+        assertThat(bulb.getInstanceId(), is("65539"));
+        assertThat(bulb.getName(), is("LR Floor Lamp"));
+        assertThat(bulb.getTimestampCreatedAt(), is(1538425240L));
 
         // Check data of class TradfriDevice
         assertThat(bulb.getDeviceType(), is(DeviceType.LIGHT));
         assertThat(bulb.getReachabilityState(), is(1));
-        assertThat(bulb.getTimestampLastSeen(), is(1590864848L));
+        assertThat(bulb.getTimestampLastSeen(), is(1603481417L));
         assertThat(bulb.isAlive(), is(true));
 
         // Check data of class TradfriDeviceInfo
         TradfriDeviceInfo devInfo = bulb.getDeviceInfo();
         assertNotNull(devInfo);
         assertThat(devInfo.getVendor(), is("IKEA of Sweden"));
-        assertThat(devInfo.getModel(), is("TRADFRI bulb E27 WS clear 950lm"));
+        assertThat(devInfo.getModel(), is("TRADFRI bulb E27 CWS opal 600lm"));
         assertThat(devInfo.getSerialNumber(), isEmptyString());
-        assertThat(devInfo.getFirmware(), is("2.3.050"));
+        assertThat(devInfo.getFirmware(), is("1.3.013"));
         assertThat(devInfo.getPowerSource(), is(1));
         assertThat(devInfo.getBatteryLevel(), is(-1)); // value is not available
 
-        // Check data of class TradfriColorTempLight
-        TradfriColorTempLightSetting bulbInfo = bulb.getLightSetting();
+        // Check data of class TradfriColorLight
+        TradfriColorLightSetting bulbInfo = bulb.getLightSetting();
         assertNotNull(bulbInfo);
-        // Check data of class TradfriColorTempLightSetting
+        // Check data of class TradfriColorLightSetting
         assertThat(bulbInfo.getOnOff(), is(1));
-        assertThat(bulbInfo.getDimmer(), is(50));
-        assertThat(bulbInfo.getColor(), is("f1e0b5"));
-        assertThat(bulbInfo.getColorX(), is(30138));
-        assertThat(bulbInfo.getColorY(), is(26909));
-        assertThat(bulbInfo.getColorTemperature(), is(454));
+        assertThat(bulbInfo.getDimmer(), is(254));
+        assertThat(bulbInfo.getColor(), is("da5d41"));
+        assertThat(bulbInfo.getHue(), is(1490));
+        assertThat(bulbInfo.getSaturation(), is(61206));
+        assertThat(bulbInfo.getColorX(), is(40632));
+        assertThat(bulbInfo.getColorY(), is(22282));
     }
 }

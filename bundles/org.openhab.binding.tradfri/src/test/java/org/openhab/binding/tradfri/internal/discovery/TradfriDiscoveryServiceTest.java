@@ -87,7 +87,7 @@ public class TradfriDiscoveryServiceTest {
 
     @Test
     public void correctSupportedTypes() {
-        assertThat(discovery.getSupportedThingTypes().size(), is(9));
+        assertThat(discovery.getSupportedThingTypes().size(), is(10));
         assertTrue(discovery.getSupportedThingTypes().contains(THING_TYPE_DIMMABLE_LIGHT));
         assertTrue(discovery.getSupportedThingTypes().contains(THING_TYPE_COLOR_TEMP_LIGHT));
         assertTrue(discovery.getSupportedThingTypes().contains(THING_TYPE_COLOR_LIGHT));
@@ -97,6 +97,7 @@ public class TradfriDiscoveryServiceTest {
         assertTrue(discovery.getSupportedThingTypes().contains(THING_TYPE_OPEN_CLOSE_REMOTE_CONTROL));
         assertTrue(discovery.getSupportedThingTypes().contains(THING_TYPE_ONOFF_PLUG));
         assertTrue(discovery.getSupportedThingTypes().contains(THING_TYPE_BLINDS));
+        assertTrue(discovery.getSupportedThingTypes().contains(THING_TYPE_GROUP));
     }
 
     @Test
