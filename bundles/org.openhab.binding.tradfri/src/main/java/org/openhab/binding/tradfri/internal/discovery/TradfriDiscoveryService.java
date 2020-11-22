@@ -202,7 +202,7 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService {
 
         Map<String, Object> properties = new HashMap<>(1);
 
-        String id = device.getInstanceId();
+        Integer id = Integer.valueOf(device.getInstanceId());
         if (id != null) {
             properties.put(TradfriDeviceConfig.CONFIG_ID, id);
         }

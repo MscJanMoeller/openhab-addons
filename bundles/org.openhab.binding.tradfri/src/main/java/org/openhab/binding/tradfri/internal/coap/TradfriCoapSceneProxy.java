@@ -22,8 +22,6 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriScene;
 import org.openhab.binding.tradfri.internal.model.TradfriSceneProxy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * {@link TradfriCoapSceneProxy} observes changes of a single scene
@@ -33,8 +31,6 @@ import org.slf4j.LoggerFactory;
  */
 @NonNullByDefault
 public class TradfriCoapSceneProxy extends TradfriCoapResourceProxy implements TradfriSceneProxy {
-
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     public TradfriCoapSceneProxy(String gatewayUri, String groupId, Endpoint endpoint,
             ScheduledExecutorService scheduler) {

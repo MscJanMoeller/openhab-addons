@@ -26,8 +26,6 @@ import org.openhab.binding.tradfri.internal.coap.status.TradfriDevice;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriDimmableLight;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriDimmableLightSetting;
 import org.openhab.binding.tradfri.internal.model.TradfriDimmableLightProxy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * {@link TradfriCoapDimmableLightProxy} represents a single light bulb
@@ -39,13 +37,13 @@ import org.slf4j.LoggerFactory;
 @NonNullByDefault
 public class TradfriCoapDimmableLightProxy extends TradfriCoapDeviceProxy implements TradfriDimmableLightProxy {
 
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
+    private static final ThingTypeUID thingType = THING_TYPE_DIMMABLE_LIGHT;
 
     public TradfriCoapDimmableLightProxy(TradfriCoapClient coapClient, ScheduledExecutorService scheduler) {
-        this(THING_TYPE_DIMMABLE_LIGHT, coapClient, scheduler);
+        this(thingType, coapClient, scheduler);
     }
 
-    public TradfriCoapDimmableLightProxy(ThingTypeUID thingType, TradfriCoapClient coapClient,
+    protected TradfriCoapDimmableLightProxy(ThingTypeUID thingType, TradfriCoapClient coapClient,
             ScheduledExecutorService scheduler) {
         super(thingType, coapClient, scheduler);
     }

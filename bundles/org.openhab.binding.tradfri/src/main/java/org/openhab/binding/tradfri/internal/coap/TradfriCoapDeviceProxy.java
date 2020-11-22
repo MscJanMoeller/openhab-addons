@@ -21,8 +21,6 @@ import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriDevice;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriDeviceInfo;
 import org.openhab.binding.tradfri.internal.model.TradfriDeviceProxy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * {@link TradfriCoapDeviceProxy} observes changes of a single device
@@ -33,11 +31,9 @@ import org.slf4j.LoggerFactory;
 @NonNullByDefault
 public class TradfriCoapDeviceProxy extends TradfriCoapResourceProxy implements TradfriDeviceProxy {
 
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
-
     private final ThingTypeUID thingType;
 
-    public TradfriCoapDeviceProxy(ThingTypeUID thingType, TradfriCoapClient coapClient,
+    protected TradfriCoapDeviceProxy(ThingTypeUID thingType, TradfriCoapClient coapClient,
             ScheduledExecutorService scheduler) {
         super(coapClient, scheduler);
         this.thingType = thingType;

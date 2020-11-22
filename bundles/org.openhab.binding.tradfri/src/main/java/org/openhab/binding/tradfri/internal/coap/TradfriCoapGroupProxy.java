@@ -26,8 +26,6 @@ import org.openhab.binding.tradfri.internal.coap.TradfriResourceListEventHandler
 import org.openhab.binding.tradfri.internal.coap.status.TradfriGroup;
 import org.openhab.binding.tradfri.internal.model.TradfriGroupProxy;
 import org.openhab.binding.tradfri.internal.model.TradfriSceneProxy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * {@link TradfriCoapGroupProxy} observes changes of a single group and related scenes
@@ -37,8 +35,6 @@ import org.slf4j.LoggerFactory;
  */
 @NonNullByDefault
 public class TradfriCoapGroupProxy extends TradfriCoapResourceProxy implements TradfriGroupProxy {
-
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final TradfriCoapProxyFactory proxyFactory;
 

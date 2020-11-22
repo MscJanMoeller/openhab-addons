@@ -28,8 +28,6 @@ import org.openhab.binding.tradfri.internal.coap.status.TradfriColorLightSetting
 import org.openhab.binding.tradfri.internal.coap.status.TradfriDevice;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriDimmableLightSetting;
 import org.openhab.binding.tradfri.internal.model.TradfriColorLightProxy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * {@link TradfriCoapColorLightProxy} represents a single light bulb
@@ -41,13 +39,13 @@ import org.slf4j.LoggerFactory;
 @NonNullByDefault
 public class TradfriCoapColorLightProxy extends TradfriCoapDimmableLightProxy implements TradfriColorLightProxy {
 
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
+    private static final ThingTypeUID thingType = THING_TYPE_COLOR_LIGHT;
 
     public TradfriCoapColorLightProxy(TradfriCoapClient coapClient, ScheduledExecutorService scheduler) {
-        super(THING_TYPE_COLOR_LIGHT, coapClient, scheduler);
+        super(thingType, coapClient, scheduler);
     }
 
-    public TradfriCoapColorLightProxy(ThingTypeUID thingType, TradfriCoapClient coapClient,
+    protected TradfriCoapColorLightProxy(ThingTypeUID thingType, TradfriCoapClient coapClient,
             ScheduledExecutorService scheduler) {
         super(thingType, coapClient, scheduler);
     }

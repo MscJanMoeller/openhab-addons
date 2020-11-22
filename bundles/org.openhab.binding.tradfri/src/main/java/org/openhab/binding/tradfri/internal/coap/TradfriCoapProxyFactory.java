@@ -13,8 +13,9 @@
 
 package org.openhab.binding.tradfri.internal.coap;
 
-import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.ENDPOINT_DEVICES;
+import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 
+import java.util.HashMap;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.californium.core.CoapHandler;
@@ -22,11 +23,13 @@ import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.openhab.binding.tradfri.internal.model.TradfriResourceEventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 
 /**
@@ -42,12 +45,20 @@ public class TradfriCoapProxyFactory {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static final Gson gson = new Gson();
+    private static final HashMap<ThingTypeUID, @Nullable Class<? extends TradfriCoapDeviceProxy>> factoryMap = new HashMap<ThingTypeUID, @Nullable Class<? extends TradfriCoapDeviceProxy>>();
+
+    private static final JsonParser parser = new JsonParser();
 
     private final String baseUri;
     private final Endpoint endpoint;
 
     private final ScheduledExecutorService scheduler;
+
+    static {
+        factoryMap.put(THING_TYPE_DIMMABLE_LIGHT, TradfriCoapDimmableLightProxy.class);
+        factoryMap.put(THING_TYPE_COLOR_TEMP_LIGHT, TradfriCoapColorTempLightProxy.class);
+        factoryMap.put(THING_TYPE_COLOR_LIGHT, TradfriCoapColorLightProxy.class);
+    }
 
     public TradfriCoapProxyFactory(String baseUri, Endpoint endpoint, ScheduledExecutorService scheduler) {
         this.baseUri = baseUri;
@@ -57,29 +68,56 @@ public class TradfriCoapProxyFactory {
 
     public void createDeviceProxy(String id, TradfriResourceEventHandler callback) {
         TradfriCoapClient coapClient = new TradfriCoapClient(this.baseUri + "/" + ENDPOINT_DEVICES + "/" + id);
+        createDeviceProxy(coapClient, callback);
+    }
+
+    public void createDeviceProxy(TradfriCoapClient coapClient, TradfriResourceEventHandler callback) {
         coapClient.get(new CoapHandler() {
             @Override
             public void onLoad(@Nullable CoapResponse response) {
                 if (response == null) {
-                    logger.trace("Received empty GatewayInfo CoAP response");
+                    logger.trace("Received empty CoAP response");
                     return;
                 }
                 logger.trace("GatewayInfo CoAP response\noptions: {}\npayload: {}", response.getOptions(),
                         response.getResponseText());
                 if (response.isSuccess()) {
                     try {
-                        // TODO create proxy based on
+                        JsonObject devicePayload = parser.parse(response.getResponseText()).getAsJsonObject();
+
+                        // Create proxy based on ThingTypeUID
+                        ThingTypeUID thingType = TradfriThingTypeMap.getThingTypeFrom(devicePayload);
+                        if (thingType != null) {
+                            Class<? extends TradfriCoapDeviceProxy> proxyClass = factoryMap.get(thingType);
+                            if (proxyClass != null) {
+                                TradfriCoapResourceProxy newProxy = proxyClass
+                                        .getConstructor(TradfriCoapClient.class, ScheduledExecutorService.class)
+                                        .newInstance(coapClient, scheduler);
+                                newProxy.onLoad(response);
+                                callback.onUpdate(newProxy);
+                            }
+                        } else {
+                            logger.info("Ignoring unknown device of TRADFRI gateway:\npayload: {}",
+                                    response.getResponseText());
+                        }
                     } catch (JsonSyntaxException ex) {
-                        logger.error("Unexpected data response: {}", response);
+                        logger.error("Unexpected CoAP response: {}", response);
+                    } catch (ReflectiveOperationException e) {
+                        logger.error("Unexpected error while creating device proxy based on CoAP response: {}",
+                                response);
+                    } catch (IllegalArgumentException e) {
+                        logger.error("Unexpected error while creating device proxy based on CoAP response: {}",
+                                response);
                     }
                 } else {
-                    logger.error("GatewayInfo CoAP error: {}", response.getCode());
+                    logger.error("CoAP error: {}. Failed to get device data for {}.", response.getCode(),
+                            coapClient.getURI());
                 }
             }
 
             @Override
             public void onError() {
-                logger.warn("CoAP error. Failed to get resource update for {}.", coapClient.getURI());
+                logger.warn("CoAP error. Failed to get device data for {}.", coapClient.getURI());
             }
         });
     }
