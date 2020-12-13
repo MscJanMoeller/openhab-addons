@@ -54,7 +54,7 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
     private final TradfriCoapClient coapClient;
     private @Nullable CoapObserveRelation observeRelation;
 
-    private final Set<TradfriResourceEventHandler> updateHandler = new CopyOnWriteArraySet<>();
+    private final Set<TradfriResourceEventHandler> updateHandlers = new CopyOnWriteArraySet<>();
 
     protected @Nullable TradfriResource cachedData;
 
@@ -95,12 +95,13 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
 
     @Override
     public void triggerUpdate() {
+        // Asynchronous call
         this.coapClient.get(this);
     }
 
     protected void updateData(TradfriResource data) {
         this.cachedData = data;
-        updateHandler.forEach(listener -> listener.onUpdate(this));
+        updateHandlers.forEach(listener -> listener.onUpdate(this));
     }
 
     @Override
@@ -129,21 +130,24 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
     }
 
     public void dispose() {
-        if (observeRelation != null) {
-            observeRelation.reactiveCancel();
-            observeRelation = null;
+        if (this.observeRelation != null) {
+            this.observeRelation.reactiveCancel();
+            this.observeRelation = null;
         }
-        coapClient.shutdown();
+        this.coapClient.shutdown();
+
+        this.updateHandlers.clear();
+        this.cachedData = null;
     }
 
     /**
-     * Registers a handler, which is informed about resource updates.
+     * Registers a handler, which will be informed about resource updates.
      *
      * @param handler the handler to register
      */
     @Override
     public void registerHandler(TradfriResourceEventHandler handler) {
-        this.updateHandler.add(handler);
+        this.updateHandlers.add(handler);
     }
 
     /**
@@ -153,7 +157,7 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
      */
     @Override
     public void unregisterHandler(TradfriResourceEventHandler handler) {
-        this.updateHandler.remove(handler);
+        this.updateHandlers.remove(handler);
     }
 
     protected abstract TradfriResource convert(String coapPayload) throws JsonSyntaxException;

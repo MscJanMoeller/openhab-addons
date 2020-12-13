@@ -217,9 +217,9 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService {
             properties.put(PROPERTY_VENDOR, vendor);
         }
 
-        String firmware = device.getFirmware();
-        if (firmware != null) {
-            properties.put(PROPERTY_FIRMWARE_VERSION, firmware);
+        String firmwareVersion = device.getFirmwareVersion();
+        if (firmwareVersion != null) {
+            properties.put(PROPERTY_FIRMWARE_VERSION, firmwareVersion);
         }
 
         logger.debug("Adding device {} to inbox", thingId);

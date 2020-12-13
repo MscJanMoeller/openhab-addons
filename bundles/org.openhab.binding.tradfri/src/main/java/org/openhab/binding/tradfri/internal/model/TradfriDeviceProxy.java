@@ -39,7 +39,7 @@ public interface TradfriDeviceProxy extends TradfriResourceProxy {
     String getSerialNumber();
 
     @Nullable
-    String getFirmware();
+    String getFirmwareVersion();
 
     boolean isAlive();
 

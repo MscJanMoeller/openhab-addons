@@ -19,9 +19,10 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
-import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -99,9 +100,11 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     private @Nullable TradfriResourceListObserver deviceListObserver;
     private @Nullable TradfriResourceListObserver groupListObserver;
 
+    private final ConcurrentHashMap<String, @Nullable Set<TradfriResourceEventHandler>> resourceUpdateHandler;
+
     private @Nullable TradfriCoapProxyFactory proxyFactory;
 
-    private final Map<String, TradfriCoapResourceProxy> proxyMap;
+    private final ConcurrentHashMap<String, TradfriCoapResourceProxy> proxyMap;
 
     private final TradfriResourceEventHandler discoveryDeviceUpdatedAdapter;
     private final TradfriResourceEventHandler discoveryGroupUpdatedAdapter;
@@ -116,6 +119,8 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
 
     public TradfriGatewayHandler(Bridge bridge, TradfriDiscoveryService ds) {
         super(bridge);
+
+        this.resourceUpdateHandler = new ConcurrentHashMap<String, @Nullable Set<TradfriResourceEventHandler>>();
 
         this.proxyMap = new ConcurrentHashMap<String, TradfriCoapResourceProxy>();
 
@@ -197,8 +202,6 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
                 }
             });
         }
-
-        updateStatus(ThingStatus.UNKNOWN);
     }
 
     /**
@@ -208,7 +211,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
      *
      * @return true, if credentials were successfully obtained, false otherwise
      */
-    protected boolean obtainIdentityAndPreSharedKey() {
+    private boolean obtainIdentityAndPreSharedKey() {
         TradfriGatewayConfig configuration = getConfigAs(TradfriGatewayConfig.class);
 
         String identity = UUID.randomUUID().toString().replace("-", "");
@@ -322,7 +325,6 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
 
         // Schedule a CoAP ping every minute to check the connection
         supvJob = scheduler.scheduleWithFixedDelay(this::checkConnection, 0, 1, TimeUnit.MINUTES);
-
     }
 
     /**
@@ -388,11 +390,11 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         }
     }
 
-    public void onConnectionError(String detailedError) {
+    private void onConnectionError(String detailedError) {
         onConnectionError(detailedError, true);
     }
 
-    public void onConnectionError(String detailedError, boolean resumeConnection) {
+    private void onConnectionError(String detailedError, boolean resumeConnection) {
         if (this.coapErrors > ACCEPTED_COAP_ERRORS || !resumeConnection) {
             if (!isNullOrEmpty(detailedError)) {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, detailedError);
@@ -427,7 +429,15 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     public void dispose() {
         stopScan();
 
+        // Implicitly disposes all resources by triggering RESOURCE_REMOVED event
         disposeResourceListObserver();
+
+        for (Set<TradfriResourceEventHandler> handlers : this.resourceUpdateHandler.values()) {
+            if (handlers != null) {
+                handlers.clear();
+            }
+        }
+        this.resourceUpdateHandler.clear();
 
         if (this.supvJob != null) {
             this.supvJob.cancel(true);
@@ -445,23 +455,61 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
             this.gatewayInfoClient.shutdown();
             this.gatewayInfoClient = null;
         }
+
         super.dispose();
     }
 
     private void disposeResourceListObserver() {
 
         if (this.deviceListObserver != null) {
+            // Triggers RESOURCE_REMOVED event for all resources
             this.deviceListObserver.dispose();
             this.deviceListObserver = null;
         }
         if (this.groupListObserver != null) {
+            // Triggers RESOURCE_REMOVED event for all resources
             this.groupListObserver.dispose();
             this.groupListObserver = null;
         }
     }
 
-    public TradfriResourceProxy getTradfriResource(String id) {
+    public @Nullable TradfriResourceProxy getTradfriResource(String id) {
         return this.proxyMap.get(id);
+    }
+
+    /**
+     * Registers a handler, which will be informed about Tradfri resource updates.
+     *
+     * @param handler the handler to register
+     */
+    public void registerResourceUpdateHandler(String id, TradfriResourceEventHandler handler) {
+        Set<TradfriResourceEventHandler> handlers = this.resourceUpdateHandler.get(id);
+        if (handlers == null) {
+            handlers = new CopyOnWriteArraySet<>();
+        }
+        handlers.add(handler);
+
+        TradfriResourceProxy proxy = getTradfriResource(id);
+        if (proxy != null) {
+            proxy.unregisterHandler(handler);
+        }
+    }
+
+    /**
+     * Unregisters a given resource update handler.
+     *
+     * @param handler the handler to unregister
+     */
+    public void unregisterResourceUpdateHandler(String id, TradfriResourceEventHandler handler) {
+        Set<TradfriResourceEventHandler> handlers = this.resourceUpdateHandler.get(id);
+        if (handlers != null) {
+            handlers.remove(handler);
+        }
+
+        TradfriResourceProxy proxy = getTradfriResource(id);
+        if (proxy != null) {
+            proxy.unregisterHandler(handler);
+        }
     }
 
     /**
@@ -491,7 +539,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
             this.groupListObserver.triggerUpdate();
         }
 
-        this.proxyMap.forEach((id, proxy) -> proxy.triggerUpdate());
+        this.proxyMap.values().parallelStream().forEach((proxy) -> proxy.triggerUpdate());
     }
 
     /**
@@ -538,7 +586,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         if (status != ThingStatus.ONLINE) {
             boolean hasFwVersion = gateway.getProperties().containsKey(Thing.PROPERTY_FIRMWARE_VERSION);
 
-            TradfriResourceListObserver deviceListObserver = this.groupListObserver;
+            TradfriResourceListObserver deviceListObserver = this.deviceListObserver;
             TradfriResourceListObserver groupListObserver = this.groupListObserver;
             boolean observerInitialzed = false;
             if (deviceListObserver != null && groupListObserver != null) {
@@ -595,6 +643,11 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
                         proxyMap.put(id, coapProxy);
                         // Register handler to update discovery results
                         coapProxy.registerHandler(discoveryDeviceUpdatedAdapter);
+                        // Register update handlers of already configured thing
+                        Set<TradfriResourceEventHandler> handlers = this.resourceUpdateHandler.get(id);
+                        if (handlers != null) {
+                            handlers.forEach(handler -> coapProxy.registerHandler(handler));
+                        }
                         // Start observation of device updates
                         coapProxy.observe();
                     });
@@ -608,7 +661,12 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
             if (this.proxyMap.containsKey(id)) {
                 // Remove proxy of removed device
                 TradfriCoapResourceProxy proxy = this.proxyMap.remove(id);
-                // TODO: check if there is a configured thing for that proxy
+                // Unregister update handlers of configured thing
+                Set<TradfriResourceEventHandler> handlers = this.resourceUpdateHandler.get(id);
+                if (handlers != null) {
+                    handlers.forEach(handler -> proxy.unregisterHandler(handler));
+                }
+                // TODO: error handling if there is a configured thing for that proxy
                 // Destroy proxy
                 proxy.dispose();
             }
@@ -628,6 +686,11 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
                     this.proxyMap.put(id, proxy);
                     // Register handler to update discovery results
                     proxy.registerHandler(discoveryGroupUpdatedAdapter);
+                    // Register update handlers of already configured thing
+                    Set<TradfriResourceEventHandler> handlers = this.resourceUpdateHandler.get(id);
+                    if (handlers != null) {
+                        handlers.forEach(handler -> proxy.registerHandler(handler));
+                    }
                     // Start observation of group updates
                     proxy.observe();
                 } else {
@@ -643,7 +706,12 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
                 if (mustNotifyDiscoveryService()) {
                     this.discoveryGroupRemovedAdapter.onUpdate(proxy);
                 }
-                // TODO: check if there is a configured thing for that proxy
+                // Unregister update handlers of configured thing
+                Set<TradfriResourceEventHandler> handlers = this.resourceUpdateHandler.get(id);
+                if (handlers != null) {
+                    handlers.forEach(handler -> proxy.unregisterHandler(handler));
+                }
+                // TODO: error handling if there is a configured thing for that proxy
                 // Destroy proxy
                 proxy.dispose();
             }

@@ -17,10 +17,10 @@ import static org.eclipse.smarthome.core.thing.Thing.*;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.thing.Thing;
+import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.openhab.binding.tradfri.internal.config.TradfriDeviceConfig;
 import org.openhab.binding.tradfri.internal.model.TradfriDeviceData;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.openhab.binding.tradfri.internal.model.TradfriDeviceProxy;
 
 /**
  * The {@link TradfriDeviceHandler} is the abstract base class for individual device handlers.
@@ -29,8 +29,6 @@ import org.slf4j.LoggerFactory;
  */
 @NonNullByDefault
 public abstract class TradfriDeviceHandler extends TradfriResourceHandler {
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     // the unique instance id of the device
     protected @Nullable Integer id;
@@ -58,11 +56,41 @@ public abstract class TradfriDeviceHandler extends TradfriResourceHandler {
         return this.id != null ? this.id.toString() : null;
     }
 
+    protected void updateDeviceStatus(TradfriDeviceProxy proxy) {
+        updateStatus(proxy);
+        updateStatus(proxy.isAlive() ? ThingStatus.ONLINE : ThingStatus.OFFLINE);
+        updateDeviceProperties(proxy);
+    }
+
+    private void updateDeviceProperties(TradfriDeviceProxy proxy) {
+        String vendor = proxy.getVendor();
+        if (vendor != null) {
+            getThing().setProperty(PROPERTY_VENDOR, vendor);
+        }
+
+        String modelId = proxy.getModel();
+        if (modelId != null) {
+            getThing().setProperty(PROPERTY_MODEL_ID, modelId);
+        }
+
+        String serialNumber = proxy.getSerialNumber();
+        if (serialNumber != null) {
+            getThing().setProperty(PROPERTY_SERIAL_NUMBER, serialNumber);
+        }
+
+        String firmwareVersion = proxy.getFirmwareVersion();
+        if (firmwareVersion != null) {
+            getThing().setProperty(PROPERTY_FIRMWARE_VERSION, firmwareVersion);
+        }
+    }
+
+    // TODO: remove
     protected void set(String payload) {
         logger.debug("Sending payload: {}", payload);
         // TODO: coapClient.asyncPut(payload, this, scheduler);
     }
 
+    // TODO: remove
     protected void updateDeviceProperties(TradfriDeviceData state) {
         String firmwareVersion = state.getFirmwareVersion();
         if (firmwareVersion != null) {

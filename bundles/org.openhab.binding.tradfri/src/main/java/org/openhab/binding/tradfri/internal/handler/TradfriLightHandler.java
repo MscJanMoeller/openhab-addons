@@ -26,11 +26,10 @@ import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
+import org.openhab.binding.tradfri.internal.model.TradfriDeviceProxy;
 import org.openhab.binding.tradfri.internal.model.TradfriLightData;
 import org.openhab.binding.tradfri.internal.model.TradfriResourceEventHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriResourceProxy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 
@@ -40,11 +39,10 @@ import com.google.gson.JsonElement;
  * @author Kai Kreuzer - Initial contribution
  * @author Holger Reichert - Support for color bulbs
  * @author Christoph Weitkamp - Restructuring and refactoring of the binding
+ * @author Jan Möller - Refactoring of the binding to support groups and scenes
  */
 @NonNullByDefault
 public class TradfriLightHandler extends TradfriDeviceHandler implements TradfriResourceEventHandler {
-
-    private final Logger logger = LoggerFactory.getLogger(TradfriLightHandler.class);
 
     // step size for increase/decrease commands
     private static final int STEP = 10;
@@ -63,6 +61,9 @@ public class TradfriLightHandler extends TradfriDeviceHandler implements Tradfri
 
     @Override
     public void onUpdate(TradfriResourceProxy proxy) {
+        TradfriDeviceProxy deviceProxy = (TradfriDeviceProxy) proxy;
+        updateDeviceStatus(deviceProxy);
+
         // TODO Auto-generated method stub
     }
 

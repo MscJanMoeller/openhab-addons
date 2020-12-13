@@ -32,8 +32,6 @@ import org.openhab.binding.tradfri.internal.model.TradfriGroupProxy;
 import org.openhab.binding.tradfri.internal.model.TradfriResourceEventHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriResourceProxy;
 import org.openhab.binding.tradfri.internal.model.TradfriSceneProxy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The {@link TradfriGroupHandler} is responsible for handling commands of individual groups.
@@ -42,8 +40,6 @@ import org.slf4j.LoggerFactory;
  */
 @NonNullByDefault
 public class TradfriGroupHandler extends TradfriResourceHandler implements TradfriResourceEventHandler {
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     // the unique instance id of the group
     protected @Nullable String id;
@@ -78,6 +74,7 @@ public class TradfriGroupHandler extends TradfriResourceHandler implements Tradf
 
     @Override
     public void onUpdate(TradfriResourceProxy proxy) {
+        updateStatus(proxy);
 
         TradfriGroupProxy groupProxy = (TradfriGroupProxy) proxy;
 

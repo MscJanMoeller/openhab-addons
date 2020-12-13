@@ -86,7 +86,7 @@ public class TradfriCoapDeviceProxy extends TradfriCoapResourceProxy implements 
     }
 
     @Override
-    public @Nullable String getFirmware() {
+    public @Nullable String getFirmwareVersion() {
         String firmware = null;
         if (this.cachedData != null) {
             TradfriDeviceInfo deviceInfo = ((TradfriDevice) this.cachedData).getDeviceInfo();

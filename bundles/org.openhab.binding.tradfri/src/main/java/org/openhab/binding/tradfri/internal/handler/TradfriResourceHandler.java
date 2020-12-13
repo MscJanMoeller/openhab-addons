@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 @NonNullByDefault
 public abstract class TradfriResourceHandler extends BaseThingHandler {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     private @Nullable TradfriResourceProxy proxy;
 
@@ -42,33 +42,25 @@ public abstract class TradfriResourceHandler extends BaseThingHandler {
     }
 
     @Override
-    @SuppressWarnings("null")
     public synchronized void initialize() {
-
-        updateStatus(ThingStatus.UNKNOWN);
 
         String id = getResourceId();
         if (id == null) {
-            logger.error("Unexpected initialization error");
+            updateStatus(ThingStatus.UNINITIALIZED, ThingStatusDetail.CONFIGURATION_ERROR,
+                    String.format("Invalid config: configuration parameter 'id' is missing."));
             return;
         }
 
         Bridge tradfriGateway = getBridge();
-        switch (tradfriGateway.getStatus()) {
-            case ONLINE:
-                TradfriGatewayHandler handler = (TradfriGatewayHandler) tradfriGateway.getHandler();
-                this.proxy = handler.getTradfriResource(id);
-                if (this.proxy != null) {
-                    this.proxy.registerHandler(getEventHandler());
-                } else {
-                    // TODO: error handling
-                }
-                break;
-            case OFFLINE:
-            default:
-                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.BRIDGE_OFFLINE,
-                        String.format("Gateway offline '%s'", tradfriGateway.getStatusInfo()));
-                break;
+        if (tradfriGateway == null) {
+            updateStatus(ThingStatus.UNINITIALIZED, ThingStatusDetail.BRIDGE_UNINITIALIZED,
+                    String.format("Unexpected initialization error: link to TRADFRI gateway is missing."));
+            return;
+        }
+
+        TradfriGatewayHandler handler = (TradfriGatewayHandler) tradfriGateway.getHandler();
+        if (handler != null) {
+            handler.registerResourceUpdateHandler(id, getEventHandler());
         }
     }
 
@@ -77,7 +69,16 @@ public abstract class TradfriResourceHandler extends BaseThingHandler {
         super.dispose();
 
         if (this.proxy != null) {
-            this.proxy.unregisterHandler(getEventHandler());
+            this.proxy = null;
+        }
+
+        String id = getResourceId();
+        Bridge tradfriGateway = getBridge();
+        if (id != null && tradfriGateway != null) {
+            TradfriGatewayHandler handler = (TradfriGatewayHandler) tradfriGateway.getHandler();
+            if (handler != null) {
+                handler.unregisterResourceUpdateHandler(id, getEventHandler());
+            }
         }
     }
 
@@ -92,11 +93,20 @@ public abstract class TradfriResourceHandler extends BaseThingHandler {
         }
     }
 
+    protected abstract TradfriResourceEventHandler getEventHandler();
+
+    protected abstract @Nullable String getResourceId();
+
     protected @Nullable TradfriResourceProxy getProxy() {
         return this.proxy;
     }
 
-    protected abstract TradfriResourceEventHandler getEventHandler();
+    protected void updateStatus(TradfriResourceProxy proxy) {
+        this.proxy = proxy;
 
-    protected abstract @Nullable String getResourceId();
+        ThingStatus status = getThing().getStatus();
+        if (status != ThingStatus.ONLINE) {
+            updateStatus(ThingStatus.ONLINE);
+        }
+    }
 }

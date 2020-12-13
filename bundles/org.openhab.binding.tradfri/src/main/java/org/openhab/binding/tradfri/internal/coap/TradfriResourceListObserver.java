@@ -54,6 +54,7 @@ public class TradfriResourceListObserver implements CoapCallback {
 
     private final Set<TradfriResourceListEventHandler> updateHandler = new CopyOnWriteArraySet<>();
 
+    // Stores resource IDs
     private Set<String> cachedResources = Collections.emptySet();
 
     private int updateCounter = 0;
@@ -76,7 +77,7 @@ public class TradfriResourceListObserver implements CoapCallback {
         return this.updateCounter > 0;
     }
 
-    public void observe() {
+    public synchronized void observe() {
         /**
          * The native CoAP observe mechanism is currently not supported by the TRADFRI gateway
          * for lists of devices, groups and scenes. Therefore the ResourceListObserver are polling
@@ -119,12 +120,18 @@ public class TradfriResourceListObserver implements CoapCallback {
     }
 
     @Override
-    public void onError(ThingStatus status, ThingStatusDetail statusDetail) {
+    public synchronized void onError(ThingStatus status, ThingStatusDetail statusDetail) {
         logger.warn("CoAP error. Failed to get resource list update for {}.", this.coapClient.getURI());
     }
 
-    public void dispose() {
+    public synchronized void dispose() {
         updateCounter = 0;
+
+        this.cachedResources.forEach(
+                id -> updateHandler.forEach(listener -> listener.onUpdate(ResourceListEvent.RESOURCE_REMOVED, id)));
+
+        this.cachedResources.clear();
+        this.updateHandler.clear();
 
         if (this.updateJob != null) {
             this.updateJob.cancel(true);
