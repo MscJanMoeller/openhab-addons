@@ -10,33 +10,18 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-
 package org.openhab.binding.tradfri.internal.model;
 
-import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
-
 /**
- * {@link TradfriResourceProxy} is a base class of a single resource
- * like a device, group or scene to provide:
- * - access to the data
- * - notifies about changes
- * - forwards commands
+ * {@link TradfriEvent} This annotation type must be used to mark a
+ * method as handler for Tradfri resource events. Only methods using this
+ * annotation type will be called by the event publisher.
  *
  * @author Jan Möller - Initial contribution
- *
  */
 
-@NonNullByDefault
-public interface TradfriResourceProxy {
-
-    @Nullable
-    String getInstanceId();
-
-    @Nullable
-    String getName();
-
-    void triggerUpdate();
-
-    void dispose();
+public enum TradfriEvent {
+    RESOURCE_ADDED,
+    RESOURCE_UPDATED,
+    RESOURCE_REMOVED
 }

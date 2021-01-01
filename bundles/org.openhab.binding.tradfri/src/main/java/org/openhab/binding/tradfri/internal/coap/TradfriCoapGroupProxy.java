@@ -15,16 +15,14 @@ package org.openhab.binding.tradfri.internal.coap;
 
 import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 
-import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.tradfri.internal.coap.TradfriResourceListEventHandler.ResourceListEvent;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriGroup;
+import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriGroupProxy;
+import org.openhab.binding.tradfri.internal.model.TradfriResourceProxy;
 import org.openhab.binding.tradfri.internal.model.TradfriSceneProxy;
 
 /**
@@ -36,28 +34,21 @@ import org.openhab.binding.tradfri.internal.model.TradfriSceneProxy;
 @NonNullByDefault
 public class TradfriCoapGroupProxy extends TradfriCoapResourceProxy implements TradfriGroupProxy {
 
-    private final TradfriCoapProxyFactory proxyFactory;
-
-    private final Map<String, TradfriCoapSceneProxy> sceneProxyMap;
-
     private @Nullable TradfriResourceListObserver sceneListObserver;
 
-    public TradfriCoapGroupProxy(String gatewayUri, String groupId, Endpoint endpoint,
+    public TradfriCoapGroupProxy(TradfriCoapResourceStorage resourceStorage, TradfriCoapClient coapClient,
             ScheduledExecutorService scheduler) {
-        super(gatewayUri + "/" + ENDPOINT_GROUPS + "/" + groupId, endpoint, scheduler);
+        super(resourceStorage, coapClient, scheduler);
 
-        this.proxyFactory = new TradfriCoapProxyFactory(gatewayUri, endpoint, scheduler);
-
-        this.sceneProxyMap = new ConcurrentHashMap<String, TradfriCoapSceneProxy>();
-
-        this.sceneListObserver = new TradfriResourceListObserver(gatewayUri + "/" + ENDPOINT_SCENES + "/" + groupId,
-                endpoint, scheduler);
+        String sceneListUri = coapClient.getURI().replaceFirst(ENDPOINT_GROUPS, ENDPOINT_SCENES);
+        this.sceneListObserver = new TradfriResourceListObserver(sceneListUri, coapClient.getEndpoint(), scheduler);
         this.sceneListObserver.registerHandler(this::handleSceneListChange);
     }
 
     @Override
-    public @Nullable TradfriSceneProxy getSceneById(@Nullable String id) {
-        return sceneProxyMap.get(id);
+    public @Nullable TradfriSceneProxy getSceneById(String id) {
+        TradfriResourceProxy proxy = this.resourceStorage.get(id);
+        return (proxy != null && proxy instanceof TradfriSceneProxy) ? (TradfriSceneProxy) proxy : null;
     }
 
     @Override
@@ -66,7 +57,10 @@ public class TradfriCoapGroupProxy extends TradfriCoapResourceProxy implements T
 
         TradfriGroup groupData = (TradfriGroup) this.cachedData;
         if (groupData != null) {
-            sceneProxy = getSceneById(groupData.getSceneId());
+            String sceneId = groupData.getSceneId();
+            if (sceneId != null) {
+                sceneProxy = getSceneById(sceneId);
+            }
         } else {
             logger.debug("Unexpected error. Proxy object of group not initialized yet");
         }
@@ -97,31 +91,27 @@ public class TradfriCoapGroupProxy extends TradfriCoapResourceProxy implements T
         if (this.sceneListObserver != null) {
             sceneListObserver.triggerUpdate();
         }
-        this.sceneProxyMap.forEach((id, proxy) -> proxy.triggerUpdate());
     }
 
     @Override
-    protected TradfriGroup convert(String coapPayload) {
+    public TradfriGroup parsePayload(String coapPayload) {
         return gson.fromJson(coapPayload, TradfriGroup.class);
     }
 
-    private synchronized void handleSceneListChange(ResourceListEvent event, String id) {
-        if (event == ResourceListEvent.RESOURCE_ADDED) {
-            if (!this.sceneProxyMap.containsKey(id)) {
-                // A scene was added. Create new proxy for that scene
-                TradfriCoapSceneProxy proxy = this.proxyFactory.createSceneProxy(id);
-                // Add this proxy to the list of proxies
-                this.sceneProxyMap.put(id, proxy);
-                // Start observation of scene updates
-                proxy.observe();
+    private synchronized void handleSceneListChange(TradfriEvent event, String id) {
+        if (event == TradfriEvent.RESOURCE_ADDED) {
+            String groupId = getInstanceId();
+            if (groupId != null) {
+                this.resourceStorage.createSceneProxy(groupId, id);
             }
-        } else if (event == ResourceListEvent.RESOURCE_REMOVED) {
-            if (this.sceneProxyMap.containsKey(id)) {
-                // A scene was removed. Remove proxy of that scene
-                TradfriCoapSceneProxy proxy = this.sceneProxyMap.remove(id);
-                // Destroy proxy
+        } else if (event == TradfriEvent.RESOURCE_REMOVED) {
+            // Remove proxy of removed device
+            TradfriCoapResourceProxy proxy = this.resourceStorage.remove(id);
+            if (proxy != null) {
+                // Destroy proxy object
                 proxy.dispose();
             }
         }
     }
+
 }

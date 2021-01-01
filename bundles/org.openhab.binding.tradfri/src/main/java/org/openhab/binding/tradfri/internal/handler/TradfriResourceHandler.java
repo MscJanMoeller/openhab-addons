@@ -20,8 +20,8 @@ import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.ThingStatusInfo;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
-import org.openhab.binding.tradfri.internal.model.TradfriResourceEventHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriResourceProxy;
+import org.openhab.binding.tradfri.internal.model.TradfriResourceStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +35,7 @@ public abstract class TradfriResourceHandler extends BaseThingHandler {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private @Nullable TradfriResourceProxy proxy;
+    private @Nullable TradfriResourceStorage resourceStorage;
 
     public TradfriResourceHandler(Thing thing) {
         super(thing);
@@ -60,7 +60,7 @@ public abstract class TradfriResourceHandler extends BaseThingHandler {
 
         TradfriGatewayHandler handler = (TradfriGatewayHandler) tradfriGateway.getHandler();
         if (handler != null) {
-            handler.registerResourceUpdateHandler(id, getEventHandler());
+            this.resourceStorage = handler.getResourceStorage();
         }
     }
 
@@ -68,18 +68,7 @@ public abstract class TradfriResourceHandler extends BaseThingHandler {
     public synchronized void dispose() {
         super.dispose();
 
-        if (this.proxy != null) {
-            this.proxy = null;
-        }
-
-        String id = getResourceId();
-        Bridge tradfriGateway = getBridge();
-        if (id != null && tradfriGateway != null) {
-            TradfriGatewayHandler handler = (TradfriGatewayHandler) tradfriGateway.getHandler();
-            if (handler != null) {
-                handler.unregisterResourceUpdateHandler(id, getEventHandler());
-            }
-        }
+        this.resourceStorage = null;
     }
 
     @Override
@@ -93,17 +82,22 @@ public abstract class TradfriResourceHandler extends BaseThingHandler {
         }
     }
 
-    protected abstract TradfriResourceEventHandler getEventHandler();
-
     protected abstract @Nullable String getResourceId();
 
-    protected @Nullable TradfriResourceProxy getProxy() {
-        return this.proxy;
+    protected @Nullable TradfriResourceStorage getResourceStorage() {
+        return this.resourceStorage;
     }
 
-    protected void updateStatus(TradfriResourceProxy proxy) {
-        this.proxy = proxy;
+    protected @Nullable TradfriResourceProxy getProxy() {
+        TradfriResourceProxy proxy = null;
+        String id = getResourceId();
+        if (id != null && this.resourceStorage != null) {
+            proxy = this.resourceStorage.get(id);
+        }
+        return proxy;
+    }
 
+    protected void updateOnlineStatus(TradfriResourceProxy proxy) {
         ThingStatus status = getThing().getStatus();
         if (status != ThingStatus.ONLINE) {
             updateStatus(ThingStatus.ONLINE);

@@ -13,6 +13,7 @@
 package org.openhab.binding.tradfri.internal.coap;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 
 /**
  * {@link TradfriResourceListEventHandler} can register at the {@link TradfriResourceListObserver}
@@ -24,17 +25,11 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 @NonNullByDefault
 @FunctionalInterface
 public interface TradfriResourceListEventHandler {
-
-    enum ResourceListEvent {
-        RESOURCE_ADDED,
-        RESOURCE_REMOVED
-    }
-
     /**
-     * This method is called when new device information is received.
+     * This method is called when a resource list was updated.
      *
      * @param event defines whether a resource was added or removed
-     * @param instanceId The instance id of the device
+     * @param instanceId The instance id of the resource
      */
-    public void onUpdate(ResourceListEvent event, String instanceId);
+    public void onUpdate(TradfriEvent event, String instanceId);
 }

@@ -13,8 +13,6 @@
 
 package org.openhab.binding.tradfri.internal.coap;
 
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -25,7 +23,6 @@ import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriResource;
-import org.openhab.binding.tradfri.internal.model.TradfriResourceEventHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriResourceProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,19 +51,30 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
     private final TradfriCoapClient coapClient;
     private @Nullable CoapObserveRelation observeRelation;
 
-    private final Set<TradfriResourceEventHandler> updateHandlers = new CopyOnWriteArraySet<>();
+    protected final TradfriCoapResourceStorage resourceStorage;
 
     protected @Nullable TradfriResource cachedData;
 
-    protected TradfriCoapResourceProxy(TradfriCoapClient coapClient, ScheduledExecutorService scheduler) {
+    protected TradfriCoapResourceProxy(TradfriCoapResourceStorage resourceStorage, TradfriCoapClient coapClient,
+            ScheduledExecutorService scheduler) {
+        this.resourceStorage = resourceStorage;
         this.coapClient = coapClient;
         this.scheduler = scheduler;
     }
 
-    protected TradfriCoapResourceProxy(String uri, Endpoint endpoint, ScheduledExecutorService scheduler) {
+    protected TradfriCoapResourceProxy(TradfriCoapResourceStorage resourceStorage, String uri, Endpoint endpoint,
+            ScheduledExecutorService scheduler) {
+        this.resourceStorage = resourceStorage;
         this.coapClient = new TradfriCoapClient(uri);
         this.coapClient.setEndpoint(endpoint);
         this.scheduler = scheduler;
+    }
+
+    public void initialize(TradfriResource data) {
+        this.cachedData = data;
+        this.resourceStorage.add(this);
+        // Start observation of resource updates
+        observe();
     }
 
     @Override
@@ -87,22 +95,13 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
         return name;
     }
 
-    public void observe() {
-        scheduler.schedule(() -> {
-            observeRelation = coapClient.observe(this);
-        }, 1, TimeUnit.SECONDS);
-    }
-
     @Override
     public void triggerUpdate() {
         // Asynchronous call
         this.coapClient.get(this);
     }
 
-    protected void updateData(TradfriResource data) {
-        this.cachedData = data;
-        updateHandlers.forEach(listener -> listener.onUpdate(this));
-    }
+    public abstract TradfriResource parsePayload(String coapPayload) throws JsonSyntaxException;
 
     @Override
     public void onLoad(@Nullable CoapResponse response) {
@@ -113,7 +112,7 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
         logger.debug("CoAP response\noptions: {}\npayload: {}", response.getOptions(), response.getResponseText());
         if (response.isSuccess()) {
             try {
-                updateData(convert(response.getResponseText()));
+                updateData(parsePayload(response.getResponseText()));
             } catch (JsonParseException e) {
                 logger.error("Coap response is no valid json: {}, {}", response.getResponseText(), e.getMessage());
             }
@@ -129,36 +128,30 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
         // TODO: implement generic error reaction for resource proxy
     }
 
+    @Override
     public void dispose() {
         if (this.observeRelation != null) {
             this.observeRelation.reactiveCancel();
             this.observeRelation = null;
         }
         this.coapClient.shutdown();
-
-        this.updateHandlers.clear();
         this.cachedData = null;
     }
 
-    /**
-     * Registers a handler, which will be informed about resource updates.
-     *
-     * @param handler the handler to register
-     */
-    @Override
-    public void registerHandler(TradfriResourceEventHandler handler) {
-        this.updateHandlers.add(handler);
+    protected void observe() {
+        if (this.observeRelation != null) {
+            this.observeRelation.reactiveCancel();
+            this.observeRelation = null;
+        }
+
+        scheduler.schedule(() -> {
+            observeRelation = coapClient.observe(this);
+        }, 1, TimeUnit.SECONDS);
     }
 
-    /**
-     * Unregisters a given handler.
-     *
-     * @param handler the handler to unregister
-     */
-    @Override
-    public void unregisterHandler(TradfriResourceEventHandler handler) {
-        this.updateHandlers.remove(handler);
+    protected void updateData(TradfriResource data) {
+        this.cachedData = data;
+        this.resourceStorage.updated(this);
     }
 
-    protected abstract TradfriResource convert(String coapPayload) throws JsonSyntaxException;
 }

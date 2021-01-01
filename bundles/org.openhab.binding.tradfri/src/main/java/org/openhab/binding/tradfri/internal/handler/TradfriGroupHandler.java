@@ -28,8 +28,9 @@ import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
 import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import org.openhab.binding.tradfri.internal.config.TradfriGroupConfig;
+import org.openhab.binding.tradfri.internal.model.TradfriEvent;
+import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriGroupProxy;
-import org.openhab.binding.tradfri.internal.model.TradfriResourceEventHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriResourceProxy;
 import org.openhab.binding.tradfri.internal.model.TradfriSceneProxy;
 
@@ -39,7 +40,7 @@ import org.openhab.binding.tradfri.internal.model.TradfriSceneProxy;
  * @author Jan Möller - Initial contribution
  */
 @NonNullByDefault
-public class TradfriGroupHandler extends TradfriResourceHandler implements TradfriResourceEventHandler {
+public class TradfriGroupHandler extends TradfriResourceHandler {
 
     // the unique instance id of the group
     protected @Nullable String id;
@@ -63,22 +64,15 @@ public class TradfriGroupHandler extends TradfriResourceHandler implements Tradf
     }
 
     @Override
-    protected TradfriResourceEventHandler getEventHandler() {
-        return this;
-    }
-
-    @Override
     protected @Nullable String getResourceId() {
         return this.id != null ? this.id : null;
     }
 
-    @Override
-    public void onUpdate(TradfriResourceProxy proxy) {
-        updateStatus(proxy);
+    @TradfriEventHandler(TradfriEvent.RESOURCE_UPDATED)
+    public void onUpdate(TradfriGroupProxy proxy) {
+        updateOnlineStatus(proxy);
 
-        TradfriGroupProxy groupProxy = (TradfriGroupProxy) proxy;
-
-        TradfriSceneProxy activeScene = groupProxy.getActiveScene();
+        TradfriSceneProxy activeScene = proxy.getActiveScene();
         if (activeScene != null) {
             String name = activeScene.getSceneName();
             if (name == null) {
@@ -88,8 +82,8 @@ public class TradfriGroupHandler extends TradfriResourceHandler implements Tradf
             StringType scene = new StringType(name);
             updateState(TradfriBindingConstants.CHANNEL_SCENE, scene);
 
-            logger.debug("Updating group \"{}\" with ID {}. Current scene: {}", groupProxy.getName(),
-                    groupProxy.getInstanceId(), activeScene.getInstanceId());
+            logger.debug("Updating group \"{}\" with ID {}. Current scene: {}", proxy.getName(), proxy.getInstanceId(),
+                    activeScene.getInstanceId());
         }
     }
 

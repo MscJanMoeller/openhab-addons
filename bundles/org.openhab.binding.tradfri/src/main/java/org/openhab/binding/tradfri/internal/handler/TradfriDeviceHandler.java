@@ -21,6 +21,7 @@ import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.openhab.binding.tradfri.internal.config.TradfriDeviceConfig;
 import org.openhab.binding.tradfri.internal.model.TradfriDeviceData;
 import org.openhab.binding.tradfri.internal.model.TradfriDeviceProxy;
+import org.openhab.binding.tradfri.internal.model.TradfriResourceProxy;
 
 /**
  * The {@link TradfriDeviceHandler} is the abstract base class for individual device handlers.
@@ -51,15 +52,39 @@ public abstract class TradfriDeviceHandler extends TradfriResourceHandler {
         this.id = null;
     }
 
+    protected void onUpdate(TradfriDeviceProxy device) {
+        updateOnlineStatus(device);
+        updateStatus(device.isAlive() ? ThingStatus.ONLINE : ThingStatus.OFFLINE);
+        updateDeviceProperties(device);
+    }
+
     @Override
     protected @Nullable String getResourceId() {
         return this.id != null ? this.id.toString() : null;
     }
 
-    protected void updateDeviceStatus(TradfriDeviceProxy proxy) {
-        updateStatus(proxy);
-        updateStatus(proxy.isAlive() ? ThingStatus.ONLINE : ThingStatus.OFFLINE);
-        updateDeviceProperties(proxy);
+    protected boolean updateDeviceStatus(TradfriResourceProxy proxy) {
+
+        boolean success = false;
+
+        if (proxy instanceof TradfriDeviceProxy) {
+            TradfriDeviceProxy device = (TradfriDeviceProxy) proxy;
+
+            // Check match of thing type
+            if (getThing().getThingTypeUID().equals(device.getThingType())) {
+
+                success = true;
+
+            } else {
+                logger.error("Thing type mismatch during device update. Expected:'{}' Actual:'{}'",
+                        getThing().getThingTypeUID().getId(), device.getThingType().getId());
+            }
+        } else {
+            logger.error("Got device update from unknown thing type. Expected: '{}'",
+                    getThing().getThingTypeUID().getId());
+        }
+
+        return success;
     }
 
     private void updateDeviceProperties(TradfriDeviceProxy proxy) {

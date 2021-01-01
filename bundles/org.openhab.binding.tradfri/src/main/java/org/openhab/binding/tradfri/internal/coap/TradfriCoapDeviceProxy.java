@@ -33,20 +33,20 @@ public class TradfriCoapDeviceProxy extends TradfriCoapResourceProxy implements 
 
     private final ThingTypeUID thingType;
 
-    protected TradfriCoapDeviceProxy(ThingTypeUID thingType, TradfriCoapClient coapClient,
-            ScheduledExecutorService scheduler) {
-        super(coapClient, scheduler);
+    protected TradfriCoapDeviceProxy(TradfriCoapResourceStorage resourceStorage, ThingTypeUID thingType,
+            TradfriCoapClient coapClient, ScheduledExecutorService scheduler) {
+        super(resourceStorage, coapClient, scheduler);
         this.thingType = thingType;
-    }
-
-    @Override
-    protected TradfriDevice convert(String coapPayload) {
-        return gson.fromJson(coapPayload, TradfriDevice.class);
     }
 
     @Override
     public ThingTypeUID getThingType() {
         return this.thingType;
+    }
+
+    @Override
+    public boolean matches(ThingTypeUID thingType) {
+        return this.thingType.equals(thingType);
     }
 
     @Override
@@ -118,4 +118,8 @@ public class TradfriCoapDeviceProxy extends TradfriCoapResourceProxy implements 
         return batteryLevel;
     }
 
+    @Override
+    public TradfriDevice parsePayload(String coapPayload) {
+        return gson.fromJson(coapPayload, TradfriDevice.class);
+    }
 }

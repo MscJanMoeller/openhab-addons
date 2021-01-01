@@ -29,6 +29,8 @@ public interface TradfriDeviceProxy extends TradfriResourceProxy {
 
     ThingTypeUID getThingType();
 
+    boolean matches(ThingTypeUID thingType);
+
     @Nullable
     String getVendor();
 

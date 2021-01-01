@@ -39,13 +39,14 @@ public class TradfriCoapDimmableLightProxy extends TradfriCoapDeviceProxy implem
 
     private static final ThingTypeUID thingType = THING_TYPE_DIMMABLE_LIGHT;
 
-    public TradfriCoapDimmableLightProxy(TradfriCoapClient coapClient, ScheduledExecutorService scheduler) {
-        this(thingType, coapClient, scheduler);
+    public TradfriCoapDimmableLightProxy(TradfriCoapResourceStorage resourceStorage, TradfriCoapClient coapClient,
+            ScheduledExecutorService scheduler) {
+        this(resourceStorage, thingType, coapClient, scheduler);
     }
 
-    protected TradfriCoapDimmableLightProxy(ThingTypeUID thingType, TradfriCoapClient coapClient,
-            ScheduledExecutorService scheduler) {
-        super(thingType, coapClient, scheduler);
+    protected TradfriCoapDimmableLightProxy(TradfriCoapResourceStorage resourceStorage, ThingTypeUID thingType,
+            TradfriCoapClient coapClient, ScheduledExecutorService scheduler) {
+        super(resourceStorage, thingType, coapClient, scheduler);
     }
 
     @Override
@@ -69,7 +70,7 @@ public class TradfriCoapDimmableLightProxy extends TradfriCoapDeviceProxy implem
     }
 
     @Override
-    protected TradfriDevice convert(String coapPayload) {
+    public TradfriDevice parsePayload(String coapPayload) {
         return gson.fromJson(coapPayload, TradfriDimmableLight.class);
     }
 

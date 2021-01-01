@@ -171,7 +171,6 @@ public class TradfriBindingConstants {
     public static final String IOT_ENDPOINT = "9103";
     public static final String LIGHT = "3311";
     public static final int LIGHTS_OFF_SMART_TASK = 2;
-    public static final String LIGHT_SETTING = "15013";
     public static final int LOSS_OF_INTERNET_CONNECTIVITY = 5001;
     public static final String MASTER_TOKEN_TAG = "9036";
     public static final String MAX_MSR_VALUE = "5602";
@@ -214,6 +213,7 @@ public class TradfriBindingConstants {
     public static final String SCENE_ACTIVATE_FLAG = "9058";
     public static final String SCENE_ID = "9039";
     public static final String SCENE_INDEX = "9057";
+    public static final String SCENE_LIGHT_SETTING = "15013";
     public static final String SCENE_LINK = "9009";
     public static final String SENSOR = "3300";
     public static final String SENSOR_TYPE = "5751";

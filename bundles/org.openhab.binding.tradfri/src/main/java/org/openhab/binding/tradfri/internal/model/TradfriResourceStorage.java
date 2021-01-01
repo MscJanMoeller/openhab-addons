@@ -10,26 +10,30 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
+
 package org.openhab.binding.tradfri.internal.model;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 
 /**
- * {@link TradfriResourceEventHandler} can register at the {@link TradfriResourceProxy}
- * to be informed about updates of resources like devices, groups or scenes.
+ * {@link TradfriResourceStorage} stores all proxy objects of specific
+ * single resources like a device, group or scene.
  *
  * @author Jan Möller - Initial contribution
+ *
  */
 
 @NonNullByDefault
-@FunctionalInterface
-public interface TradfriResourceEventHandler {
+public interface TradfriResourceStorage {
 
-    /**
-     * This method is called when resource data has been updated.
-     *
-     * @param proxy representing the updated the resource
-     */
+    public void subscribeEvent(TradfriEvent event, Object subscriber);
 
-    void onUpdate(TradfriResourceProxy proxy);
+    public boolean contains(String id);
+
+    public @Nullable TradfriResourceProxy get(String id);
+
+    public void refresh();
+
+    public void clear();
 }

@@ -41,13 +41,9 @@ public class TradfriCoapColorTempLightProxy extends TradfriCoapDimmableLightProx
 
     private static final ThingTypeUID thingType = THING_TYPE_COLOR_TEMP_LIGHT;
 
-    public TradfriCoapColorTempLightProxy(TradfriCoapClient coapClient, ScheduledExecutorService scheduler) {
-        super(thingType, coapClient, scheduler);
-    }
-
-    protected TradfriCoapColorTempLightProxy(ThingTypeUID thingType, TradfriCoapClient coapClient,
+    public TradfriCoapColorTempLightProxy(TradfriCoapResourceStorage resourceStorage, TradfriCoapClient coapClient,
             ScheduledExecutorService scheduler) {
-        super(thingType, coapClient, scheduler);
+        super(resourceStorage, thingType, coapClient, scheduler);
     }
 
     @Override
@@ -69,7 +65,7 @@ public class TradfriCoapColorTempLightProxy extends TradfriCoapDimmableLightProx
     }
 
     @Override
-    protected TradfriDevice convert(String coapPayload) {
+    public TradfriDevice parsePayload(String coapPayload) {
         return gson.fromJson(coapPayload, TradfriColorTempLight.class);
     }
 

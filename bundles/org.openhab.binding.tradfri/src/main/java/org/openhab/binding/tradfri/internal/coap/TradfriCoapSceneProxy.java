@@ -32,9 +32,9 @@ import org.openhab.binding.tradfri.internal.model.TradfriSceneProxy;
 @NonNullByDefault
 public class TradfriCoapSceneProxy extends TradfriCoapResourceProxy implements TradfriSceneProxy {
 
-    public TradfriCoapSceneProxy(String gatewayUri, String groupId, Endpoint endpoint,
-            ScheduledExecutorService scheduler) {
-        super(gatewayUri + "/" + ENDPOINT_SCENES + "/" + groupId, endpoint, scheduler);
+    public TradfriCoapSceneProxy(TradfriCoapResourceStorage resourceStorage, String gatewayUri, String groupId,
+            Endpoint endpoint, ScheduledExecutorService scheduler) {
+        super(resourceStorage, gatewayUri + "/" + ENDPOINT_SCENES + "/" + groupId, endpoint, scheduler);
     }
 
     @Override
@@ -47,7 +47,7 @@ public class TradfriCoapSceneProxy extends TradfriCoapResourceProxy implements T
     }
 
     @Override
-    protected TradfriScene convert(String coapPayload) {
+    public TradfriScene parsePayload(String coapPayload) {
         return gson.fromJson(coapPayload, TradfriScene.class);
     }
 }
