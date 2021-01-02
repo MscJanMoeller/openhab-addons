@@ -42,8 +42,10 @@ import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapProxyFactory;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceCache;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceProxy;
+import org.openhab.binding.tradfri.internal.config.TradfriGroupConfig;
 import org.openhab.binding.tradfri.internal.handler.TradfriGatewayHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriDevice;
+import org.openhab.binding.tradfri.internal.model.TradfriGroup;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -105,11 +107,34 @@ public class TradfriDiscoveryServiceTest {
         discoveryResult = null;
     }
 
-    private void discoverDeviceFrom(String deviceResponse) {
+    private void discoverGroupFrom(String payload) {
         // Stub behavior of CoapResponse
         CoapResponse response = mock(CoapResponse.class);
         when(response.isSuccess()).thenReturn(true);
-        when(response.getResponseText()).thenReturn(deviceResponse);
+        when(response.getResponseText()).thenReturn(payload);
+
+        // Stub behavior of CoapClient
+        when(coapClient.getURI()).thenReturn("coaps://localhost:5684/" + ENDPOINT_GROUPS);
+        when(coapClient.getEndpoint()).thenReturn(mock(Endpoint.class));
+        doAnswer(answerVoid((CoapHandler callback) -> callback.onLoad(response))).when(coapClient)
+                .get(any(CoapHandler.class));
+
+        // Stub behavior of resource cache and use call to inform discovery service
+        doAnswer(answerVoid((proxy) -> {
+            TradfriGroup discoveredGroup = (TradfriGroup) proxy;
+            discovery.onGroupUpdated(handler.getThing(), discoveredGroup);
+        })).when(resourceCache).add(any(TradfriCoapResourceProxy.class));
+
+        // Create proxy for discovered resource
+        this.proxyFactory.createProxy(this.coapClient);
+
+    }
+
+    private void discoverDeviceFrom(String payload) {
+        // Stub behavior of CoapResponse
+        CoapResponse response = mock(CoapResponse.class);
+        when(response.isSuccess()).thenReturn(true);
+        when(response.getResponseText()).thenReturn(payload);
 
         // Stub behavior of CoapClient
         doAnswer(answerVoid((CoapHandler callback) -> callback.onLoad(response))).when(coapClient)
@@ -121,7 +146,7 @@ public class TradfriDiscoveryServiceTest {
             discovery.onDeviceUpdated(handler.getThing(), discoveredDevice);
         })).when(resourceCache).add(any(TradfriCoapResourceProxy.class));
 
-        // Create proxy for discovered device
+        // Create proxy for discovered resource
         this.proxyFactory.createProxy(this.coapClient);
 
     }
@@ -129,6 +154,7 @@ public class TradfriDiscoveryServiceTest {
     @Test
     public void correctSupportedTypes() {
         assertThat(discovery.getSupportedThingTypes().size(), is(10));
+        assertTrue(discovery.getSupportedThingTypes().contains(THING_TYPE_GROUP));
         assertTrue(discovery.getSupportedThingTypes().contains(THING_TYPE_DIMMABLE_LIGHT));
         assertTrue(discovery.getSupportedThingTypes().contains(THING_TYPE_COLOR_TEMP_LIGHT));
         assertTrue(discovery.getSupportedThingTypes().contains(THING_TYPE_COLOR_LIGHT));
@@ -138,7 +164,23 @@ public class TradfriDiscoveryServiceTest {
         assertTrue(discovery.getSupportedThingTypes().contains(THING_TYPE_OPEN_CLOSE_REMOTE_CONTROL));
         assertTrue(discovery.getSupportedThingTypes().contains(THING_TYPE_ONOFF_PLUG));
         assertTrue(discovery.getSupportedThingTypes().contains(THING_TYPE_BLINDS));
-        assertTrue(discovery.getSupportedThingTypes().contains(THING_TYPE_GROUP));
+    }
+
+    @Test
+    public void validDiscoveryResultGroup() {
+        String jsonResponse = "{\"9003\":131079," + "\"9001\":\"Living room dining table\"," + "\"9002\":1572085357,"
+                + "\"9039\":196635," + "\"5850\":0," + "\"5851\":0," + "\"9108\":0," + "\"9018\":{\"15002\":"
+                + "{\"9003\":[65552,65553,65554]}}}";
+
+        discoverGroupFrom(jsonResponse);
+
+        assertNotNull(discoveryResult);
+        assertThat(discoveryResult.getFlag(), is(DiscoveryResultFlag.NEW));
+        assertThat(discoveryResult.getThingUID(), is(new ThingUID("tradfri:group:1:131079")));
+        assertThat(discoveryResult.getThingTypeUID(), is(THING_TYPE_GROUP));
+        assertThat(discoveryResult.getBridgeUID(), is(GATEWAY_THING_UID));
+        assertThat(discoveryResult.getProperties().get(TradfriGroupConfig.CONFIG_ID), is("131079"));
+        assertThat(discoveryResult.getRepresentationProperty(), is(TradfriGroupConfig.CONFIG_ID));
     }
 
     @Test
