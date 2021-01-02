@@ -44,16 +44,16 @@ public class TradfriCoapProxyFactory {
 
     private static final JsonParser parser = new JsonParser();
 
-    private final TradfriCoapResourceStorage resourceStorage;
+    private final TradfriCoapResourceCache resourceCache;
 
     private final String baseUri;
     private final Endpoint endpoint;
 
     private final ScheduledExecutorService scheduler;
 
-    public TradfriCoapProxyFactory(TradfriCoapResourceStorage resourceStorage, String baseUri, Endpoint endpoint,
+    public TradfriCoapProxyFactory(TradfriCoapResourceCache resourceCache, String baseUri, Endpoint endpoint,
             ScheduledExecutorService scheduler) {
-        this.resourceStorage = resourceStorage;
+        this.resourceCache = resourceCache;
         this.baseUri = baseUri;
         this.endpoint = endpoint;
         this.scheduler = scheduler;
@@ -95,9 +95,9 @@ public class TradfriCoapProxyFactory {
                                 .getProxyClassFrom(payload);
                         if (proxyClass != null) {
                             TradfriCoapResourceProxy newProxy = proxyClass
-                                    .getConstructor(TradfriCoapResourceStorage.class, TradfriCoapClient.class,
+                                    .getConstructor(TradfriCoapResourceCache.class, TradfriCoapClient.class,
                                             ScheduledExecutorService.class)
-                                    .newInstance(resourceStorage, coapClient, scheduler);
+                                    .newInstance(resourceCache, coapClient, scheduler);
                             newProxy.initialize(newProxy.parsePayload(response.getResponseText()));
                         } else {
                             logger.info("Ignoring unknown device of TRADFRI gateway:\npayload: {}",

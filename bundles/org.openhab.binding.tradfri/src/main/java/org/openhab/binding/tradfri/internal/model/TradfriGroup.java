@@ -14,24 +14,24 @@
 package org.openhab.binding.tradfri.internal.model;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.smarthome.core.library.types.PercentType;
+import org.eclipse.jdt.annotation.Nullable;
 
 /**
- * {@link TradfriDimmableLightProxy} represents a light
- * that has continuous brightness control.
+ * {@link TradfriGroup} represents a single group and provides:
+ * - access to the data
+ * - notifies about changes
+ * - forwards commands
  *
  * @author Jan Möller - Initial contribution
  *
  */
 
 @NonNullByDefault
-public interface TradfriDimmableLightProxy extends TradfriDeviceProxy {
+public interface TradfriGroup extends TradfriResource {
 
-    boolean isOn();
+    @Nullable
+    TradfriScene getActiveScene();
 
-    boolean isOff();
-
-    PercentType getBrightness();
-
-    void setBrightness(PercentType value);
+    @Nullable
+    TradfriScene getSceneById(String id);
 }

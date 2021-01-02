@@ -18,9 +18,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriDevice;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriDeviceInfo;
-import org.openhab.binding.tradfri.internal.model.TradfriDeviceProxy;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapDevice;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapDeviceInfo;
+import org.openhab.binding.tradfri.internal.model.TradfriDevice;
 
 /**
  * {@link TradfriCoapDeviceProxy} observes changes of a single device
@@ -29,13 +29,13 @@ import org.openhab.binding.tradfri.internal.model.TradfriDeviceProxy;
  *
  */
 @NonNullByDefault
-public class TradfriCoapDeviceProxy extends TradfriCoapResourceProxy implements TradfriDeviceProxy {
+public class TradfriCoapDeviceProxy extends TradfriCoapResourceProxy implements TradfriDevice {
 
     private final ThingTypeUID thingType;
 
-    protected TradfriCoapDeviceProxy(TradfriCoapResourceStorage resourceStorage, ThingTypeUID thingType,
+    protected TradfriCoapDeviceProxy(TradfriCoapResourceCache resourceCache, ThingTypeUID thingType,
             TradfriCoapClient coapClient, ScheduledExecutorService scheduler) {
-        super(resourceStorage, coapClient, scheduler);
+        super(resourceCache, coapClient, scheduler);
         this.thingType = thingType;
     }
 
@@ -53,7 +53,7 @@ public class TradfriCoapDeviceProxy extends TradfriCoapResourceProxy implements 
     public @Nullable String getVendor() {
         String vendor = null;
         if (this.cachedData != null) {
-            TradfriDeviceInfo deviceInfo = ((TradfriDevice) this.cachedData).getDeviceInfo();
+            TradfriCoapDeviceInfo deviceInfo = ((TradfriCoapDevice) this.cachedData).getDeviceInfo();
             if (deviceInfo != null) {
                 vendor = deviceInfo.getVendor();
             }
@@ -65,7 +65,7 @@ public class TradfriCoapDeviceProxy extends TradfriCoapResourceProxy implements 
     public @Nullable String getModel() {
         String model = null;
         if (this.cachedData != null) {
-            TradfriDeviceInfo deviceInfo = ((TradfriDevice) this.cachedData).getDeviceInfo();
+            TradfriCoapDeviceInfo deviceInfo = ((TradfriCoapDevice) this.cachedData).getDeviceInfo();
             if (deviceInfo != null) {
                 model = deviceInfo.getModel();
             }
@@ -77,7 +77,7 @@ public class TradfriCoapDeviceProxy extends TradfriCoapResourceProxy implements 
     public @Nullable String getSerialNumber() {
         String serialNumber = null;
         if (this.cachedData != null) {
-            TradfriDeviceInfo deviceInfo = ((TradfriDevice) this.cachedData).getDeviceInfo();
+            TradfriCoapDeviceInfo deviceInfo = ((TradfriCoapDevice) this.cachedData).getDeviceInfo();
             if (deviceInfo != null) {
                 serialNumber = deviceInfo.getSerialNumber();
             }
@@ -89,7 +89,7 @@ public class TradfriCoapDeviceProxy extends TradfriCoapResourceProxy implements 
     public @Nullable String getFirmwareVersion() {
         String firmware = null;
         if (this.cachedData != null) {
-            TradfriDeviceInfo deviceInfo = ((TradfriDevice) this.cachedData).getDeviceInfo();
+            TradfriCoapDeviceInfo deviceInfo = ((TradfriCoapDevice) this.cachedData).getDeviceInfo();
             if (deviceInfo != null) {
                 firmware = deviceInfo.getFirmware();
             }
@@ -101,7 +101,7 @@ public class TradfriCoapDeviceProxy extends TradfriCoapResourceProxy implements 
     public boolean isAlive() {
         boolean isAlive = false;
         if (this.cachedData != null) {
-            isAlive = ((TradfriDevice) this.cachedData).isAlive();
+            isAlive = ((TradfriCoapDevice) this.cachedData).isAlive();
         }
         return isAlive;
     }
@@ -110,7 +110,7 @@ public class TradfriCoapDeviceProxy extends TradfriCoapResourceProxy implements 
     public int getBatteryLevel() {
         int batteryLevel = -1;
         if (this.cachedData != null) {
-            TradfriDeviceInfo deviceInfo = ((TradfriDevice) this.cachedData).getDeviceInfo();
+            TradfriCoapDeviceInfo deviceInfo = ((TradfriCoapDevice) this.cachedData).getDeviceInfo();
             if (deviceInfo != null) {
                 batteryLevel = deviceInfo.getBatteryLevel();
             }
@@ -119,7 +119,7 @@ public class TradfriCoapDeviceProxy extends TradfriCoapResourceProxy implements 
     }
 
     @Override
-    public TradfriDevice parsePayload(String coapPayload) {
-        return gson.fromJson(coapPayload, TradfriDevice.class);
+    public TradfriCoapDevice parsePayload(String coapPayload) {
+        return gson.fromJson(coapPayload, TradfriCoapDevice.class);
     }
 }

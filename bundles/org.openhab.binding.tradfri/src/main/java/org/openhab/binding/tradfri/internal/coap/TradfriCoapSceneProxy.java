@@ -20,8 +20,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriScene;
-import org.openhab.binding.tradfri.internal.model.TradfriSceneProxy;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapScene;
+import org.openhab.binding.tradfri.internal.model.TradfriScene;
 
 /**
  * {@link TradfriCoapSceneProxy} observes changes of a single scene
@@ -30,16 +30,16 @@ import org.openhab.binding.tradfri.internal.model.TradfriSceneProxy;
  *
  */
 @NonNullByDefault
-public class TradfriCoapSceneProxy extends TradfriCoapResourceProxy implements TradfriSceneProxy {
+public class TradfriCoapSceneProxy extends TradfriCoapResourceProxy implements TradfriScene {
 
-    public TradfriCoapSceneProxy(TradfriCoapResourceStorage resourceStorage, String gatewayUri, String groupId,
+    public TradfriCoapSceneProxy(TradfriCoapResourceCache resourceCache, String gatewayUri, String groupId,
             Endpoint endpoint, ScheduledExecutorService scheduler) {
-        super(resourceStorage, gatewayUri + "/" + ENDPOINT_SCENES + "/" + groupId, endpoint, scheduler);
+        super(resourceCache, gatewayUri + "/" + ENDPOINT_SCENES + "/" + groupId, endpoint, scheduler);
     }
 
     @Override
     public @Nullable String getSceneName() {
-        TradfriScene sceneData = (TradfriScene) this.cachedData;
+        TradfriCoapScene sceneData = (TradfriCoapScene) this.cachedData;
         if (sceneData != null) {
             return sceneData.getName();
         }
@@ -47,7 +47,7 @@ public class TradfriCoapSceneProxy extends TradfriCoapResourceProxy implements T
     }
 
     @Override
-    public TradfriScene parsePayload(String coapPayload) {
-        return gson.fromJson(coapPayload, TradfriScene.class);
+    public TradfriCoapScene parsePayload(String coapPayload) {
+        return gson.fromJson(coapPayload, TradfriCoapScene.class);
     }
 }

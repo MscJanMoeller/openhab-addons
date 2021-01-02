@@ -27,13 +27,13 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
-import org.openhab.binding.tradfri.internal.model.TradfriResourceProxy;
-import org.openhab.binding.tradfri.internal.model.TradfriResourceStorage;
+import org.openhab.binding.tradfri.internal.model.TradfriResource;
+import org.openhab.binding.tradfri.internal.model.TradfriResourceCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * {@link TradfriCoapResourceStorage} stores all proxy objects of specific
+ * {@link TradfriCoapResourceCache} stores all proxy objects of specific
  * single resources like a device, group or scene.
  *
  * @author Jan Möller - Initial contribution
@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
  */
 
 @NonNullByDefault
-public class TradfriCoapResourceStorage implements TradfriResourceStorage {
+public class TradfriCoapResourceCache implements TradfriResourceCache {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -54,7 +54,7 @@ public class TradfriCoapResourceStorage implements TradfriResourceStorage {
 
     private @Nullable TradfriCoapProxyFactory proxyFactory;
 
-    public TradfriCoapResourceStorage() {
+    public TradfriCoapResourceCache() {
 
         this.proxyMap = new ConcurrentHashMap<String, TradfriCoapResourceProxy>();
         this.eventHandlerMap = new ConcurrentHashMap<TradfriEvent, Set<WeakReference<Object>>>(
@@ -170,7 +170,7 @@ public class TradfriCoapResourceStorage implements TradfriResourceStorage {
         }
     }
 
-    public void updated(TradfriResourceProxy proxy) {
+    public void updated(TradfriResource proxy) {
         publish(TradfriEvent.RESOURCE_UPDATED, proxy);
     }
 
@@ -183,7 +183,7 @@ public class TradfriCoapResourceStorage implements TradfriResourceStorage {
         return proxy;
     }
 
-    private void publish(TradfriEvent event, TradfriResourceProxy resource) {
+    private void publish(TradfriEvent event, TradfriResource resource) {
         eventHandlerMap.get(event).parallelStream().forEach((subscriberRef) -> {
             Object subscriberObj = subscriberRef.get();
 
@@ -196,7 +196,7 @@ public class TradfriCoapResourceStorage implements TradfriResourceStorage {
         });
     }
 
-    private <T, R extends TradfriResourceProxy> void deliverEvent(T subscriber, Method method, R resource) {
+    private <T, R extends TradfriResource> void deliverEvent(T subscriber, Method method, R resource) {
         try {
             boolean methodFound = false;
             for (final Class<?> paramClass : method.getParameterTypes()) {
@@ -257,7 +257,7 @@ public class TradfriCoapResourceStorage implements TradfriResourceStorage {
             // A device was removed
         } else if (event == TradfriEvent.RESOURCE_REMOVED) {
             // Remove proxy of removed device
-            TradfriResourceProxy proxy = remove(id);
+            TradfriResource proxy = remove(id);
             // TODO: error handling if there is a configured thing for that proxy
             if (proxy != null) {
                 // Destroy proxy object
@@ -273,7 +273,7 @@ public class TradfriCoapResourceStorage implements TradfriResourceStorage {
             // A group was removed
         } else if (event == TradfriEvent.RESOURCE_REMOVED) {
             // Remove proxy of removed group
-            TradfriResourceProxy proxy = remove(id);
+            TradfriResource proxy = remove(id);
             // TODO: error handling if there is a configured thing for that proxy
             if (proxy != null) {
                 // Destroy proxy object

@@ -40,8 +40,10 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapProxyFactory;
+import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceCache;
+import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceProxy;
 import org.openhab.binding.tradfri.internal.handler.TradfriGatewayHandler;
-import org.openhab.binding.tradfri.internal.model.TradfriDeviceProxy;
+import org.openhab.binding.tradfri.internal.model.TradfriDevice;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -56,6 +58,8 @@ public class TradfriDiscoveryServiceTest {
 
     private static final ThingUID GATEWAY_THING_UID = new ThingUID("tradfri:gateway:1");
 
+    @Mock
+    private TradfriCoapResourceCache resourceCache;
     @Mock
     private TradfriGatewayHandler handler;
     @Mock
@@ -92,7 +96,7 @@ public class TradfriDiscoveryServiceTest {
         discovery.registerTradfriGatewayHandler(handler);
         discovery.addDiscoveryListener(listener);
 
-        proxyFactory = new TradfriCoapProxyFactory("coaps://localhost:5684", mock(Endpoint.class),
+        proxyFactory = new TradfriCoapProxyFactory(resourceCache, "coaps://localhost:5684", mock(Endpoint.class),
                 mock(ScheduledExecutorService.class));
     }
 
@@ -111,11 +115,15 @@ public class TradfriDiscoveryServiceTest {
         doAnswer(answerVoid((CoapHandler callback) -> callback.onLoad(response))).when(coapClient)
                 .get(any(CoapHandler.class));
 
-        // Create proxy for discovered device
-        this.proxyFactory.createDeviceProxy(this.coapClient, (proxy) -> {
-            TradfriDeviceProxy discoveredDevice = (TradfriDeviceProxy) proxy;
+        // Stub behavior of resource cache and use call to inform discovery service
+        doAnswer(answerVoid((proxy) -> {
+            TradfriDevice discoveredDevice = (TradfriDevice) proxy;
             discovery.onDeviceUpdated(handler.getThing(), discoveredDevice);
-        });
+        })).when(resourceCache).add(any(TradfriCoapResourceProxy.class));
+
+        // Create proxy for discovered device
+        this.proxyFactory.createProxy(this.coapClient);
+
     }
 
     @Test

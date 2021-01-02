@@ -26,14 +26,14 @@ import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
-import org.openhab.binding.tradfri.internal.model.TradfriColorLightProxy;
-import org.openhab.binding.tradfri.internal.model.TradfriColorTempLightProxy;
-import org.openhab.binding.tradfri.internal.model.TradfriDeviceProxy;
-import org.openhab.binding.tradfri.internal.model.TradfriDimmableLightProxy;
+import org.openhab.binding.tradfri.internal.model.TradfriColorLight;
+import org.openhab.binding.tradfri.internal.model.TradfriColorTempLight;
+import org.openhab.binding.tradfri.internal.model.TradfriDevice;
+import org.openhab.binding.tradfri.internal.model.TradfriDimmableLight;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriLightData;
-import org.openhab.binding.tradfri.internal.model.TradfriResourceStorage;
+import org.openhab.binding.tradfri.internal.model.TradfriResourceCache;
 
 import com.google.gson.JsonElement;
 
@@ -59,35 +59,35 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
     public synchronized void initialize() {
         super.initialize();
 
-        TradfriResourceStorage resourceStorage = getResourceStorage();
+        TradfriResourceCache resourceCache = getresourceCache();
         String resourceId = getResourceId();
 
-        if (resourceStorage != null && resourceId != null) {
-            resourceStorage.subscribeEvent(TradfriEvent.RESOURCE_UPDATED, resourceId, this);
+        if (resourceCache != null && resourceId != null) {
+            resourceCache.subscribeEvent(TradfriEvent.RESOURCE_UPDATED, resourceId, this);
         }
     }
 
     @Override
     public synchronized void dispose() {
-        TradfriResourceStorage resourceStorage = getResourceStorage();
+        TradfriResourceCache resourceCache = getresourceCache();
         String resourceId = getResourceId();
 
-        if (resourceStorage != null && resourceId != null) {
-            resourceStorage.unsubscribeEvent(TradfriEvent.RESOURCE_UPDATED, resourceId, this);
+        if (resourceCache != null && resourceId != null) {
+            resourceCache.unsubscribeEvent(TradfriEvent.RESOURCE_UPDATED, resourceId, this);
         }
 
         super.dispose();
     }
 
     @TradfriEventHandler(TradfriEvent.RESOURCE_UPDATED)
-    public void onProxyUpdate(TradfriDimmableLightProxy proxy) {
-        if (proxy instanceof TradfriDeviceProxy) {
+    public void onProxyUpdate(TradfriDimmableLight proxy) {
+        if (proxy instanceof TradfriDevice) {
             if (!updateDeviceStatus(proxy)) {
                 return;
             }
         }
 
-        TradfriDimmableLightProxy light = proxy;
+        TradfriDimmableLight light = proxy;
         if (light != null) {
             if (light.isOff()) {
                 logger.debug("Setting state to OFF");
@@ -106,7 +106,7 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
         }
 
         if (hasColorTempSupport()) {
-            TradfriColorTempLightProxy colorTempLight = getColorTempLight();
+            TradfriColorTempLight colorTempLight = getColorTempLight();
             if (colorTempLight != null) {
 
                 PercentType colorTemp = colorTempLight.getColorTemperature();
@@ -313,8 +313,8 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
         return thing.getThingTypeUID().getId().equals(THING_TYPE_COLOR_TEMP_LIGHT.getId());
     }
 
-    private @Nullable TradfriColorTempLightProxy getColorTempLight() {
-        return (TradfriColorTempLightProxy) getProxy();
+    private @Nullable TradfriColorTempLight getColorTempLight() {
+        return (TradfriColorTempLight) getProxy();
     }
 
     /**
@@ -326,7 +326,7 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
         return thing.getThingTypeUID().getId().equals(THING_TYPE_COLOR_LIGHT.getId());
     }
 
-    private @Nullable TradfriColorLightProxy getColorLight() {
-        return (TradfriColorLightProxy) getProxy();
+    private @Nullable TradfriColorLight getColorLight() {
+        return (TradfriColorLight) getProxy();
     }
 }

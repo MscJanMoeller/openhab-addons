@@ -49,15 +49,15 @@ import org.eclipse.smarthome.core.thing.binding.BaseBridgeHandler;
 import org.eclipse.smarthome.core.thing.binding.ThingHandler;
 import org.eclipse.smarthome.core.types.Command;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
-import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceStorage;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriGateway;
+import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceCache;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapGateway;
 import org.openhab.binding.tradfri.internal.config.TradfriGatewayConfig;
 import org.openhab.binding.tradfri.internal.discovery.TradfriDiscoveryService;
-import org.openhab.binding.tradfri.internal.model.TradfriDeviceProxy;
+import org.openhab.binding.tradfri.internal.model.TradfriDevice;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
-import org.openhab.binding.tradfri.internal.model.TradfriGroupProxy;
-import org.openhab.binding.tradfri.internal.model.TradfriResourceStorage;
+import org.openhab.binding.tradfri.internal.model.TradfriGroup;
+import org.openhab.binding.tradfri.internal.model.TradfriResourceCache;
 import org.openhab.binding.tradfri.internal.model.TradfriVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,7 +95,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
 
     private final TradfriDiscoveryService discoveryService;
 
-    private final TradfriCoapResourceStorage resourceStorage;
+    private final TradfriCoapResourceCache resourceCache;
 
     private final AtomicInteger activeScans = new AtomicInteger(0);
 
@@ -108,7 +108,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         super(bridge);
 
         this.discoveryService = ds;
-        this.resourceStorage = new TradfriCoapResourceStorage();
+        this.resourceCache = new TradfriCoapResourceCache();
     }
 
     @Override
@@ -309,14 +309,14 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         requestGatewayInfo();
 
         // Connect TradfriDiscoveryService with resource storage to get events for devices and groups
-        this.resourceStorage.subscribeEvent(TradfriEvent.RESOURCE_ADDED, this);
-        this.resourceStorage.subscribeEvent(TradfriEvent.RESOURCE_UPDATED, this);
-        this.resourceStorage.subscribeEvent(TradfriEvent.RESOURCE_REMOVED, this);
+        this.resourceCache.subscribeEvent(TradfriEvent.RESOURCE_ADDED, this);
+        this.resourceCache.subscribeEvent(TradfriEvent.RESOURCE_UPDATED, this);
+        this.resourceCache.subscribeEvent(TradfriEvent.RESOURCE_REMOVED, this);
 
         String baseUri = getGatewayURI();
         Endpoint endpoint = getEndpoint();
         if (baseUri != null && endpoint != null) {
-            this.resourceStorage.initialize(baseUri, endpoint, scheduler);
+            this.resourceCache.initialize(baseUri, endpoint, scheduler);
         }
     }
 
@@ -374,7 +374,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     public void dispose() {
         stopScan();
 
-        this.resourceStorage.clear();
+        this.resourceCache.clear();
 
         if (this.supvJob != null) {
             this.supvJob.cancel(true);
@@ -396,8 +396,8 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         super.dispose();
     }
 
-    public TradfriResourceStorage getResourceStorage() {
-        return this.resourceStorage;
+    public TradfriResourceCache getResourceCache() {
+        return this.resourceCache;
     }
 
     /**
@@ -420,7 +420,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     public synchronized void startScan() {
         this.activeScans.getAndIncrement();
 
-        this.resourceStorage.refresh();
+        this.resourceCache.refresh();
     }
 
     /**
@@ -462,7 +462,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     }
 
     @TradfriEventHandler(TradfriEvent.RESOURCE_ADDED)
-    public void onDeviceAdded(TradfriDeviceProxy proxy) {
+    public void onDeviceAdded(TradfriDevice proxy) {
         updateOnlineStatus();
         if (mustNotifyDiscoveryService()) {
             this.discoveryService.onDeviceUpdated(getThing(), proxy);
@@ -470,7 +470,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     }
 
     @TradfriEventHandler(TradfriEvent.RESOURCE_UPDATED)
-    public void onDeviceUpdated(TradfriDeviceProxy proxy) {
+    public void onDeviceUpdated(TradfriDevice proxy) {
         updateOnlineStatus();
         if (mustNotifyDiscoveryService()) {
             // TODO inform discovery service only if relevant data changed (like name of device)
@@ -479,7 +479,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     }
 
     @TradfriEventHandler(TradfriEvent.RESOURCE_UPDATED)
-    public void onGroupUpdated(TradfriGroupProxy proxy) {
+    public void onGroupUpdated(TradfriGroup proxy) {
         updateOnlineStatus();
         if (mustNotifyDiscoveryService()) {
             // TODO inform discovery service only if relevant data changed (like name of group)
@@ -488,7 +488,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     }
 
     @TradfriEventHandler(TradfriEvent.RESOURCE_REMOVED)
-    public void onGroupRemoved(TradfriGroupProxy proxy) {
+    public void onGroupRemoved(TradfriGroup proxy) {
         if (mustNotifyDiscoveryService()) {
             this.discoveryService.onGroupRemoved(getThing(), proxy);
         }
@@ -499,7 +499,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         ThingStatus status = gateway.getStatus();
         if (status != ThingStatus.ONLINE) {
             boolean hasFwVersion = gateway.getProperties().containsKey(Thing.PROPERTY_FIRMWARE_VERSION);
-            if (hasFwVersion && this.resourceStorage.isInitialized()) {
+            if (hasFwVersion && this.resourceCache.isInitialized()) {
                 updateStatus(ThingStatus.ONLINE, ThingStatusDetail.NONE);
             }
         }
@@ -519,7 +519,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
                             response.getResponseText());
                     if (response.isSuccess()) {
                         try {
-                            TradfriGateway gateway = gson.fromJson(response.getResponseText(), TradfriGateway.class);
+                            TradfriCoapGateway gateway = gson.fromJson(response.getResponseText(), TradfriCoapGateway.class);
                             getThing().setProperty(Thing.PROPERTY_FIRMWARE_VERSION, gateway.getVersion());
                             updateOnlineStatus();
                         } catch (JsonParseException ex) {

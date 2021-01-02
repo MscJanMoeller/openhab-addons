@@ -20,11 +20,11 @@ import org.junit.Test;
 import com.google.gson.Gson;
 
 /**
- * Tests for {@link TradfriGroup}.
+ * Tests for {@link TradfriCoapGroup}.
  *
  * @author Jan Möller - Initial contribution
  */
-public class TradfriGroupTest {
+public class TradfriCoapGroupTest {
 
     private final Gson gson = new Gson();
 
@@ -34,17 +34,17 @@ public class TradfriGroupTest {
                 + "\"9039\":196635," + "\"5850\":0," + "\"5851\":0," + "\"9108\":0," + "\"9018\":{\"15002\":"
                 + "{\"9003\":[65552,65553,65554]}}}";
 
-        TradfriGroup grp = this.gson.fromJson(json, TradfriGroup.class);
+        TradfriCoapGroup grp = this.gson.fromJson(json, TradfriCoapGroup.class);
 
-        // Check data of class TradfriResource
+        // Check data of class TradfriCoapResource
         assertThat(grp.getInstanceId(), is("131079"));
         assertThat(grp.getName(), is("Living room dining table"));
         assertThat(grp.getTimestampCreatedAt(), is(1572085357L));
 
-        // Check data of class TradfriGroup
+        // Check data of class TradfriCoapGroup
         assertThat(grp.getSceneId(), is("196635"));
         assertThat(grp.getGroupType(), is(0));
-        TradfriResourceIdList idList = grp.getMembers();
+        TradfriCoapResourceIdList idList = grp.getMembers();
         assertNotNull(idList);
         assertThat(idList.size(), is(3));
         assertThat(idList.toSet(), contains("65552", "65553", "65554"));

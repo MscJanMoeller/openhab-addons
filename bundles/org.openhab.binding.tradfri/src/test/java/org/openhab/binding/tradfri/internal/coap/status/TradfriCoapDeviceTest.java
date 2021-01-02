@@ -16,16 +16,16 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
 import org.junit.Test;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriDevice.DeviceType;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapDevice.DeviceType;
 
 import com.google.gson.Gson;
 
 /**
- * Tests for {@link TradfriDevice}.
+ * Tests for {@link TradfriCoapDevice}.
  *
  * @author Jan Möller - Initial contribution
  */
-public class TradfriDeviceTest {
+public class TradfriCoapDeviceTest {
 
     private final Gson gson = new Gson();
 
@@ -37,21 +37,21 @@ public class TradfriDeviceTest {
                 + "\"3311\":[{\"5850\":1," + "\"5851\":50," + "\"5717\":0,\"5711\":454," + "\"5709\":30138,"
                 + "\"5710\":26909," + "\"5706\":\"f1e0b5\"," + "\"9003\":0}]}";
 
-        TradfriDevice dev = this.gson.fromJson(json, TradfriDevice.class);
+        TradfriCoapDevice dev = this.gson.fromJson(json, TradfriCoapDevice.class);
 
-        // Check data of class TradfriResource
+        // Check data of class TradfriCoapResource
         assertThat(dev.getInstanceId(), is("65553"));
         assertThat(dev.getName(), is("Dining Table center"));
         assertThat(dev.getTimestampCreatedAt(), is(1545594514L));
 
-        // Check data of class TradfriDevice
+        // Check data of class TradfriCoapDevice
         assertThat(dev.getDeviceType(), is(DeviceType.LIGHT));
         assertThat(dev.getReachabilityState(), is(1));
         assertThat(dev.getTimestampLastSeen(), is(1590864848L));
         assertThat(dev.isAlive(), is(true));
 
-        // Check data of class TradfriDeviceInfo
-        TradfriDeviceInfo devInfo = dev.getDeviceInfo();
+        // Check data of class TradfriCoapDeviceInfo
+        TradfriCoapDeviceInfo devInfo = dev.getDeviceInfo();
         assertNotNull(devInfo);
         assertThat(devInfo.getVendor(), is("IKEA of Sweden"));
         assertThat(devInfo.getModel(), is("TRADFRI bulb E27 WS clear 950lm"));

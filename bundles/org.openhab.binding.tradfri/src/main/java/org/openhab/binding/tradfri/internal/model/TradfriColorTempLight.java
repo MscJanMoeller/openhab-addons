@@ -15,25 +15,21 @@ package org.openhab.binding.tradfri.internal.model;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.smarthome.core.library.types.PercentType;
 
 /**
- * {@link TradfriResourceStorage} stores all proxy objects of specific
- * single resources like a device, group or scene.
+ * {@link TradfriCoapColorTempLight} represents a light
+ * that supports different color temperature settings.
  *
  * @author Jan Möller - Initial contribution
  *
  */
 
 @NonNullByDefault
-public interface TradfriResourceStorage {
+public interface TradfriColorTempLight extends TradfriDimmableLight {
 
-    public void subscribeEvent(TradfriEvent event, Object subscriber);
+    @Nullable
+    PercentType getColorTemperature();
 
-    public boolean contains(String id);
-
-    public @Nullable TradfriResourceProxy get(String id);
-
-    public void refresh();
-
-    public void clear();
+    void setColorTemperature(PercentType value);
 }

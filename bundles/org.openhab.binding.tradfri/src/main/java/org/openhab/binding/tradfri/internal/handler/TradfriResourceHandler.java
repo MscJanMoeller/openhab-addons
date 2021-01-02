@@ -20,8 +20,8 @@ import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.ThingStatusInfo;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
-import org.openhab.binding.tradfri.internal.model.TradfriResourceProxy;
-import org.openhab.binding.tradfri.internal.model.TradfriResourceStorage;
+import org.openhab.binding.tradfri.internal.model.TradfriResource;
+import org.openhab.binding.tradfri.internal.model.TradfriResourceCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +35,7 @@ public abstract class TradfriResourceHandler extends BaseThingHandler {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private @Nullable TradfriResourceStorage resourceStorage;
+    private @Nullable TradfriResourceCache resourceCache;
 
     public TradfriResourceHandler(Thing thing) {
         super(thing);
@@ -60,7 +60,7 @@ public abstract class TradfriResourceHandler extends BaseThingHandler {
 
         TradfriGatewayHandler handler = (TradfriGatewayHandler) tradfriGateway.getHandler();
         if (handler != null) {
-            this.resourceStorage = handler.getResourceStorage();
+            this.resourceCache = handler.getResourceCache();
         }
     }
 
@@ -68,7 +68,7 @@ public abstract class TradfriResourceHandler extends BaseThingHandler {
     public synchronized void dispose() {
         super.dispose();
 
-        this.resourceStorage = null;
+        this.resourceCache = null;
     }
 
     @Override
@@ -84,20 +84,20 @@ public abstract class TradfriResourceHandler extends BaseThingHandler {
 
     protected abstract @Nullable String getResourceId();
 
-    protected @Nullable TradfriResourceStorage getResourceStorage() {
-        return this.resourceStorage;
+    protected @Nullable TradfriResourceCache getresourceCache() {
+        return this.resourceCache;
     }
 
-    protected @Nullable TradfriResourceProxy getProxy() {
-        TradfriResourceProxy proxy = null;
+    protected @Nullable TradfriResource getProxy() {
+        TradfriResource proxy = null;
         String id = getResourceId();
-        if (id != null && this.resourceStorage != null) {
-            proxy = this.resourceStorage.get(id);
+        if (id != null && this.resourceCache != null) {
+            proxy = this.resourceCache.get(id);
         }
         return proxy;
     }
 
-    protected void updateOnlineStatus(TradfriResourceProxy proxy) {
+    protected void updateOnlineStatus(TradfriResource proxy) {
         ThingStatus status = getThing().getStatus();
         if (status != ThingStatus.ONLINE) {
             updateStatus(ThingStatus.ONLINE);

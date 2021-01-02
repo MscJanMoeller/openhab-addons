@@ -15,21 +15,35 @@ package org.openhab.binding.tradfri.internal.model;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.eclipse.smarthome.core.library.types.PercentType;
+import org.eclipse.smarthome.core.thing.ThingTypeUID;
 
 /**
- * {@link TradfriColorTempLightProxy} represents a light
- * that supports different color temperature settings.
+ * {@link TradfriDevice} represents of a single device
  *
  * @author Jan Möller - Initial contribution
  *
  */
 
 @NonNullByDefault
-public interface TradfriColorTempLightProxy extends TradfriDimmableLightProxy {
+public interface TradfriDevice extends TradfriResource {
+
+    ThingTypeUID getThingType();
+
+    boolean matches(ThingTypeUID thingType);
 
     @Nullable
-    PercentType getColorTemperature();
+    String getVendor();
 
-    void setColorTemperature(PercentType value);
+    @Nullable
+    String getModel();
+
+    @Nullable
+    String getSerialNumber();
+
+    @Nullable
+    String getFirmwareVersion();
+
+    boolean isAlive();
+
+    int getBatteryLevel();
 }

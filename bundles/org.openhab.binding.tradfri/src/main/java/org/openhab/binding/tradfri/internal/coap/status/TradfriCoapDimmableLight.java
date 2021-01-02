@@ -13,34 +13,29 @@
 package org.openhab.binding.tradfri.internal.coap.status;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 
 import com.google.gson.annotations.SerializedName;
 
 /**
- * The {@link TradfriDimmableLightSetting} class is a base Java wrapper for raw JSON data related to a dimmable light
- * bulb.
+ * The {@link TradfriCoapDimmableLight} class is a base Java wrapper for raw JSON data related to a dimmable light bulb.
  *
  * @author Jan Möller - Initial contribution
  */
 
 @NonNullByDefault
-public class TradfriDimmableLightSetting {
+public class TradfriCoapDimmableLight extends TradfriCoapDevice {
 
-    @SerializedName(value = TradfriBindingConstants.RESOURCE_INSTANCE_ID)
-    public int instanceId;
+    @SerializedName(value = TradfriBindingConstants.LIGHT)
+    private TradfriCoapDimmableLightSetting @Nullable [] lightSettings;
 
-    @SerializedName(value = TradfriBindingConstants.DIMMER)
-    private int dimmer;
-
-    @SerializedName(value = TradfriBindingConstants.ONOFF)
-    private int onOff;
-
-    public int getOnOff() {
-        return this.onOff;
-    }
-
-    public int getDimmer() {
-        return this.dimmer;
+    public @Nullable TradfriCoapDimmableLightSetting getLightSetting() {
+        TradfriCoapDimmableLightSetting[] lightSettingArray = this.lightSettings;
+        if (lightSettingArray != null && lightSettingArray.length > 0) {
+            return lightSettingArray[0];
+        } else {
+            return null;
+        }
     }
 }

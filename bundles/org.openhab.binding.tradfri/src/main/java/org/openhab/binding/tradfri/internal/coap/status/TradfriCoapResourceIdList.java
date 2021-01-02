@@ -21,36 +21,35 @@ import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * The {@link TradfriResourceIdList} class is a Java wrapper for raw JSON data
+ * The {@link TradfriCoapResourceIdList} class is a Java wrapper for raw JSON data
  * and represents a list of links to devices, groups or scenes based on the instance id.
  *
  * @author Jan Möller - Initial contribution
  */
 
 @NonNullByDefault
-public class TradfriResourceIdList {
+public class TradfriCoapResourceIdList {
     @SerializedName(value = TradfriBindingConstants.RESOURCE_INSTANCE_ID)
     private @Nullable Set<String> instanceIDs;
 
     public int size() {
+        int size = 0;
         if (this.instanceIDs != null) {
-            this.instanceIDs.size();
+            size = this.instanceIDs.size();
         }
-        return 0;
+        return size;
     }
 
     public boolean isEmpty() {
-        if (this.instanceIDs != null) {
-            this.instanceIDs.isEmpty();
-        }
-        return true;
+        return size() > 0;
     }
 
     public boolean contains(String id) {
+        boolean containsId = false;
         if (this.instanceIDs != null) {
-            this.instanceIDs.contains(id);
+            containsId = this.instanceIDs.contains(id);
         }
-        return false;
+        return containsId;
     }
 
     public @Nullable Set<String> toSet() {

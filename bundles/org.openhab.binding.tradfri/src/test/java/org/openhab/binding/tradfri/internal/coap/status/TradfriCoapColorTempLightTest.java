@@ -16,16 +16,16 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
 import org.junit.Test;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriDevice.DeviceType;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapDevice.DeviceType;
 
 import com.google.gson.Gson;
 
 /**
- * Tests for {@link TradfriDevice}.
+ * Tests for {@link TradfriCoapDevice}.
  *
  * @author Jan Möller - Initial contribution
  */
-public class TradfriColorTempLightTest {
+public class TradfriCoapColorTempLightTest {
 
     private final Gson gson = new Gson();
 
@@ -37,21 +37,21 @@ public class TradfriColorTempLightTest {
                 + "\"3311\":[{\"5850\":1," + "\"5851\":50," + "\"5717\":0,\"5711\":454," + "\"5709\":30138,"
                 + "\"5710\":26909," + "\"5706\":\"f1e0b5\"," + "\"9003\":0}]}";
 
-        TradfriColorTempLight bulb = this.gson.fromJson(json, TradfriColorTempLight.class);
+        TradfriCoapColorTempLight bulb = this.gson.fromJson(json, TradfriCoapColorTempLight.class);
 
-        // Check data of class TradfriResource
+        // Check data of class TradfriCoapResource
         assertThat(bulb.getInstanceId(), is("65553"));
         assertThat(bulb.getName(), is("Dining Table"));
         assertThat(bulb.getTimestampCreatedAt(), is(1545594514L));
 
-        // Check data of class TradfriDevice
+        // Check data of class TradfriCoapDevice
         assertThat(bulb.getDeviceType(), is(DeviceType.LIGHT));
         assertThat(bulb.getReachabilityState(), is(1));
         assertThat(bulb.getTimestampLastSeen(), is(1590864848L));
         assertThat(bulb.isAlive(), is(true));
 
-        // Check data of class TradfriDeviceInfo
-        TradfriDeviceInfo devInfo = bulb.getDeviceInfo();
+        // Check data of class TradfriCoapDeviceInfo
+        TradfriCoapDeviceInfo devInfo = bulb.getDeviceInfo();
         assertNotNull(devInfo);
         assertThat(devInfo.getVendor(), is("IKEA of Sweden"));
         assertThat(devInfo.getModel(), is("TRADFRI bulb E27 WS clear 950lm"));
@@ -60,10 +60,10 @@ public class TradfriColorTempLightTest {
         assertThat(devInfo.getPowerSource(), is(1));
         assertThat(devInfo.getBatteryLevel(), is(-1)); // value is not available
 
-        // Check data of class TradfriColorTempLight
-        TradfriColorTempLightSetting bulbInfo = bulb.getLightSetting();
+        // Check data of class TradfriCoapColorTempLight
+        TradfriCoapColorTempLightSetting bulbInfo = bulb.getLightSetting();
         assertNotNull(bulbInfo);
-        // Check data of class TradfriColorTempLightSetting
+        // Check data of class TradfriCoapColorTempLightSetting
         assertThat(bulbInfo.getOnOff(), is(1));
         assertThat(bulbInfo.getDimmer(), is(50));
         assertThat(bulbInfo.getColor(), is("f1e0b5"));

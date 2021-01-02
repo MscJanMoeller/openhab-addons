@@ -17,21 +17,23 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
- * {@link TradfriGroupProxy} represents a single group and provides:
- * - access to the data
- * - notifies about changes
- * - forwards commands
+ * {@link TradfriResourceCache} stores all proxy objects of specific
+ * single resources like a device, group or scene.
  *
  * @author Jan Möller - Initial contribution
  *
  */
 
 @NonNullByDefault
-public interface TradfriGroupProxy extends TradfriResourceProxy {
+public interface TradfriResourceCache {
 
-    @Nullable
-    TradfriSceneProxy getActiveScene();
+    public void subscribeEvent(TradfriEvent event, Object subscriber);
 
-    @Nullable
-    TradfriSceneProxy getSceneById(String id);
+    public boolean contains(String id);
+
+    public @Nullable TradfriResource get(String id);
+
+    public void refresh();
+
+    public void clear();
 }

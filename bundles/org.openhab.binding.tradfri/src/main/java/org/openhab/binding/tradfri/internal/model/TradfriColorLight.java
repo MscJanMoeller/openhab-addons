@@ -15,28 +15,21 @@ package org.openhab.binding.tradfri.internal.model;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.smarthome.core.library.types.HSBType;
 
 /**
- * {@link TradfriResourceProxy} is a base class of a single resource
- * like a device, group or scene to provide:
- * - access to the data
- * - notifies about changes
- * - forwards commands
+ * {@link TradfriColorLight} represents a light
+ * that supports full colors and color temperature settings.
  *
  * @author Jan Möller - Initial contribution
  *
  */
 
 @NonNullByDefault
-public interface TradfriResourceProxy {
+public interface TradfriColorLight extends TradfriColorTempLight {
 
     @Nullable
-    String getInstanceId();
+    HSBType getColor();
 
-    @Nullable
-    String getName();
-
-    void triggerUpdate();
-
-    void dispose();
+    void setColor(HSBType value);
 }

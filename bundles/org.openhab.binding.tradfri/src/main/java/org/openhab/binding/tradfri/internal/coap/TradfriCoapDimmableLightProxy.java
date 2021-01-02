@@ -22,10 +22,10 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.library.types.PercentType;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.openhab.binding.tradfri.internal.TradfriColor;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriDevice;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriDimmableLight;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriDimmableLightSetting;
-import org.openhab.binding.tradfri.internal.model.TradfriDimmableLightProxy;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapDevice;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapDimmableLight;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapDimmableLightSetting;
+import org.openhab.binding.tradfri.internal.model.TradfriDimmableLight;
 
 /**
  * {@link TradfriCoapDimmableLightProxy} represents a single light bulb
@@ -35,18 +35,18 @@ import org.openhab.binding.tradfri.internal.model.TradfriDimmableLightProxy;
  *
  */
 @NonNullByDefault
-public class TradfriCoapDimmableLightProxy extends TradfriCoapDeviceProxy implements TradfriDimmableLightProxy {
+public class TradfriCoapDimmableLightProxy extends TradfriCoapDeviceProxy implements TradfriDimmableLight {
 
     private static final ThingTypeUID thingType = THING_TYPE_DIMMABLE_LIGHT;
 
-    public TradfriCoapDimmableLightProxy(TradfriCoapResourceStorage resourceStorage, TradfriCoapClient coapClient,
+    public TradfriCoapDimmableLightProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient,
             ScheduledExecutorService scheduler) {
-        this(resourceStorage, thingType, coapClient, scheduler);
+        this(resourceCache, thingType, coapClient, scheduler);
     }
 
-    protected TradfriCoapDimmableLightProxy(TradfriCoapResourceStorage resourceStorage, ThingTypeUID thingType,
+    protected TradfriCoapDimmableLightProxy(TradfriCoapResourceCache resourceCache, ThingTypeUID thingType,
             TradfriCoapClient coapClient, ScheduledExecutorService scheduler) {
-        super(resourceStorage, thingType, coapClient, scheduler);
+        super(resourceCache, thingType, coapClient, scheduler);
     }
 
     @Override
@@ -70,13 +70,13 @@ public class TradfriCoapDimmableLightProxy extends TradfriCoapDeviceProxy implem
     }
 
     @Override
-    public TradfriDevice parsePayload(String coapPayload) {
-        return gson.fromJson(coapPayload, TradfriDimmableLight.class);
+    public TradfriCoapDevice parsePayload(String coapPayload) {
+        return gson.fromJson(coapPayload, TradfriCoapDimmableLight.class);
     }
 
     protected int getOnOff() {
         int onOff = -1;
-        TradfriDimmableLightSetting lightSetting = getDimmableLightSetting();
+        TradfriCoapDimmableLightSetting lightSetting = getDimmableLightSetting();
         if (lightSetting != null) {
             onOff = lightSetting.getOnOff();
         }
@@ -85,17 +85,17 @@ public class TradfriCoapDimmableLightProxy extends TradfriCoapDeviceProxy implem
 
     protected int getDimmer() {
         int dimmer = -1;
-        TradfriDimmableLightSetting lightSetting = getDimmableLightSetting();
+        TradfriCoapDimmableLightSetting lightSetting = getDimmableLightSetting();
         if (lightSetting != null) {
             dimmer = lightSetting.getDimmer();
         }
         return dimmer;
     }
 
-    protected @Nullable TradfriDimmableLightSetting getDimmableLightSetting() {
-        TradfriDimmableLightSetting lightSetting = null;
+    protected @Nullable TradfriCoapDimmableLightSetting getDimmableLightSetting() {
+        TradfriCoapDimmableLightSetting lightSetting = null;
         if (this.cachedData != null) {
-            lightSetting = ((TradfriDimmableLight) this.cachedData).getLightSetting();
+            lightSetting = ((TradfriCoapDimmableLight) this.cachedData).getLightSetting();
         }
         return lightSetting;
     }

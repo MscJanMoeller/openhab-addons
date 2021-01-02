@@ -19,17 +19,17 @@ import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * The {@link TradfriGroup} class is a Java wrapper for raw JSON data related to a group.
+ * The {@link TradfriCoapGroup} class is a Java wrapper for raw JSON data related to a group.
  *
  * @author Jan Möller - Initial contribution
  */
 
 @NonNullByDefault
-public class TradfriGroup extends TradfriResource {
+public class TradfriCoapGroup extends TradfriCoapResource {
 
     private class DeviceLinks {
         @SerializedName(value = TradfriBindingConstants.RESOURCE_LINKS)
-        private @Nullable TradfriResourceIdList resourceLinks;
+        private @Nullable TradfriCoapResourceIdList resourceLinks;
     }
 
     /**
@@ -56,7 +56,7 @@ public class TradfriGroup extends TradfriResource {
         return groupType;
     }
 
-    public @Nullable TradfriResourceIdList getMembers() {
+    public @Nullable TradfriCoapResourceIdList getMembers() {
         if (this.deviceLinks != null) {
             return this.deviceLinks.resourceLinks;
         }

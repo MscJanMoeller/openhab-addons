@@ -17,7 +17,8 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
- * {@link TradfriSceneProxy} represents of a single scene and provides:
+ * {@link TradfriResource} is a base class of a single resource
+ * like a device, group or scene to provide:
  * - access to the data
  * - notifies about changes
  * - forwards commands
@@ -27,7 +28,15 @@ import org.eclipse.jdt.annotation.Nullable;
  */
 
 @NonNullByDefault
-public interface TradfriSceneProxy extends TradfriResourceProxy {
+public interface TradfriResource {
+
     @Nullable
-    String getSceneName();
+    String getInstanceId();
+
+    @Nullable
+    String getName();
+
+    void triggerUpdate();
+
+    void dispose();
 }

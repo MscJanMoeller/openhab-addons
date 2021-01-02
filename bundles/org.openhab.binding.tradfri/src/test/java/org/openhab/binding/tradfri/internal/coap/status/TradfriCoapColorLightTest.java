@@ -16,16 +16,16 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
 import org.junit.Test;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriDevice.DeviceType;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapDevice.DeviceType;
 
 import com.google.gson.Gson;
 
 /**
- * Tests for {@link TradfriDevice}.
+ * Tests for {@link TradfriCoapDevice}.
  *
  * @author Jan Möller - Initial contribution
  */
-public class TradfriColorLightTest {
+public class TradfriCoapColorLightTest {
 
     private final Gson gson = new Gson();
 
@@ -36,21 +36,21 @@ public class TradfriColorLightTest {
                 + "\"9020\":1603481417,\"9054\":0,\"9019\":1,\"5750\":2,\"3311\":[{\"5850\":1,\"5851\":254,\"5707\":1490,"
                 + "\"5708\":61206,\"5709\":40632,\"5710\":22282,\"5706\":\"da5d41\",\"9003\":0}]}";
 
-        TradfriColorLight bulb = this.gson.fromJson(json, TradfriColorLight.class);
+        TradfriCoapColorLight bulb = this.gson.fromJson(json, TradfriCoapColorLight.class);
 
-        // Check data of class TradfriResource
+        // Check data of class TradfriCoapResource
         assertThat(bulb.getInstanceId(), is("65539"));
         assertThat(bulb.getName(), is("LR Floor Lamp"));
         assertThat(bulb.getTimestampCreatedAt(), is(1538425240L));
 
-        // Check data of class TradfriDevice
+        // Check data of class TradfriCoapDevice
         assertThat(bulb.getDeviceType(), is(DeviceType.LIGHT));
         assertThat(bulb.getReachabilityState(), is(1));
         assertThat(bulb.getTimestampLastSeen(), is(1603481417L));
         assertThat(bulb.isAlive(), is(true));
 
-        // Check data of class TradfriDeviceInfo
-        TradfriDeviceInfo devInfo = bulb.getDeviceInfo();
+        // Check data of class TradfriCoapDeviceInfo
+        TradfriCoapDeviceInfo devInfo = bulb.getDeviceInfo();
         assertNotNull(devInfo);
         assertThat(devInfo.getVendor(), is("IKEA of Sweden"));
         assertThat(devInfo.getModel(), is("TRADFRI bulb E27 CWS opal 600lm"));
@@ -59,10 +59,10 @@ public class TradfriColorLightTest {
         assertThat(devInfo.getPowerSource(), is(1));
         assertThat(devInfo.getBatteryLevel(), is(-1)); // value is not available
 
-        // Check data of class TradfriColorLight
-        TradfriColorLightSetting bulbInfo = bulb.getLightSetting();
+        // Check data of class TradfriCoapColorLight
+        TradfriCoapColorLightSetting bulbInfo = bulb.getLightSetting();
         assertNotNull(bulbInfo);
-        // Check data of class TradfriColorLightSetting
+        // Check data of class TradfriCoapColorLightSetting
         assertThat(bulbInfo.getOnOff(), is(1));
         assertThat(bulbInfo.getDimmer(), is(254));
         assertThat(bulbInfo.getColor(), is("da5d41"));

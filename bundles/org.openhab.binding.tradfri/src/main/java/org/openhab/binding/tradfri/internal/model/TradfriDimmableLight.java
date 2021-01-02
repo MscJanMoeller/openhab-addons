@@ -14,36 +14,24 @@
 package org.openhab.binding.tradfri.internal.model;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
-import org.eclipse.smarthome.core.thing.ThingTypeUID;
+import org.eclipse.smarthome.core.library.types.PercentType;
 
 /**
- * {@link TradfriDeviceProxy} represents of a single device
+ * {@link TradfriDimmableLight} represents a light
+ * that has continuous brightness control.
  *
  * @author Jan Möller - Initial contribution
  *
  */
 
 @NonNullByDefault
-public interface TradfriDeviceProxy extends TradfriResourceProxy {
+public interface TradfriDimmableLight extends TradfriDevice {
 
-    ThingTypeUID getThingType();
+    boolean isOn();
 
-    boolean matches(ThingTypeUID thingType);
+    boolean isOff();
 
-    @Nullable
-    String getVendor();
+    PercentType getBrightness();
 
-    @Nullable
-    String getModel();
-
-    @Nullable
-    String getSerialNumber();
-
-    @Nullable
-    String getFirmwareVersion();
-
-    boolean isAlive();
-
-    int getBatteryLevel();
+    void setBrightness(PercentType value);
 }

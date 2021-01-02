@@ -19,13 +19,13 @@ import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * The {@link TradfriGateway} class is a Java wrapper for raw JSON data related to the Tradfri gateway.
+ * The {@link TradfriCoapGateway} class is a Java wrapper for raw JSON data related to the Tradfri gateway.
  *
  * @author Jan Möller - Initial contribution
  */
 
 @NonNullByDefault
-public class TradfriGateway {
+public class TradfriCoapGateway {
 
     @SerializedName(value = TradfriBindingConstants.ALEXA_PAIR_STATUS)
     private int alexaPairStatus;

@@ -19,23 +19,31 @@ import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * The {@link TradfriDimmableLight} class is a base Java wrapper for raw JSON data related to a dimmable light bulb.
+ * The {@link TradfriCoapResource} class is a Java wrapper for raw JSON data related to devices, groups and scenes.
  *
  * @author Jan Möller - Initial contribution
  */
 
 @NonNullByDefault
-public class TradfriDimmableLight extends TradfriDevice {
+public class TradfriCoapResource {
 
-    @SerializedName(value = TradfriBindingConstants.LIGHT)
-    private TradfriDimmableLightSetting @Nullable [] lightSettings;
+    @SerializedName(value = TradfriBindingConstants.RESOURCE_NAME)
+    private @Nullable String name;
+    @SerializedName(value = TradfriBindingConstants.RESOURCE_TIMESTAMP_CREATED_AT)
+    private long timestampCreatedAt;
+    @SerializedName(value = TradfriBindingConstants.RESOURCE_INSTANCE_ID)
+    private @Nullable String instanceId;
 
-    public @Nullable TradfriDimmableLightSetting getLightSetting() {
-        TradfriDimmableLightSetting[] lightSettingArray = this.lightSettings;
-        if (lightSettingArray != null && lightSettingArray.length > 0) {
-            return lightSettingArray[0];
-        } else {
-            return null;
-        }
+    public @Nullable String getName() {
+        return name;
     }
+
+    public long getTimestampCreatedAt() {
+        return timestampCreatedAt;
+    }
+
+    public @Nullable String getInstanceId() {
+        return instanceId;
+    }
+
 }

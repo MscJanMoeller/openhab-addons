@@ -19,31 +19,24 @@ import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * The {@link TradfriResource} class is a Java wrapper for raw JSON data related to devices, groups and scenes.
+ * The {@link TradfriCoapColorLight} class is a Java wrapper for raw JSON data related to a light bulb with
+ * color temperature settings and full colors support.
  *
  * @author Jan Möller - Initial contribution
  */
 
 @NonNullByDefault
-public class TradfriResource {
+public class TradfriCoapColorLight extends TradfriCoapDevice {
 
-    @SerializedName(value = TradfriBindingConstants.RESOURCE_NAME)
-    private @Nullable String name;
-    @SerializedName(value = TradfriBindingConstants.RESOURCE_TIMESTAMP_CREATED_AT)
-    private long timestampCreatedAt;
-    @SerializedName(value = TradfriBindingConstants.RESOURCE_INSTANCE_ID)
-    private @Nullable String instanceId;
+    @SerializedName(value = TradfriBindingConstants.LIGHT)
+    private TradfriCoapColorLightSetting @Nullable [] lightSettings;
 
-    public @Nullable String getName() {
-        return name;
+    public @Nullable TradfriCoapColorLightSetting getLightSetting() {
+        TradfriCoapColorLightSetting[] lightSettingArray = this.lightSettings;
+        if (lightSettingArray != null && lightSettingArray.length > 0) {
+            return lightSettingArray[0];
+        } else {
+            return null;
+        }
     }
-
-    public long getTimestampCreatedAt() {
-        return timestampCreatedAt;
-    }
-
-    public @Nullable String getInstanceId() {
-        return instanceId;
-    }
-
 }

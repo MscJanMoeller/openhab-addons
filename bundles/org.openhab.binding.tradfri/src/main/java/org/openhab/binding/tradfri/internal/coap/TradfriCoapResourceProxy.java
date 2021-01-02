@@ -22,8 +22,8 @@ import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriResource;
-import org.openhab.binding.tradfri.internal.model.TradfriResourceProxy;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapResource;
+import org.openhab.binding.tradfri.internal.model.TradfriResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +40,7 @@ import com.google.gson.JsonSyntaxException;
  */
 
 @NonNullByDefault
-public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriResourceProxy {
+public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriResource {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -51,28 +51,28 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
     private final TradfriCoapClient coapClient;
     private @Nullable CoapObserveRelation observeRelation;
 
-    protected final TradfriCoapResourceStorage resourceStorage;
+    protected final TradfriCoapResourceCache resourceCache;
 
-    protected @Nullable TradfriResource cachedData;
+    protected @Nullable TradfriCoapResource cachedData;
 
-    protected TradfriCoapResourceProxy(TradfriCoapResourceStorage resourceStorage, TradfriCoapClient coapClient,
+    protected TradfriCoapResourceProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient,
             ScheduledExecutorService scheduler) {
-        this.resourceStorage = resourceStorage;
+        this.resourceCache = resourceCache;
         this.coapClient = coapClient;
         this.scheduler = scheduler;
     }
 
-    protected TradfriCoapResourceProxy(TradfriCoapResourceStorage resourceStorage, String uri, Endpoint endpoint,
+    protected TradfriCoapResourceProxy(TradfriCoapResourceCache resourceCache, String uri, Endpoint endpoint,
             ScheduledExecutorService scheduler) {
-        this.resourceStorage = resourceStorage;
+        this.resourceCache = resourceCache;
         this.coapClient = new TradfriCoapClient(uri);
         this.coapClient.setEndpoint(endpoint);
         this.scheduler = scheduler;
     }
 
-    public void initialize(TradfriResource data) {
+    public void initialize(TradfriCoapResource data) {
         this.cachedData = data;
-        this.resourceStorage.add(this);
+        this.resourceCache.add(this);
         // Start observation of resource updates
         observe();
     }
@@ -101,7 +101,7 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
         this.coapClient.get(this);
     }
 
-    public abstract TradfriResource parsePayload(String coapPayload) throws JsonSyntaxException;
+    public abstract TradfriCoapResource parsePayload(String coapPayload) throws JsonSyntaxException;
 
     @Override
     public void onLoad(@Nullable CoapResponse response) {
@@ -149,9 +149,9 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
         }, 1, TimeUnit.SECONDS);
     }
 
-    protected void updateData(TradfriResource data) {
+    protected void updateData(TradfriCoapResource data) {
         this.cachedData = data;
-        this.resourceStorage.updated(this);
+        this.resourceCache.updated(this);
     }
 
 }

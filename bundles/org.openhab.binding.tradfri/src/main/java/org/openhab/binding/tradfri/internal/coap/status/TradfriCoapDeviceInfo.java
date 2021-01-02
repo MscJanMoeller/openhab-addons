@@ -19,13 +19,13 @@ import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * The {@link TradfriDeviceInfo} class is a Java wrapper for raw JSON data related to specific devices info.
+ * The {@link TradfriCoapDeviceInfo} class is a Java wrapper for raw JSON data related to specific devices info.
  *
  * @author Jan Möller - Initial contribution
  */
 
 @NonNullByDefault
-public class TradfriDeviceInfo {
+public class TradfriCoapDeviceInfo {
 
     @SerializedName(value = TradfriBindingConstants.DEVICE_VENDOR)
     private @Nullable String vendor;

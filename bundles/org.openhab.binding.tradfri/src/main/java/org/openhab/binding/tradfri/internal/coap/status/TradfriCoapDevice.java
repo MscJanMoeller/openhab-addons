@@ -19,13 +19,13 @@ import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * The {@link TradfriDevice} class is a Java wrapper for raw JSON data related to a device.
+ * The {@link TradfriCoapDevice} class is a Java wrapper for raw JSON data related to a device.
  *
  * @author Jan Möller - Initial contribution
  */
 
 @NonNullByDefault
-public class TradfriDevice extends TradfriResource {
+public class TradfriCoapDevice extends TradfriCoapResource {
 
     public enum DeviceType {
         SWITCH,
@@ -51,7 +51,7 @@ public class TradfriDevice extends TradfriResource {
     private int currentOtaUpdateState;
 
     @SerializedName(value = TradfriBindingConstants.DEVICE)
-    private @Nullable TradfriDeviceInfo deviceInfo;
+    private @Nullable TradfriCoapDeviceInfo deviceInfo;
 
     public DeviceType getDeviceType() {
         switch (deviceType) {
@@ -85,7 +85,7 @@ public class TradfriDevice extends TradfriResource {
         return currentOtaUpdateState;
     }
 
-    public @Nullable TradfriDeviceInfo getDeviceInfo() {
+    public @Nullable TradfriCoapDeviceInfo getDeviceInfo() {
         return deviceInfo;
     }
 

@@ -30,9 +30,9 @@ import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import org.openhab.binding.tradfri.internal.config.TradfriGroupConfig;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
-import org.openhab.binding.tradfri.internal.model.TradfriGroupProxy;
-import org.openhab.binding.tradfri.internal.model.TradfriResourceProxy;
-import org.openhab.binding.tradfri.internal.model.TradfriSceneProxy;
+import org.openhab.binding.tradfri.internal.model.TradfriGroup;
+import org.openhab.binding.tradfri.internal.model.TradfriResource;
+import org.openhab.binding.tradfri.internal.model.TradfriScene;
 
 /**
  * The {@link TradfriGroupHandler} is responsible for handling commands of individual groups.
@@ -69,10 +69,10 @@ public class TradfriGroupHandler extends TradfriResourceHandler {
     }
 
     @TradfriEventHandler(TradfriEvent.RESOURCE_UPDATED)
-    public void onUpdate(TradfriGroupProxy proxy) {
+    public void onUpdate(TradfriGroup proxy) {
         updateOnlineStatus(proxy);
 
-        TradfriSceneProxy activeScene = proxy.getActiveScene();
+        TradfriScene activeScene = proxy.getActiveScene();
         if (activeScene != null) {
             String name = activeScene.getSceneName();
             if (name == null) {
@@ -94,7 +94,7 @@ public class TradfriGroupHandler extends TradfriResourceHandler {
         if (gateway != null && gateway.getStatus() == ThingStatus.ONLINE) {
             if (command instanceof RefreshType) {
                 logger.debug("Refreshing channel {}", channelUID);
-                TradfriResourceProxy proxy = getProxy();
+                TradfriResource proxy = getProxy();
                 if (proxy != null) {
                     proxy.triggerUpdate();
                 } else {
@@ -158,9 +158,9 @@ public class TradfriGroupHandler extends TradfriResourceHandler {
 
     private @Nullable String getSceneName(String sceneId) {
         String name = null;
-        TradfriGroupProxy proxy = (TradfriGroupProxy) getProxy();
+        TradfriGroup proxy = (TradfriGroup) getProxy();
         if (proxy != null) {
-            TradfriSceneProxy sceneProxy = proxy.getSceneById(sceneId);
+            TradfriScene sceneProxy = proxy.getSceneById(sceneId);
             if (sceneProxy != null) {
                 name = sceneProxy.getSceneName();
                 if (name == null) {

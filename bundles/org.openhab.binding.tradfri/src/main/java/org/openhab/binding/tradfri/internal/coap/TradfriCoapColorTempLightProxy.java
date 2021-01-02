@@ -22,11 +22,11 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.library.types.PercentType;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.openhab.binding.tradfri.internal.TradfriColor;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriColorTempLight;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriColorTempLightSetting;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriDevice;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriDimmableLightSetting;
-import org.openhab.binding.tradfri.internal.model.TradfriColorTempLightProxy;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapColorTempLight;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapColorTempLightSetting;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapDevice;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapDimmableLightSetting;
+import org.openhab.binding.tradfri.internal.model.TradfriColorTempLight;
 
 /**
  * {@link TradfriCoapColorTempLightProxy} represents a single light bulb
@@ -37,13 +37,13 @@ import org.openhab.binding.tradfri.internal.model.TradfriColorTempLightProxy;
  */
 @NonNullByDefault
 public class TradfriCoapColorTempLightProxy extends TradfriCoapDimmableLightProxy
-        implements TradfriColorTempLightProxy {
+        implements TradfriColorTempLight {
 
     private static final ThingTypeUID thingType = THING_TYPE_COLOR_TEMP_LIGHT;
 
-    public TradfriCoapColorTempLightProxy(TradfriCoapResourceStorage resourceStorage, TradfriCoapClient coapClient,
+    public TradfriCoapColorTempLightProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient,
             ScheduledExecutorService scheduler) {
-        super(resourceStorage, thingType, coapClient, scheduler);
+        super(resourceCache, thingType, coapClient, scheduler);
     }
 
     @Override
@@ -65,22 +65,22 @@ public class TradfriCoapColorTempLightProxy extends TradfriCoapDimmableLightProx
     }
 
     @Override
-    public TradfriDevice parsePayload(String coapPayload) {
-        return gson.fromJson(coapPayload, TradfriColorTempLight.class);
+    public TradfriCoapDevice parsePayload(String coapPayload) {
+        return gson.fromJson(coapPayload, TradfriCoapColorTempLight.class);
     }
 
     @Override
-    protected @Nullable TradfriDimmableLightSetting getDimmableLightSetting() {
-        TradfriDimmableLightSetting lightSetting = null;
+    protected @Nullable TradfriCoapDimmableLightSetting getDimmableLightSetting() {
+        TradfriCoapDimmableLightSetting lightSetting = null;
         if (this.cachedData != null) {
-            lightSetting = ((TradfriColorTempLight) this.cachedData).getLightSetting();
+            lightSetting = ((TradfriCoapColorTempLight) this.cachedData).getLightSetting();
         }
         return lightSetting;
     }
 
     private int getColorX() {
         int colorX = -1;
-        TradfriColorTempLightSetting lightSetting = getColorTempLightSetting();
+        TradfriCoapColorTempLightSetting lightSetting = getColorTempLightSetting();
         if (lightSetting != null) {
             colorX = lightSetting.getColorX();
         }
@@ -89,17 +89,17 @@ public class TradfriCoapColorTempLightProxy extends TradfriCoapDimmableLightProx
 
     private int getColorY() {
         int colorY = -1;
-        TradfriColorTempLightSetting lightSetting = getColorTempLightSetting();
+        TradfriCoapColorTempLightSetting lightSetting = getColorTempLightSetting();
         if (lightSetting != null) {
             colorY = lightSetting.getColorY();
         }
         return colorY;
     }
 
-    private @Nullable TradfriColorTempLightSetting getColorTempLightSetting() {
-        TradfriColorTempLightSetting lightSetting = null;
+    private @Nullable TradfriCoapColorTempLightSetting getColorTempLightSetting() {
+        TradfriCoapColorTempLightSetting lightSetting = null;
         if (this.cachedData != null) {
-            lightSetting = ((TradfriColorTempLight) this.cachedData).getLightSetting();
+            lightSetting = ((TradfriCoapColorTempLight) this.cachedData).getLightSetting();
         }
         return lightSetting;
     }

@@ -20,8 +20,8 @@ import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.openhab.binding.tradfri.internal.config.TradfriDeviceConfig;
 import org.openhab.binding.tradfri.internal.model.TradfriDeviceData;
-import org.openhab.binding.tradfri.internal.model.TradfriDeviceProxy;
-import org.openhab.binding.tradfri.internal.model.TradfriResourceProxy;
+import org.openhab.binding.tradfri.internal.model.TradfriDevice;
+import org.openhab.binding.tradfri.internal.model.TradfriResource;
 
 /**
  * The {@link TradfriDeviceHandler} is the abstract base class for individual device handlers.
@@ -52,7 +52,7 @@ public abstract class TradfriDeviceHandler extends TradfriResourceHandler {
         this.id = null;
     }
 
-    protected void onUpdate(TradfriDeviceProxy device) {
+    protected void onUpdate(TradfriDevice device) {
         updateOnlineStatus(device);
         updateStatus(device.isAlive() ? ThingStatus.ONLINE : ThingStatus.OFFLINE);
         updateDeviceProperties(device);
@@ -63,12 +63,12 @@ public abstract class TradfriDeviceHandler extends TradfriResourceHandler {
         return this.id != null ? this.id.toString() : null;
     }
 
-    protected boolean updateDeviceStatus(TradfriResourceProxy proxy) {
+    protected boolean updateDeviceStatus(TradfriResource proxy) {
 
         boolean success = false;
 
-        if (proxy instanceof TradfriDeviceProxy) {
-            TradfriDeviceProxy device = (TradfriDeviceProxy) proxy;
+        if (proxy instanceof TradfriDevice) {
+            TradfriDevice device = (TradfriDevice) proxy;
 
             // Check match of thing type
             if (getThing().getThingTypeUID().equals(device.getThingType())) {
@@ -87,7 +87,7 @@ public abstract class TradfriDeviceHandler extends TradfriResourceHandler {
         return success;
     }
 
-    private void updateDeviceProperties(TradfriDeviceProxy proxy) {
+    private void updateDeviceProperties(TradfriDevice proxy) {
         String vendor = proxy.getVendor();
         if (vendor != null) {
             getThing().setProperty(PROPERTY_VENDOR, vendor);
