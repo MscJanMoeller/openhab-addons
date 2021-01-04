@@ -54,7 +54,7 @@ import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapGateway;
 import org.openhab.binding.tradfri.internal.config.TradfriGatewayConfig;
 import org.openhab.binding.tradfri.internal.discovery.TradfriDiscoveryService;
 import org.openhab.binding.tradfri.internal.model.TradfriDevice;
-import org.openhab.binding.tradfri.internal.model.TradfriEvent;
+import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
 import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriGroup;
 import org.openhab.binding.tradfri.internal.model.TradfriResourceCache;
@@ -309,9 +309,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         requestGatewayInfo();
 
         // Connect TradfriDiscoveryService with resource storage to get events for devices and groups
-        this.resourceCache.subscribeEvent(TradfriEvent.RESOURCE_ADDED, this);
-        this.resourceCache.subscribeEvent(TradfriEvent.RESOURCE_UPDATED, this);
-        this.resourceCache.subscribeEvent(TradfriEvent.RESOURCE_REMOVED, this);
+        this.resourceCache.subscribeEvent(this);
 
         String baseUri = getGatewayURI();
         Endpoint endpoint = getEndpoint();
@@ -461,16 +459,8 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         return this.endpoint;
     }
 
-    @TradfriEventHandler(TradfriEvent.RESOURCE_ADDED)
-    public void onDeviceAdded(TradfriDevice proxy) {
-        updateOnlineStatus();
-        if (mustNotifyDiscoveryService()) {
-            this.discoveryService.onDeviceUpdated(getThing(), proxy);
-        }
-    }
-
-    @TradfriEventHandler(TradfriEvent.RESOURCE_UPDATED)
-    public void onDeviceUpdated(TradfriDevice proxy) {
+    @TradfriEventHandler({ EType.RESOURCE_ADDED, EType.RESOURCE_UPDATED })
+    public void onDeviceAddedOrUpdated(TradfriDevice proxy) {
         updateOnlineStatus();
         if (mustNotifyDiscoveryService()) {
             // TODO inform discovery service only if relevant data changed (like name of device)
@@ -478,7 +468,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         }
     }
 
-    @TradfriEventHandler(TradfriEvent.RESOURCE_UPDATED)
+    @TradfriEventHandler({ EType.RESOURCE_ADDED, EType.RESOURCE_UPDATED })
     public void onGroupUpdated(TradfriGroup proxy) {
         updateOnlineStatus();
         if (mustNotifyDiscoveryService()) {
@@ -487,7 +477,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         }
     }
 
-    @TradfriEventHandler(TradfriEvent.RESOURCE_REMOVED)
+    @TradfriEventHandler(EType.RESOURCE_REMOVED)
     public void onGroupRemoved(TradfriGroup proxy) {
         if (mustNotifyDiscoveryService()) {
             this.discoveryService.onGroupRemoved(getThing(), proxy);
@@ -519,7 +509,8 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
                             response.getResponseText());
                     if (response.isSuccess()) {
                         try {
-                            TradfriCoapGateway gateway = gson.fromJson(response.getResponseText(), TradfriCoapGateway.class);
+                            TradfriCoapGateway gateway = gson.fromJson(response.getResponseText(),
+                                    TradfriCoapGateway.class);
                             getThing().setProperty(Thing.PROPERTY_FIRMWARE_VERSION, gateway.getVersion());
                             updateOnlineStatus();
                         } catch (JsonParseException ex) {

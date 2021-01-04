@@ -27,6 +27,7 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent;
+import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,11 +108,11 @@ public class TradfriResourceListObserver implements CoapCallback {
             Set<String> removedResources = cachedResources.stream().filter(r -> !currentResources.contains(r))
                     .collect(Collectors.toSet());
 
-            addedResources.forEach(
-                    id -> updateHandler.forEach(listener -> listener.onUpdate(TradfriEvent.RESOURCE_ADDED, id)));
+            addedResources.forEach(id -> updateHandler
+                    .forEach(listener -> listener.onUpdate(TradfriEvent.from(id, EType.RESOURCE_ADDED))));
 
-            removedResources.forEach(
-                    id -> updateHandler.forEach(listener -> listener.onUpdate(TradfriEvent.RESOURCE_REMOVED, id)));
+            removedResources.forEach(id -> updateHandler
+                    .forEach(listener -> listener.onUpdate(TradfriEvent.from(id, EType.RESOURCE_REMOVED))));
 
             this.cachedResources = currentResources;
         }
@@ -127,8 +128,8 @@ public class TradfriResourceListObserver implements CoapCallback {
     public synchronized void dispose() {
         updateCounter = 0;
 
-        this.cachedResources
-                .forEach(id -> updateHandler.forEach(listener -> listener.onUpdate(TradfriEvent.RESOURCE_REMOVED, id)));
+        this.cachedResources.forEach(id -> updateHandler
+                .forEach(listener -> listener.onUpdate(TradfriEvent.from(id, EType.RESOURCE_REMOVED))));
 
         this.cachedResources.clear();
         this.updateHandler.clear();

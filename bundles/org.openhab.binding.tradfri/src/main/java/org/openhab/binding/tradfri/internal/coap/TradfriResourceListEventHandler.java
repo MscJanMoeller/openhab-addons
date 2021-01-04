@@ -28,8 +28,8 @@ public interface TradfriResourceListEventHandler {
     /**
      * This method is called when a resource list was updated.
      *
-     * @param event defines whether a resource was added or removed
-     * @param instanceId The instance id of the resource
+     * @param event provides details of the event e.g. whether resource was added or removed
+     *            and the related instance id of the resource
      */
-    public void onUpdate(TradfriEvent event, String instanceId);
+    public void onUpdate(TradfriEvent event);
 }

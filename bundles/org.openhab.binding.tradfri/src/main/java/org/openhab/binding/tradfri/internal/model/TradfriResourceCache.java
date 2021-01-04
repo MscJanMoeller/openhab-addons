@@ -15,9 +15,10 @@ package org.openhab.binding.tradfri.internal.model;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
 
 /**
- * {@link TradfriResourceCache} stores all proxy objects of specific
+ * {@link TradfriResourceCache} stores all objects of specific
  * single resources like a device, group or scene.
  *
  * @author Jan Möller - Initial contribution
@@ -27,7 +28,15 @@ import org.eclipse.jdt.annotation.Nullable;
 @NonNullByDefault
 public interface TradfriResourceCache {
 
-    public void subscribeEvent(TradfriEvent event, Object subscriber);
+    public void subscribeEvent(Object subscriber);
+
+    public void subscribeEvent(String id, Object subscriber);
+
+    public void subscribeEvent(EType eventType, Object subscriber);
+
+    public void subscribeEvent(String id, EType eventType, Object subscriber);
+
+    public void unsubscribeEvent(Object subscriber);
 
     public boolean contains(String id);
 

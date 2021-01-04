@@ -88,16 +88,16 @@ public abstract class TradfriResourceHandler extends BaseThingHandler {
         return this.resourceCache;
     }
 
-    protected @Nullable TradfriResource getProxy() {
-        TradfriResource proxy = null;
+    protected @Nullable TradfriResource getResource() {
+        TradfriResource resource = null;
         String id = getResourceId();
         if (id != null && this.resourceCache != null) {
-            proxy = this.resourceCache.get(id);
+            resource = this.resourceCache.get(id);
         }
-        return proxy;
+        return resource;
     }
 
-    protected void updateOnlineStatus(TradfriResource proxy) {
+    protected void updateOnlineStatus(TradfriResource resource) {
         ThingStatus status = getThing().getStatus();
         if (status != ThingStatus.ONLINE) {
             updateStatus(ThingStatus.ONLINE);

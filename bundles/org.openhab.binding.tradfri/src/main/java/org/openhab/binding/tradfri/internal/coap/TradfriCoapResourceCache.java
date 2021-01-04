@@ -17,6 +17,8 @@ import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -26,6 +28,7 @@ import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent;
+import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
 import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriResource;
 import org.openhab.binding.tradfri.internal.model.TradfriResourceCache;
@@ -57,8 +60,7 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
     public TradfriCoapResourceCache() {
 
         this.proxyMap = new ConcurrentHashMap<String, TradfriCoapResourceProxy>();
-        this.eventHandlerMap = new ConcurrentHashMap<TradfriEvent, Set<WeakReference<Object>>>(
-                TradfriEvent.values().length);
+        this.eventHandlerMap = new ConcurrentHashMap<TradfriEvent, Set<WeakReference<Object>>>();
     }
 
     public boolean isInitialized() {
@@ -79,11 +81,31 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
     }
 
     @Override
-    public void subscribeEvent(TradfriEvent event, Object subscriber) {
-        if (!eventHandlerMap.containsKey(event)) {
-            eventHandlerMap.put(event, new CopyOnWriteArraySet<WeakReference<Object>>());
-        }
-        eventHandlerMap.get(event).add(new WeakReference<>(subscriber));
+    public void subscribeEvent(Object subscriber) {
+        Optional.empty();
+        subscribe(TradfriEvent.empty(), subscriber);
+    }
+
+    @Override
+    public void subscribeEvent(String id, Object subscriber) {
+        // TODO: behavior if resource with id was already added but event subscription was not available
+        subscribe(TradfriEvent.from(id), subscriber);
+    }
+
+    @Override
+    public void subscribeEvent(EType event, Object subscriber) {
+        subscribe(TradfriEvent.from(event), subscriber);
+    }
+
+    @Override
+    public void subscribeEvent(String id, EType event, Object subscriber) {
+        // TODO: behavior if resource with id was already added but event subscription was not available
+        subscribe(TradfriEvent.from(id, event), subscriber);
+    }
+
+    @Override
+    public void unsubscribeEvent(Object subscriber) {
+
     }
 
     @Override
@@ -148,10 +170,16 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
     }
 
     public void createSceneProxy(String groupId, String sceneId) {
-        if (this.proxyFactory != null) {
-            this.proxyFactory.createSceneProxy(groupId, sceneId);
-        } else {
-            // TODO: log error message
+        if (!contains(sceneId)) {
+            if (this.proxyFactory != null) {
+                /**
+                 * Create new proxy for added scene
+                 * New proxy adds itself automatically to the resource storage
+                 */
+                this.proxyFactory.createSceneProxy(groupId, sceneId);
+            } else {
+                logger.error("Unexpected initializaion error. Scene with ID {} couldn't be added.", sceneId);
+            }
         }
     }
 
@@ -162,41 +190,58 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
             throw new IllegalArgumentException("Instance ID of argument 'proxy' must not be null");
         }
 
-        if (!this.proxyMap.containsKey(id)) {
+        if (!contains(id)) {
             this.proxyMap.put(id, proxy);
-            publish(TradfriEvent.RESOURCE_ADDED, proxy);
-        } else {
-            // TODO error handling
+            publish(EType.RESOURCE_ADDED, proxy);
         }
     }
 
     public void updated(TradfriResource proxy) {
-        publish(TradfriEvent.RESOURCE_UPDATED, proxy);
+        publish(EType.RESOURCE_UPDATED, proxy);
     }
 
     public @Nullable TradfriCoapResourceProxy remove(String id) {
         TradfriCoapResourceProxy proxy = get(id);
         if (proxy != null) {
             this.proxyMap.remove(id);
-            publish(TradfriEvent.RESOURCE_REMOVED, proxy);
+            publish(EType.RESOURCE_REMOVED, proxy);
         }
         return proxy;
     }
 
-    private void publish(TradfriEvent event, TradfriResource resource) {
-        eventHandlerMap.get(event).parallelStream().forEach((subscriberRef) -> {
-            Object subscriberObj = subscriberRef.get();
-
-            for (final Method method : subscriberObj.getClass().getDeclaredMethods()) {
-                TradfriEventHandler annotation = method.getAnnotation(TradfriEventHandler.class);
-                if (annotation != null && event == annotation.value()) {
-                    deliverEvent(subscriberObj, method, resource);
-                }
-            }
-        });
+    private void subscribe(TradfriEvent event, Object subscriber) {
+        if (!eventHandlerMap.containsKey(event)) {
+            eventHandlerMap.put(event, new CopyOnWriteArraySet<WeakReference<Object>>());
+        }
+        eventHandlerMap.get(event).add(new WeakReference<>(subscriber));
     }
 
-    private <T, R extends TradfriResource> void deliverEvent(T subscriber, Method method, R resource) {
+    private void publish(EType eventType, TradfriResource resource) {
+        final String id = resource.getInstanceId();
+        if (id != null) {
+            final TradfriEvent event = TradfriEvent.from(id, eventType);
+            this.eventHandlerMap.entrySet().forEach((entry) -> {
+                if (entry.getKey().covers(event)) {
+                    entry.getValue().parallelStream().forEach((subscriberRef) -> {
+                        Object subscriberObj = subscriberRef.get();
+                        for (final Method method : subscriberObj.getClass().getDeclaredMethods()) {
+                            TradfriEventHandler annotation = method.getAnnotation(TradfriEventHandler.class);
+                            EType[] declaredETypes = annotation.value();
+                            if (annotation != null && (declaredETypes.length == 0 || Arrays.stream(declaredETypes)
+                                    .anyMatch(declaredEType -> declaredEType == eventType))) {
+                                deliverEvent(subscriberObj, method, TradfriEvent.from(id, eventType), resource);
+                            }
+                        }
+                    });
+                }
+
+            });
+        }
+
+    }
+
+    private <T, R extends TradfriResource> void deliverEvent(T subscriber, Method method, TradfriEvent event,
+            R resource) {
         try {
             boolean methodFound = false;
             for (final Class<?> paramClass : method.getParameterTypes()) {
@@ -207,7 +252,7 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
             }
             if (methodFound) {
                 method.setAccessible(true);
-                method.invoke(subscriber, resource);
+                method.invoke(subscriber, event, resource);
             }
         } catch (Exception e) {
             // TODO error handling
@@ -250,34 +295,44 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
         }
     }
 
-    private synchronized void handleDeviceListChange(TradfriEvent event, String id) {
+    private synchronized void handleDeviceListChange(TradfriEvent event) {
+        final String id = event.getId();
         // A device was added.
-        if (event == TradfriEvent.RESOURCE_ADDED) {
-            createDeviceProxy(id);
+        if (event.is(EType.RESOURCE_ADDED)) {
+            if (id != null) {
+                createDeviceProxy(id);
+            }
             // A device was removed
-        } else if (event == TradfriEvent.RESOURCE_REMOVED) {
-            // Remove proxy of removed device
-            TradfriResource proxy = remove(id);
-            // TODO: error handling if there is a configured thing for that proxy
-            if (proxy != null) {
-                // Destroy proxy object
-                proxy.dispose();
+        } else if (event.is(EType.RESOURCE_REMOVED)) {
+            if (id != null) {
+                // Remove proxy of removed device
+                TradfriResource proxy = remove(id);
+                // TODO: error handling if there is a configured thing for that proxy
+                if (proxy != null) {
+                    // Destroy proxy object
+                    proxy.dispose();
+                }
             }
         }
     }
 
-    private synchronized void handleGroupListChange(TradfriEvent event, String id) {
+    private synchronized void handleGroupListChange(TradfriEvent event) {
+        final String id = event.getId();
         // A group was added
-        if (event == TradfriEvent.RESOURCE_ADDED) {
-            createGroupProxy(id);
+        if (event.is(EType.RESOURCE_ADDED)) {
+            if (id != null) {
+                createGroupProxy(id);
+            }
             // A group was removed
-        } else if (event == TradfriEvent.RESOURCE_REMOVED) {
-            // Remove proxy of removed group
-            TradfriResource proxy = remove(id);
-            // TODO: error handling if there is a configured thing for that proxy
-            if (proxy != null) {
-                // Destroy proxy object
-                proxy.dispose();
+        } else if (event.is(EType.RESOURCE_REMOVED)) {
+            if (id != null) {
+                // Remove proxy of removed group
+                TradfriResource proxy = remove(id);
+                // TODO: error handling if there is a configured thing for that proxy
+                if (proxy != null) {
+                    // Destroy proxy object
+                    proxy.dispose();
+                }
             }
         }
     }

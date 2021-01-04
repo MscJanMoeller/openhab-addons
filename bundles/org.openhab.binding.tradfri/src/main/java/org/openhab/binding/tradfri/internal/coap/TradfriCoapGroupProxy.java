@@ -21,6 +21,7 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapGroup;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent;
+import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
 import org.openhab.binding.tradfri.internal.model.TradfriGroup;
 import org.openhab.binding.tradfri.internal.model.TradfriResource;
 import org.openhab.binding.tradfri.internal.model.TradfriScene;
@@ -98,18 +99,21 @@ public class TradfriCoapGroupProxy extends TradfriCoapResourceProxy implements T
         return gson.fromJson(coapPayload, TradfriCoapGroup.class);
     }
 
-    private synchronized void handleSceneListChange(TradfriEvent event, String id) {
-        if (event == TradfriEvent.RESOURCE_ADDED) {
-            String groupId = getInstanceId();
-            if (groupId != null) {
-                this.resourceCache.createSceneProxy(groupId, id);
+    private synchronized void handleSceneListChange(TradfriEvent event) {
+        final String sceneId = event.getId();
+        if (event.is(EType.RESOURCE_ADDED)) {
+            final String groupId = getInstanceId();
+            if (groupId != null && sceneId != null) {
+                this.resourceCache.createSceneProxy(groupId, sceneId);
             }
-        } else if (event == TradfriEvent.RESOURCE_REMOVED) {
-            // Remove proxy of removed device
-            TradfriCoapResourceProxy proxy = this.resourceCache.remove(id);
-            if (proxy != null) {
-                // Destroy proxy object
-                proxy.dispose();
+        } else if (event.is(EType.RESOURCE_REMOVED)) {
+            if (sceneId != null) {
+                // Remove proxy of removed device
+                TradfriCoapResourceProxy proxy = this.resourceCache.remove(sceneId);
+                if (proxy != null) {
+                    // Destroy proxy object
+                    proxy.dispose();
+                }
             }
         }
     }

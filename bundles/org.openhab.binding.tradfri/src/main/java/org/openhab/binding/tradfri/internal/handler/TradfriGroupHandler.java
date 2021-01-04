@@ -28,7 +28,7 @@ import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
 import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import org.openhab.binding.tradfri.internal.config.TradfriGroupConfig;
-import org.openhab.binding.tradfri.internal.model.TradfriEvent;
+import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
 import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriGroup;
 import org.openhab.binding.tradfri.internal.model.TradfriResource;
@@ -68,7 +68,7 @@ public class TradfriGroupHandler extends TradfriResourceHandler {
         return this.id != null ? this.id : null;
     }
 
-    @TradfriEventHandler(TradfriEvent.RESOURCE_UPDATED)
+    @TradfriEventHandler(EType.RESOURCE_UPDATED)
     public void onUpdate(TradfriGroup proxy) {
         updateOnlineStatus(proxy);
 
@@ -94,7 +94,7 @@ public class TradfriGroupHandler extends TradfriResourceHandler {
         if (gateway != null && gateway.getStatus() == ThingStatus.ONLINE) {
             if (command instanceof RefreshType) {
                 logger.debug("Refreshing channel {}", channelUID);
-                TradfriResource proxy = getProxy();
+                TradfriResource proxy = getResource();
                 if (proxy != null) {
                     proxy.triggerUpdate();
                 } else {
@@ -158,7 +158,7 @@ public class TradfriGroupHandler extends TradfriResourceHandler {
 
     private @Nullable String getSceneName(String sceneId) {
         String name = null;
-        TradfriGroup proxy = (TradfriGroup) getProxy();
+        TradfriGroup proxy = (TradfriGroup) getResource();
         if (proxy != null) {
             TradfriScene sceneProxy = proxy.getSceneById(sceneId);
             if (sceneProxy != null) {

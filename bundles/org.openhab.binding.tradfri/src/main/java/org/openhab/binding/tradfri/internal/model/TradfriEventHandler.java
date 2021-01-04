@@ -17,6 +17,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
+
 /**
  * {@link TradfriEventHandler} This annotation type must be used to mark a
  * method as handler for Tradfri resource events. Only methods using this
@@ -27,5 +29,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface TradfriEventHandler {
-    TradfriEvent value();
+    EType[] value() default {};
 }
