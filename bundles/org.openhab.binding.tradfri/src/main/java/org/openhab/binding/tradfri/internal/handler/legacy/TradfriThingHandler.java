@@ -10,7 +10,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.tradfri.internal.handler;
+package org.openhab.binding.tradfri.internal.handler.legacy;
 
 import static org.eclipse.smarthome.core.thing.Thing.*;
 
@@ -31,12 +31,13 @@ import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import org.openhab.binding.tradfri.internal.coap.CoapCallback;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
 import org.openhab.binding.tradfri.internal.config.TradfriDeviceConfig;
-import org.openhab.binding.tradfri.internal.model.TradfriDeviceData;
+import org.openhab.binding.tradfri.internal.handler.TradfriGatewayHandler;
+import org.openhab.binding.tradfri.internal.model.legacy.TradfriDeviceData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The {@link TradfriThingHandler} is the abstract base class for individual device handlers.
+ * The {@link TradfriThingResourceHandler} is the abstract base class for individual device handlers.
  *
  * @author Kai Kreuzer - Initial contribution
  * @author Christoph Weitkamp - Restructuring and refactoring of the binding

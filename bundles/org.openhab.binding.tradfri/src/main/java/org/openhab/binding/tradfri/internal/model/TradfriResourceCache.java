@@ -13,8 +13,10 @@
 
 package org.openhab.binding.tradfri.internal.model;
 
+import java.util.EnumSet;
+import java.util.Optional;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
 
 /**
@@ -28,21 +30,23 @@ import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
 @NonNullByDefault
 public interface TradfriResourceCache {
 
-    public void subscribeEvent(Object subscriber);
+    void subscribeEvents(Object subscriber);
 
-    public void subscribeEvent(String id, Object subscriber);
+    void subscribeEvents(String id, Object subscriber);
 
-    public void subscribeEvent(EType eventType, Object subscriber);
+    void subscribeEvents(EnumSet<EType> eventTypes, Object subscriber);
 
-    public void subscribeEvent(String id, EType eventType, Object subscriber);
+    void subscribeEvents(String id, EnumSet<EType> eventTypes, Object subscriber);
 
-    public void unsubscribeEvent(Object subscriber);
+    void unsubscribeEvents(Object subscriber);
 
-    public boolean contains(String id);
+    boolean contains(String id);
 
-    public @Nullable TradfriResource get(String id);
+    Optional<? extends TradfriResource> get(String id);
 
-    public void refresh();
+    <T extends TradfriResource> Optional<T> getAs(String id, Class<T> resourceClass);
 
-    public void clear();
+    void refresh();
+
+    void clear();
 }

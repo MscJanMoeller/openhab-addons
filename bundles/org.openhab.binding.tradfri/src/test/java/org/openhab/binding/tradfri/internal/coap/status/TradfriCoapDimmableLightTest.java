@@ -39,8 +39,8 @@ public class TradfriCoapDimmableLightTest {
         TradfriCoapDimmableLight bulb = this.gson.fromJson(json, TradfriCoapDimmableLight.class);
 
         // Check data of class TradfriCoapResource
-        assertThat(bulb.getInstanceId(), is("65565"));
-        assertThat(bulb.getName(), is("BR Mirror Cabinet"));
+        assertThat(bulb.getInstanceId().get(), is("65565"));
+        assertThat(bulb.getName().get(), is("BR Mirror Cabinet"));
         assertThat(bulb.getTimestampCreatedAt(), is(1600000754L));
 
         // Check data of class TradfriCoapDevice
@@ -50,17 +50,17 @@ public class TradfriCoapDimmableLightTest {
         assertThat(bulb.isAlive(), is(true));
 
         // Check data of class TradfriCoapDeviceInfo
-        TradfriCoapDeviceInfo devInfo = bulb.getDeviceInfo();
+        TradfriCoapDeviceInfo devInfo = bulb.getDeviceInfo().get();
         assertNotNull(devInfo);
-        assertThat(devInfo.getVendor(), is("IKEA of Sweden"));
-        assertThat(devInfo.getModel(), is("TRADFRI Driver 10W"));
-        assertThat(devInfo.getSerialNumber(), isEmptyString());
-        assertThat(devInfo.getFirmware(), is("1.2.245"));
+        assertThat(devInfo.getVendor().get(), is("IKEA of Sweden"));
+        assertThat(devInfo.getModel().get(), is("TRADFRI Driver 10W"));
+        assertThat(devInfo.getSerialNumber().get(), isEmptyString());
+        assertThat(devInfo.getFirmware().get(), is("1.2.245"));
         assertThat(devInfo.getPowerSource(), is(1));
         assertThat(devInfo.getBatteryLevel(), is(-1)); // value is not available
 
         // Check data of class TradfriCoapDimmableLight
-        TradfriCoapDimmableLightSetting bulbInfo = bulb.getLightSetting();
+        TradfriCoapDimmableLightSetting bulbInfo = bulb.getLightSetting().get();
         assertNotNull(bulbInfo);
         // Check data of class TradfriCoapColorLightSetting
         assertThat(bulbInfo.getOnOff(), is(1));

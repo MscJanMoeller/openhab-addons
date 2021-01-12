@@ -14,7 +14,8 @@ package org.openhab.binding.tradfri.internal.config;
 
 /**
  * The {@link TradfriDeviceConfig} holds the
- * configuration information needed to access single bulbs on the gateway.
+ * configuration information needed to access single devices
+ * managed by the gateway.
  *
  * @author Kai Kreuzer - Initial contribution
  */

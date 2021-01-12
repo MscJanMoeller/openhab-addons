@@ -15,6 +15,7 @@ package org.openhab.binding.tradfri.internal.coap;
 
 import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.THING_TYPE_COLOR_TEMP_LIGHT;
 
+import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
@@ -36,8 +37,7 @@ import org.openhab.binding.tradfri.internal.model.TradfriColorTempLight;
  *
  */
 @NonNullByDefault
-public class TradfriCoapColorTempLightProxy extends TradfriCoapDimmableLightProxy
-        implements TradfriColorTempLight {
+public class TradfriCoapColorTempLightProxy extends TradfriCoapDimmableLightProxy implements TradfriColorTempLight {
 
     private static final ThingTypeUID thingType = THING_TYPE_COLOR_TEMP_LIGHT;
 
@@ -47,14 +47,14 @@ public class TradfriCoapColorTempLightProxy extends TradfriCoapDimmableLightProx
     }
 
     @Override
-    public @Nullable PercentType getColorTemperature() {
+    public Optional<PercentType> getColorTemperature() {
         int colorX = getColorX();
         int colorY = getColorY();
         if (colorX > -1 && colorY > -1) {
             TradfriColor color = new TradfriColor(colorX, colorY, null);
-            return color.getColorTemperature();
+            return Optional.of(color.getColorTemperature());
         } else {
-            return null;
+            return Optional.empty();
         }
     }
 
@@ -71,11 +71,7 @@ public class TradfriCoapColorTempLightProxy extends TradfriCoapDimmableLightProx
 
     @Override
     protected @Nullable TradfriCoapDimmableLightSetting getDimmableLightSetting() {
-        TradfriCoapDimmableLightSetting lightSetting = null;
-        if (this.cachedData != null) {
-            lightSetting = ((TradfriCoapColorTempLight) this.cachedData).getLightSetting();
-        }
-        return lightSetting;
+        return getColorTempLightSetting();
     }
 
     private int getColorX() {
@@ -97,10 +93,8 @@ public class TradfriCoapColorTempLightProxy extends TradfriCoapDimmableLightProx
     }
 
     private @Nullable TradfriCoapColorTempLightSetting getColorTempLightSetting() {
-        TradfriCoapColorTempLightSetting lightSetting = null;
-        if (this.cachedData != null) {
-            lightSetting = ((TradfriCoapColorTempLight) this.cachedData).getLightSetting();
-        }
-        return lightSetting;
+        Optional<TradfriCoapColorTempLightSetting> lightSetting = getDataAs(TradfriCoapColorTempLight.class)
+                .flatMap(light -> light.getLightSetting());
+        return lightSetting.isPresent() ? lightSetting.get() : null;
     }
 }

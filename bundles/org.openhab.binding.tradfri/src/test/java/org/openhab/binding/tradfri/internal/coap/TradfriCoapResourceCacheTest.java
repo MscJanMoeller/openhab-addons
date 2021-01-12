@@ -17,7 +17,7 @@ import static org.junit.Assert.*;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.LinkedList;
-import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.junit.After;
@@ -27,6 +27,7 @@ import org.mockito.Mock;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapColorLight;
 import org.openhab.binding.tradfri.internal.model.TradfriDevice;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent;
+import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
 import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriResource;
 
@@ -49,8 +50,8 @@ public class TradfriCoapResourceCacheTest {
 
     private TradfriCoapResourceCache resourceCache;
 
-    private List<TradfriEvent> receivedEvents;
-    private List<TradfriResource> receivedResources;
+    private Queue<TradfriEvent> expectedEvents;
+    private Queue<TradfriResource> expectedResources;
 
     private static TradfriCoapColorLight createTradfriCoapColorLight() {
         String json = "{\"3\":{\"0\":\"IKEA of Sweden\",\"6\":1,\"1\":\"TRADFRI bulb E27 CWS opal 600lm\","
@@ -66,15 +67,15 @@ public class TradfriCoapResourceCacheTest {
         initMocks(this);
 
         this.resourceCache = new TradfriCoapResourceCache();
-        this.receivedEvents = new LinkedList<TradfriEvent>();
-        this.receivedResources = new LinkedList<TradfriResource>();
+        this.expectedEvents = new LinkedList<TradfriEvent>();
+        this.expectedResources = new LinkedList<TradfriResource>();
     }
 
     @After
     public void cleanUp() {
         this.resourceCache.clear();
-        this.receivedEvents.clear();
-        this.receivedResources.clear();
+        this.expectedEvents.clear();
+        this.expectedResources.clear();
     }
 
     @Test
@@ -82,18 +83,17 @@ public class TradfriCoapResourceCacheTest {
         Object subscriber = new Object() {
             @TradfriEventHandler
             public void onAddedOrUpdatedOrRemoved(TradfriEvent event, TradfriDevice device) {
-                receivedEvents.add(event);
-                receivedResources.add(device);
+                expectedEvents.add(event);
+                expectedResources.add(device);
             }
         };
-
-        this.resourceCache.subscribeEvent(subscriber);
+        this.resourceCache.subscribeEvents(subscriber);
 
         final TradfriCoapResourceProxy device = new TradfriCoapColorLightProxy(this.resourceCache, this.coapClient,
                 this.scheduler);
 
         final TradfriCoapColorLight actualBulbData = createTradfriCoapColorLight();
-        final String actualResourceId = actualBulbData.getInstanceId();
+        final String actualResourceId = actualBulbData.getInstanceId().get();
         assertNotNull(actualResourceId);
 
         // Generates event RESOURCE_ADDED
@@ -103,7 +103,15 @@ public class TradfriCoapResourceCacheTest {
         // Generates event RESOURCE_REMOVED
         this.resourceCache.remove(actualResourceId);
 
-        assertThat(receivedEvents.size(), is(3));
+        assertThat(expectedEvents.size(), is(3));
+        assertThat(expectedEvents.remove().getType(), is(EType.RESOURCE_ADDED));
+        assertThat(expectedEvents.remove().getType(), is(EType.RESOURCE_UPDATED));
+        assertThat(expectedEvents.remove().getType(), is(EType.RESOURCE_REMOVED));
+
+        assertThat(expectedResources.size(), is(3));
+        assertThat(expectedResources.remove(), is(device));
+        assertThat(expectedResources.remove(), is(device));
+        assertThat(expectedResources.remove(), is(device));
     }
 
 }

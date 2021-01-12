@@ -54,6 +54,7 @@ import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapGateway;
 import org.openhab.binding.tradfri.internal.config.TradfriGatewayConfig;
 import org.openhab.binding.tradfri.internal.discovery.TradfriDiscoveryService;
 import org.openhab.binding.tradfri.internal.model.TradfriDevice;
+import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
 import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriGroup;
@@ -309,7 +310,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         requestGatewayInfo();
 
         // Connect TradfriDiscoveryService with resource storage to get events for devices and groups
-        this.resourceCache.subscribeEvent(this);
+        this.resourceCache.subscribeEvents(this);
 
         String baseUri = getGatewayURI();
         Endpoint endpoint = getEndpoint();
@@ -460,7 +461,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     }
 
     @TradfriEventHandler({ EType.RESOURCE_ADDED, EType.RESOURCE_UPDATED })
-    public void onDeviceAddedOrUpdated(TradfriDevice proxy) {
+    public void onDeviceAddedOrUpdated(TradfriEvent event, TradfriDevice proxy) {
         updateOnlineStatus();
         if (mustNotifyDiscoveryService()) {
             // TODO inform discovery service only if relevant data changed (like name of device)
@@ -469,7 +470,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     }
 
     @TradfriEventHandler({ EType.RESOURCE_ADDED, EType.RESOURCE_UPDATED })
-    public void onGroupUpdated(TradfriGroup proxy) {
+    public void onGroupAddedOrUpdated(TradfriEvent event, TradfriGroup proxy) {
         updateOnlineStatus();
         if (mustNotifyDiscoveryService()) {
             // TODO inform discovery service only if relevant data changed (like name of group)
@@ -478,7 +479,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     }
 
     @TradfriEventHandler(EType.RESOURCE_REMOVED)
-    public void onGroupRemoved(TradfriGroup proxy) {
+    public void onGroupRemoved(TradfriEvent event, TradfriGroup proxy) {
         if (mustNotifyDiscoveryService()) {
             this.discoveryService.onGroupRemoved(getThing(), proxy);
         }

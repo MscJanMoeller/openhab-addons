@@ -24,13 +24,13 @@ import org.eclipse.smarthome.core.thing.binding.BaseThingHandlerFactory;
 import org.eclipse.smarthome.core.thing.binding.ThingHandler;
 import org.eclipse.smarthome.core.thing.binding.ThingHandlerFactory;
 import org.openhab.binding.tradfri.internal.discovery.TradfriDiscoveryService;
-import org.openhab.binding.tradfri.internal.handler.TradfriBlindHandler;
-import org.openhab.binding.tradfri.internal.handler.TradfriControllerHandler;
 import org.openhab.binding.tradfri.internal.handler.TradfriGatewayHandler;
 import org.openhab.binding.tradfri.internal.handler.TradfriGroupHandler;
 import org.openhab.binding.tradfri.internal.handler.TradfriLightHandler;
-import org.openhab.binding.tradfri.internal.handler.TradfriPlugHandler;
-import org.openhab.binding.tradfri.internal.handler.TradfriSensorHandler;
+import org.openhab.binding.tradfri.internal.handler.legacy.TradfriBlindHandler;
+import org.openhab.binding.tradfri.internal.handler.legacy.TradfriControllerHandler;
+import org.openhab.binding.tradfri.internal.handler.legacy.TradfriPlugHandler;
+import org.openhab.binding.tradfri.internal.handler.legacy.TradfriSensorHandler;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 

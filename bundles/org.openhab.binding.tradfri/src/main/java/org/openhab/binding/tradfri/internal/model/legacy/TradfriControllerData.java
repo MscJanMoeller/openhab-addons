@@ -10,23 +10,23 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.tradfri.internal.model;
+package org.openhab.binding.tradfri.internal.model.legacy;
 
-import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.SENSOR;
+import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.SWITCH;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 
 import com.google.gson.JsonElement;
 
 /**
- * The {@link TradfriSensorData} class is a Java wrapper for the raw JSON data about the sensor state.
+ * The {@link TradfriControllerData} class is a Java wrapper for the raw JSON data about the controller state.
  *
  * @author Christoph Weitkamp - Initial contribution
  */
 @NonNullByDefault
-public class TradfriSensorData extends TradfriWirelessDeviceData {
+public class TradfriControllerData extends TradfriWirelessDeviceData {
 
-    public TradfriSensorData(JsonElement json) {
-        super(SENSOR, json);
+    public TradfriControllerData(JsonElement json) {
+        super(SWITCH, json);
     }
 }

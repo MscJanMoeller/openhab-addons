@@ -14,8 +14,9 @@ package org.openhab.binding.tradfri.internal.handler;
 
 import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 
+import java.util.Optional;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.library.types.HSBType;
 import org.eclipse.smarthome.core.library.types.IncreaseDecreaseType;
 import org.eclipse.smarthome.core.library.types.OnOffType;
@@ -28,14 +29,12 @@ import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
 import org.openhab.binding.tradfri.internal.model.TradfriColorLight;
 import org.openhab.binding.tradfri.internal.model.TradfriColorTempLight;
-import org.openhab.binding.tradfri.internal.model.TradfriDevice;
 import org.openhab.binding.tradfri.internal.model.TradfriDimmableLight;
+import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
 import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
-import org.openhab.binding.tradfri.internal.model.TradfriLightData;
-import org.openhab.binding.tradfri.internal.model.TradfriResourceCache;
-
-import com.google.gson.JsonElement;
+import org.openhab.binding.tradfri.internal.model.TradfriThingResource;
+import org.openhab.binding.tradfri.internal.model.legacy.TradfriLightData;
 
 /**
  * The {@link TradfriLightHandler} is responsible for handling commands for individual lights.
@@ -55,153 +54,56 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
         super(thing);
     }
 
-    @Override
-    public synchronized void initialize() {
-        super.initialize();
-
-        TradfriResourceCache resourceCache = getresourceCache();
-        String resourceId = getResourceId();
-
-        if (resourceCache != null && resourceId != null) {
-            resourceCache.subscribeEvent(resourceId, EType.RESOURCE_UPDATED, this);
-        }
-    }
-
-    @Override
-    public synchronized void dispose() {
-        TradfriResourceCache resourceCache = getresourceCache();
-        String resourceId = getResourceId();
-
-        if (resourceCache != null && resourceId != null) {
-            resourceCache.unsubscribeEvent(this);
-        }
-
-        super.dispose();
+    @TradfriEventHandler(EType.RESOURCE_UPDATED)
+    public void onLightUpdated(TradfriEvent event, TradfriDimmableLight bulb) {
+        onDimmableLightUpdated(bulb);
     }
 
     @TradfriEventHandler(EType.RESOURCE_UPDATED)
-    public void onProxyUpdate(TradfriDimmableLight proxy) {
-        if (proxy instanceof TradfriDevice) {
-            if (!updateDeviceStatus(proxy)) {
-                return;
-            }
-        }
-
-        TradfriDimmableLight light = proxy;
-        if (light != null) {
-            if (light.isOff()) {
-                logger.debug("Setting state to OFF");
-                updateState(CHANNEL_BRIGHTNESS, PercentType.ZERO);
-                if (hasColorSupport()) {
-                    updateState(CHANNEL_COLOR, HSBType.BLACK);
-                }
-                // if we are turned off, we do not set any brightness value
-                return;
-            }
-
-            PercentType dimmer = light.getBrightness();
-            if (dimmer != null && !hasColorSupport()) { // color lights do not have brightness channel
-                updateState(CHANNEL_BRIGHTNESS, dimmer);
-            }
-        }
-
-        if (hasColorTempSupport()) {
-            TradfriColorTempLight colorTempLight = getColorTempLight();
-            if (colorTempLight != null) {
-
-                PercentType colorTemp = colorTempLight.getColorTemperature();
-                if (colorTemp != null) {
-                    updateState(CHANNEL_COLOR_TEMPERATURE, colorTemp);
-                }
-            } else {
-
-            }
-        }
-
-        HSBType color = null;
-        if (lightHasColorSupport()) {
-            color = state.getColor();
-            if (color != null) {
-                updateState(CHANNEL_COLOR, color);
-            }
-        }
-
-        updateDeviceProperties(state);
-
-        this.state = state;
-
-        logger.debug(
-                "Updating thing for lightId {} to state {dimmer: {}, colorTemp: {}, color: {}, firmwareVersion: {}, modelId: {}, vendor: {}}",
-                state.getDeviceId(), dimmer, colorTemp, color, state.getFirmwareVersion(), state.getModelId(),
-                state.getVendor());
+    public void onLightUpdated(TradfriEvent event, TradfriColorTempLight bulb) {
+        onColorTempLightUpdated(bulb);
     }
 
-    public void onUpdate(JsonElement data) {
-        if (!(data.isJsonNull())) {
-            TradfriLightData state = new TradfriLightData(data);
-            updateStatus(state.getReachabilityStatus() ? ThingStatus.ONLINE : ThingStatus.OFFLINE);
+    @TradfriEventHandler(EType.RESOURCE_UPDATED)
+    public void onLightUpdated(TradfriEvent event, TradfriColorLight bulb) {
+        onColorLightUpdated(bulb);
+    }
 
-            if (!state.getOnOffState()) {
-                logger.debug("Setting state to OFF");
-                updateState(CHANNEL_BRIGHTNESS, PercentType.ZERO);
-                if (lightHasColorSupport()) {
-                    updateState(CHANNEL_COLOR, HSBType.BLACK);
-                }
-                // if we are turned off, we do not set any brightness value
-                return;
-            }
-
-            PercentType dimmer = state.getBrightness();
-            if (dimmer != null && !lightHasColorSupport()) { // color lights do not have brightness channel
-                updateState(CHANNEL_BRIGHTNESS, dimmer);
-            }
-
-            PercentType colorTemp = state.getColorTemperature();
-            if (colorTemp != null) {
-                updateState(CHANNEL_COLOR_TEMPERATURE, colorTemp);
-            }
-
-            HSBType color = null;
-            if (lightHasColorSupport()) {
-                color = state.getColor();
-                if (color != null) {
-                    updateState(CHANNEL_COLOR, color);
-                }
-            }
-
-            updateDeviceProperties(state);
-
-            this.state = state;
-
-            logger.debug(
-                    "Updating thing for lightId {} to state {dimmer: {}, colorTemp: {}, color: {}, firmwareVersion: {}, modelId: {}, vendor: {}}",
-                    state.getDeviceId(), dimmer, colorTemp, color, state.getFirmwareVersion(), state.getModelId(),
-                    state.getVendor());
+    @Override
+    protected void onResourceUpdated(TradfriThingResource resource) {
+        if (resource.matches(THING_TYPE_DIMMABLE_LIGHT)) {
+            resource.as(TradfriDimmableLight.class).ifPresent(bulb -> onDimmableLightUpdated(bulb));
+        } else if (resource.matches(THING_TYPE_COLOR_TEMP_LIGHT)) {
+            resource.as(TradfriColorTempLight.class).ifPresent(bulb -> onColorTempLightUpdated(bulb));
+        } else if (resource.matches(THING_TYPE_COLOR_LIGHT)) {
+            resource.as(TradfriColorLight.class).ifPresent(bulb -> onColorLightUpdated(bulb));
+        } else {
+            // Delegate
+            super.onResourceUpdated(resource);
         }
     }
 
-    private void setBrightness(PercentType percent) {
-        TradfriLightData data = new TradfriLightData();
-        data.setBrightness(percent).setTransitionTime(DEFAULT_DIMMER_TRANSITION_TIME);
-        set(data.getJsonString());
+    protected void onDimmableLightUpdated(TradfriDimmableLight bulb) {
+        onDeviceUpdated(bulb);
+        updateState(CHANNEL_BRIGHTNESS, bulb.getBrightness());
+        logger.debug("Updated thing for light bulb with Id {} to state {dimmer: {}}", bulb.getInstanceId(),
+                bulb.getBrightness());
     }
 
-    private void setState(OnOffType onOff) {
-        TradfriLightData data = new TradfriLightData();
-        data.setOnOffState(onOff == OnOffType.ON);
-        set(data.getJsonString());
+    protected void onColorTempLightUpdated(TradfriColorTempLight bulb) {
+        onDeviceUpdated(bulb);
+        updateState(CHANNEL_BRIGHTNESS, bulb.getBrightness());
+        bulb.getColorTemperature().ifPresent(colorTemp -> updateState(CHANNEL_COLOR_TEMPERATURE, colorTemp));
+        logger.debug("Updated thing for light bulb with Id {} to state {dimmer: {}, colorTemp: {}}",
+                bulb.getInstanceId(), bulb.getBrightness(), bulb.getColorTemperature());
     }
 
-    private void setColorTemperature(PercentType percent) {
-        TradfriLightData data = new TradfriLightData();
-        data.setColorTemperature(percent).setTransitionTime(DEFAULT_DIMMER_TRANSITION_TIME);
-        set(data.getJsonString());
-    }
-
-    private void setColor(HSBType hsb) {
-        TradfriLightData data = new TradfriLightData();
-        data.setColor(hsb).setTransitionTime(DEFAULT_DIMMER_TRANSITION_TIME);
-        set(data.getJsonString());
+    protected void onColorLightUpdated(TradfriColorLight bulb) {
+        onDeviceUpdated(bulb);
+        bulb.getColorTemperature().ifPresent(colorTemp -> updateState(CHANNEL_COLOR_TEMPERATURE, colorTemp));
+        bulb.getColor().ifPresent(color -> updateState(CHANNEL_COLOR, color));
+        logger.debug("Updated thing for light bulb with Id {} to state {colorTemp: {}, color: {}}",
+                bulb.getInstanceId(), bulb.getColorTemperature(), bulb.getColor());
     }
 
     @Override
@@ -210,10 +112,9 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
         if (gateway != null && gateway.getStatus() == ThingStatus.ONLINE) {
             if (command instanceof RefreshType) {
                 logger.debug("Refreshing channel {}", channelUID);
-                // TODO: coapClient.asyncGet(this);
+                getResource().ifPresent(resource -> resource.triggerUpdate());
                 return;
             }
-
             switch (channelUID.getId()) {
                 case CHANNEL_BRIGHTNESS:
                     handleBrightnessCommand(command);
@@ -309,12 +210,12 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
      *
      * @return true if the light supports full color
      */
-    private boolean hasColorTempSupport() {
+    private boolean hasThingColorTempSupport() {
         return thing.getThingTypeUID().getId().equals(THING_TYPE_COLOR_TEMP_LIGHT.getId());
     }
 
-    private @Nullable TradfriColorTempLight getColorTempLight() {
-        return (TradfriColorTempLight) getResource();
+    private Optional<TradfriColorTempLight> getColorTempLight() {
+        return getResourceAs(TradfriColorTempLight.class);
     }
 
     /**
@@ -322,11 +223,11 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
      *
      * @return true if the light supports full color
      */
-    private boolean hasColorSupport() {
+    private boolean hasThingColorSupport() {
         return thing.getThingTypeUID().getId().equals(THING_TYPE_COLOR_LIGHT.getId());
     }
 
-    private @Nullable TradfriColorLight getColorLight() {
-        return (TradfriColorLight) getResource();
+    private Optional<TradfriColorLight> getColorLight() {
+        return getResourceAs(TradfriColorLight.class);
     }
 }

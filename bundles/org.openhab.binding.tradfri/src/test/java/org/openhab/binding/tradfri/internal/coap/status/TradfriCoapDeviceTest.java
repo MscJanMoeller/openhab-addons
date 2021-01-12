@@ -40,8 +40,8 @@ public class TradfriCoapDeviceTest {
         TradfriCoapDevice dev = this.gson.fromJson(json, TradfriCoapDevice.class);
 
         // Check data of class TradfriCoapResource
-        assertThat(dev.getInstanceId(), is("65553"));
-        assertThat(dev.getName(), is("Dining Table center"));
+        assertThat(dev.getInstanceId().get(), is("65553"));
+        assertThat(dev.getName().get(), is("Dining Table center"));
         assertThat(dev.getTimestampCreatedAt(), is(1545594514L));
 
         // Check data of class TradfriCoapDevice
@@ -51,12 +51,12 @@ public class TradfriCoapDeviceTest {
         assertThat(dev.isAlive(), is(true));
 
         // Check data of class TradfriCoapDeviceInfo
-        TradfriCoapDeviceInfo devInfo = dev.getDeviceInfo();
+        TradfriCoapDeviceInfo devInfo = dev.getDeviceInfo().get();
         assertNotNull(devInfo);
-        assertThat(devInfo.getVendor(), is("IKEA of Sweden"));
-        assertThat(devInfo.getModel(), is("TRADFRI bulb E27 WS clear 950lm"));
-        assertThat(devInfo.getSerialNumber(), isEmptyString());
-        assertThat(devInfo.getFirmware(), is("2.3.050"));
+        assertThat(devInfo.getVendor().get(), is("IKEA of Sweden"));
+        assertThat(devInfo.getModel().get(), is("TRADFRI bulb E27 WS clear 950lm"));
+        assertThat(devInfo.getSerialNumber().get(), isEmptyString());
+        assertThat(devInfo.getFirmware().get(), is("2.3.050"));
         assertThat(devInfo.getPowerSource(), is(1));
         assertThat(devInfo.getBatteryLevel(), is(-1)); // value is not available
     }

@@ -13,35 +13,27 @@
 
 package org.openhab.binding.tradfri.internal.model;
 
+import java.util.Optional;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
-import org.eclipse.smarthome.core.thing.ThingTypeUID;
 
 /**
- * {@link TradfriDevice} represents of a single device
+ * {@link TradfriDevice} represents of a single Tradfri device
  *
  * @author Jan Möller - Initial contribution
  *
  */
 
 @NonNullByDefault
-public interface TradfriDevice extends TradfriResource {
+public interface TradfriDevice extends TradfriThingResource {
 
-    ThingTypeUID getThingType();
+    Optional<String> getVendor();
 
-    boolean matches(ThingTypeUID thingType);
+    Optional<String> getModel();
 
-    @Nullable
-    String getVendor();
+    Optional<String> getSerialNumber();
 
-    @Nullable
-    String getModel();
-
-    @Nullable
-    String getSerialNumber();
-
-    @Nullable
-    String getFirmwareVersion();
+    Optional<String> getFirmwareVersion();
 
     boolean isAlive();
 

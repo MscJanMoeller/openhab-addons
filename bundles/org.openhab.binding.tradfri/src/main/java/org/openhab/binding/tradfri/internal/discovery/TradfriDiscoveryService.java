@@ -196,31 +196,17 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService {
     }
 
     public void onDeviceUpdated(Bridge bridge, TradfriDevice device) {
-        ThingUID thingId = new ThingUID(device.getThingType(), bridge.getUID(), device.getInstanceId());
+        ThingUID thingId = new ThingUID(device.getThingType(), bridge.getUID(), device.getInstanceId().orElse("-1"));
 
-        String label = device.getName();
+        String label = device.getName().orElse("missing device name");
 
         Map<String, Object> properties = new HashMap<>(1);
 
-        Integer id = Integer.valueOf(device.getInstanceId());
-        if (id != null) {
-            properties.put(TradfriDeviceConfig.CONFIG_ID, id);
-        }
-
-        String model = device.getModel();
-        if (model != null) {
-            properties.put(PROPERTY_MODEL_ID, model);
-        }
-
-        String vendor = device.getVendor();
-        if (vendor != null) {
-            properties.put(PROPERTY_VENDOR, vendor);
-        }
-
-        String firmwareVersion = device.getFirmwareVersion();
-        if (firmwareVersion != null) {
-            properties.put(PROPERTY_FIRMWARE_VERSION, firmwareVersion);
-        }
+        device.getInstanceId().ifPresent(id -> properties.put(TradfriDeviceConfig.CONFIG_ID, Integer.valueOf(id)));
+        device.getModel().ifPresent(model -> properties.put(PROPERTY_MODEL_ID, model));
+        device.getVendor().ifPresent(vendor -> properties.put(PROPERTY_VENDOR, vendor));
+        device.getFirmwareVersion()
+                .ifPresent(firmwareVersion -> properties.put(PROPERTY_FIRMWARE_VERSION, firmwareVersion));
 
         logger.debug("Adding device {} to inbox", thingId);
         DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(thingId).withBridge(bridge.getUID())
@@ -230,18 +216,15 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService {
     }
 
     public void onGroupUpdated(Bridge bridge, TradfriResource group) {
-        ThingUID thingId = new ThingUID(THING_TYPE_GROUP, bridge.getUID(), group.getInstanceId());
+        ThingUID thingId = new ThingUID(THING_TYPE_GROUP, bridge.getUID(), group.getInstanceId().orElse("-1"));
 
-        String label = group.getName();
+        String label = group.getName().orElse("missing group name");
 
         Map<String, Object> properties = new HashMap<>(1);
         properties.put(PROPERTY_VENDOR, TRADFRI_VENDOR_NAME);
         properties.put(PROPERTY_MODEL_ID, "TRADFRI group of devices");
 
-        String id = group.getInstanceId();
-        if (id != null) {
-            properties.put(TradfriGroupConfig.CONFIG_ID, id);
-        }
+        group.getInstanceId().ifPresent(id -> properties.put(TradfriGroupConfig.CONFIG_ID, id));
 
         logger.debug("Inbox change: adding or updating group {}", thingId);
         DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(thingId).withBridge(bridge.getUID())
@@ -251,7 +234,7 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService {
     }
 
     public void onGroupRemoved(Bridge bridge, TradfriResource group) {
-        ThingUID thingId = new ThingUID(THING_TYPE_GROUP, bridge.getUID(), group.getInstanceId());
+        ThingUID thingId = new ThingUID(THING_TYPE_GROUP, bridge.getUID(), group.getInstanceId().orElse("-1"));
         logger.debug("Inbox change: removing group {}", thingId);
         thingRemoved(thingId);
     }

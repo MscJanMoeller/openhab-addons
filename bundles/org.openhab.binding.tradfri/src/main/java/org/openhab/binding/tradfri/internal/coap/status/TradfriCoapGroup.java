@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.tradfri.internal.coap.status;
 
+import java.util.Optional;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
@@ -48,8 +50,8 @@ public class TradfriCoapGroup extends TradfriCoapResource {
     @SerializedName(value = TradfriBindingConstants.GROUP_DEVICE_LINKS)
     private @Nullable DeviceLinks deviceLinks;
 
-    public @Nullable String getSceneId() {
-        return sceneId;
+    public Optional<String> getSceneId() {
+        return (this.sceneId != null) ? Optional.of(this.sceneId) : Optional.empty();
     }
 
     public int getGroupType() {

@@ -15,6 +15,7 @@ package org.openhab.binding.tradfri.internal.coap;
 
 import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.THING_TYPE_COLOR_LIGHT;
 
+import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
@@ -47,14 +48,14 @@ public class TradfriCoapColorLightProxy extends TradfriCoapDimmableLightProxy im
     }
 
     @Override
-    public @Nullable PercentType getColorTemperature() {
+    public Optional<PercentType> getColorTemperature() {
         int colorX = getColorX();
         int colorY = getColorY();
         if (colorX > -1 && colorY > -1) {
             TradfriColor color = new TradfriColor(colorX, colorY, null);
-            return color.getColorTemperature();
+            return Optional.of(color.getColorTemperature());
         } else {
-            return null;
+            return Optional.empty();
         }
     }
 
@@ -65,16 +66,21 @@ public class TradfriCoapColorLightProxy extends TradfriCoapDimmableLightProxy im
     }
 
     @Override
-    public @Nullable HSBType getColor() {
-        // XY color coordinates plus brightness is needed for color calculation
-        int colorX = getColorX();
-        int colorY = getColorY();
-        int brightness = getDimmer();
-        if (colorX > -1 && colorY > -1 && brightness > -1) {
-            TradfriColor color = new TradfriColor(colorX, colorY, brightness);
-            return color.getHSB();
+    public Optional<HSBType> getColor() {
+        if (isOn()) {
+            // XY color coordinates plus brightness is needed for color calculation
+            int colorX = getColorX();
+            int colorY = getColorY();
+            int brightness = getDimmer();
+            if (colorX > -1 && colorY > -1 && brightness > -1) {
+                TradfriColor color = new TradfriColor(colorX, colorY, brightness);
+                return Optional.of(color.getHSB());
+            }
+        } else {
+            Optional.of(HSBType.BLACK);
         }
-        return null;
+
+        return Optional.empty();
     }
 
     @Override
@@ -90,11 +96,7 @@ public class TradfriCoapColorLightProxy extends TradfriCoapDimmableLightProxy im
 
     @Override
     protected @Nullable TradfriCoapDimmableLightSetting getDimmableLightSetting() {
-        TradfriCoapDimmableLightSetting lightSetting = null;
-        if (this.cachedData != null) {
-            lightSetting = ((TradfriCoapColorLight) this.cachedData).getLightSetting();
-        }
-        return lightSetting;
+        return getColorLightSetting();
     }
 
     private int getHue() {
@@ -134,10 +136,8 @@ public class TradfriCoapColorLightProxy extends TradfriCoapDimmableLightProxy im
     }
 
     private @Nullable TradfriCoapColorLightSetting getColorLightSetting() {
-        TradfriCoapColorLightSetting lightSetting = null;
-        if (this.cachedData != null) {
-            lightSetting = ((TradfriCoapColorLight) this.cachedData).getLightSetting();
-        }
-        return lightSetting;
+        Optional<TradfriCoapColorLightSetting> lightSetting = getDataAs(TradfriCoapColorLight.class)
+                .flatMap(light -> light.getLightSetting());
+        return lightSetting.isPresent() ? lightSetting.get() : null;
     }
 }

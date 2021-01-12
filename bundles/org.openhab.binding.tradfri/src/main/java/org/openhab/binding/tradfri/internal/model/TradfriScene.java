@@ -13,14 +13,12 @@
 
 package org.openhab.binding.tradfri.internal.model;
 
+import java.util.Optional;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
 
 /**
- * {@link TradfriScene} represents of a single scene and provides:
- * - access to the data
- * - notifies about changes
- * - forwards commands
+ * {@link TradfriScene} represents of a single scene
  *
  * @author Jan Möller - Initial contribution
  *
@@ -28,6 +26,5 @@ import org.eclipse.jdt.annotation.Nullable;
 
 @NonNullByDefault
 public interface TradfriScene extends TradfriResource {
-    @Nullable
-    String getSceneName();
+    Optional<String> getSceneName();
 }

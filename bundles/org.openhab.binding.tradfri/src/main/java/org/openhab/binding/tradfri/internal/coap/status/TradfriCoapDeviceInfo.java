@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.tradfri.internal.coap.status;
 
+import java.util.Optional;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
@@ -40,20 +42,20 @@ public class TradfriCoapDeviceInfo {
     @SerializedName(value = TradfriBindingConstants.DEVICE_BATTERY_LEVEL)
     private int batteryLevel = -1;
 
-    public @Nullable String getVendor() {
-        return vendor;
+    public Optional<String> getVendor() {
+        return (this.vendor != null) ? Optional.of(this.vendor) : Optional.empty();
     }
 
-    public @Nullable String getModel() {
-        return model;
+    public Optional<String> getModel() {
+        return (this.model != null) ? Optional.of(this.model) : Optional.empty();
     }
 
-    public @Nullable String getSerialNumber() {
-        return serialNumber;
+    public Optional<String> getSerialNumber() {
+        return (this.serialNumber != null) ? Optional.of(this.serialNumber) : Optional.empty();
     }
 
-    public @Nullable String getFirmware() {
-        return firmware;
+    public Optional<String> getFirmware() {
+        return (this.firmware != null) ? Optional.of(this.firmware) : Optional.empty();
     }
 
     public int getPowerSource() {

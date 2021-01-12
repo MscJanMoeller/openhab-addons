@@ -15,6 +15,7 @@ package org.openhab.binding.tradfri.internal.coap;
 
 import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.THING_TYPE_DIMMABLE_LIGHT;
 
+import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
@@ -61,7 +62,7 @@ public class TradfriCoapDimmableLightProxy extends TradfriCoapDeviceProxy implem
 
     @Override
     public PercentType getBrightness() {
-        return TradfriColor.xyBrightnessToPercentType(getDimmer());
+        return isOn() ? TradfriColor.xyBrightnessToPercentType(getDimmer()) : PercentType.ZERO;
     }
 
     @Override
@@ -93,11 +94,9 @@ public class TradfriCoapDimmableLightProxy extends TradfriCoapDeviceProxy implem
     }
 
     protected @Nullable TradfriCoapDimmableLightSetting getDimmableLightSetting() {
-        TradfriCoapDimmableLightSetting lightSetting = null;
-        if (this.cachedData != null) {
-            lightSetting = ((TradfriCoapDimmableLight) this.cachedData).getLightSetting();
-        }
-        return lightSetting;
+        Optional<TradfriCoapDimmableLightSetting> lightSetting = getDataAs(TradfriCoapDimmableLight.class)
+                .flatMap(light -> light.getLightSetting());
+        return lightSetting.isPresent() ? lightSetting.get() : null;
     }
 
 }

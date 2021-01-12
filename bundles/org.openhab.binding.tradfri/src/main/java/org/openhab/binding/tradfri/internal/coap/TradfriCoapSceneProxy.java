@@ -15,11 +15,11 @@ package org.openhab.binding.tradfri.internal.coap;
 
 import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.ENDPOINT_SCENES;
 
+import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapScene;
 import org.openhab.binding.tradfri.internal.model.TradfriScene;
 
@@ -38,12 +38,8 @@ public class TradfriCoapSceneProxy extends TradfriCoapResourceProxy implements T
     }
 
     @Override
-    public @Nullable String getSceneName() {
-        TradfriCoapScene sceneData = (TradfriCoapScene) this.cachedData;
-        if (sceneData != null) {
-            return sceneData.getName();
-        }
-        return null;
+    public Optional<String> getSceneName() {
+        return getDataAs(TradfriCoapScene.class).flatMap(scene -> scene.getName());
     }
 
     @Override

@@ -16,7 +16,7 @@ package org.openhab.binding.tradfri.internal.config;
  * Configuration class for the gateway.
  *
  * @author Kai Kreuzer - Initial contribution
- * @author Jan Möller - moved configuration property names from TradfriBindingConstants to this class
+ * @author Jan Möller - Moved configuration property names from TradfriBindingConstants to this class
  */
 public class TradfriGatewayConfig {
 

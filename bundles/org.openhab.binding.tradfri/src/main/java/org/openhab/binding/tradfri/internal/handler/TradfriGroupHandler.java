@@ -26,13 +26,10 @@ import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
-import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
-import org.openhab.binding.tradfri.internal.config.TradfriGroupConfig;
+import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
 import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriGroup;
-import org.openhab.binding.tradfri.internal.model.TradfriResource;
-import org.openhab.binding.tradfri.internal.model.TradfriScene;
 
 /**
  * The {@link TradfriGroupHandler} is responsible for handling commands of individual groups.
@@ -40,7 +37,7 @@ import org.openhab.binding.tradfri.internal.model.TradfriScene;
  * @author Jan Möller - Initial contribution
  */
 @NonNullByDefault
-public class TradfriGroupHandler extends TradfriResourceHandler {
+public class TradfriGroupHandler extends TradfriThingResourceHandler {
 
     // the unique instance id of the group
     protected @Nullable String id;
@@ -49,57 +46,23 @@ public class TradfriGroupHandler extends TradfriResourceHandler {
         super(thing);
     }
 
-    @Override
-    public synchronized void initialize() {
-        this.id = getConfigAs(TradfriGroupConfig.class).id;
-
-        super.initialize();
-    }
-
-    @Override
-    public synchronized void dispose() {
-        super.dispose();
-
-        this.id = null;
-    }
-
-    @Override
-    protected @Nullable String getResourceId() {
-        return this.id != null ? this.id : null;
-    }
-
     @TradfriEventHandler(EType.RESOURCE_UPDATED)
-    public void onUpdate(TradfriGroup proxy) {
-        updateOnlineStatus(proxy);
+    public void onGroupUpdated(TradfriEvent event, TradfriGroup group) {
+        onResourceUpdated(group);
 
-        TradfriScene activeScene = proxy.getActiveScene();
-        if (activeScene != null) {
-            String name = activeScene.getSceneName();
-            if (name == null) {
-                logger.debug("Unexpected error. Scene proxy with ID {} doesn't provide a name.",
-                        activeScene.getInstanceId());
-            }
-            StringType scene = new StringType(name);
-            updateState(TradfriBindingConstants.CHANNEL_SCENE, scene);
+        group.getActiveScene().ifPresent(
+                scene -> scene.getSceneName().ifPresent(name -> updateState(CHANNEL_SCENE, StringType.valueOf(name))));
 
-            logger.debug("Updating group \"{}\" with ID {}. Current scene: {}", proxy.getName(), proxy.getInstanceId(),
-                    activeScene.getInstanceId());
-        }
+        // TODO update channels: brightness, color_temperature, color
     }
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
-
         Bridge gateway = getBridge();
         if (gateway != null && gateway.getStatus() == ThingStatus.ONLINE) {
             if (command instanceof RefreshType) {
                 logger.debug("Refreshing channel {}", channelUID);
-                TradfriResource proxy = getResource();
-                if (proxy != null) {
-                    proxy.triggerUpdate();
-                } else {
-                    logger.debug("Unexpected error. Proxy object of group with ID {} not initialized.", this.id);
-                }
+                getResource().ifPresent(resource -> resource.triggerUpdate());
                 return;
             }
 
@@ -154,22 +117,5 @@ public class TradfriGroupHandler extends TradfriResourceHandler {
         } else {
             logger.error("Cannot handle command {} for channel {}", command, CHANNEL_SCENE);
         }
-    }
-
-    private @Nullable String getSceneName(String sceneId) {
-        String name = null;
-        TradfriGroup proxy = (TradfriGroup) getResource();
-        if (proxy != null) {
-            TradfriScene sceneProxy = proxy.getSceneById(sceneId);
-            if (sceneProxy != null) {
-                name = sceneProxy.getSceneName();
-                if (name == null) {
-                    logger.debug("Unexpected error. Scene proxy with ID {} doesn't provide a name.", sceneId);
-                }
-            }
-        } else {
-            logger.debug("Unexpected error. Proxy object of group with ID {} not initialized.", this.id);
-        }
-        return name;
     }
 }

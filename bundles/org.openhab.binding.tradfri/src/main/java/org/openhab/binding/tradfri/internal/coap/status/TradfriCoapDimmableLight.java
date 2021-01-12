@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.tradfri.internal.coap.status;
 
+import java.util.Optional;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
@@ -30,12 +32,12 @@ public class TradfriCoapDimmableLight extends TradfriCoapDevice {
     @SerializedName(value = TradfriBindingConstants.LIGHT)
     private TradfriCoapDimmableLightSetting @Nullable [] lightSettings;
 
-    public @Nullable TradfriCoapDimmableLightSetting getLightSetting() {
+    public Optional<TradfriCoapDimmableLightSetting> getLightSetting() {
         TradfriCoapDimmableLightSetting[] lightSettingArray = this.lightSettings;
         if (lightSettingArray != null && lightSettingArray.length > 0) {
-            return lightSettingArray[0];
+            return Optional.of(lightSettingArray[0]);
         } else {
-            return null;
+            return Optional.empty();
         }
     }
 }

@@ -13,8 +13,9 @@
 
 package org.openhab.binding.tradfri.internal.model;
 
+import java.util.Optional;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.library.types.HSBType;
 
 /**
@@ -28,8 +29,7 @@ import org.eclipse.smarthome.core.library.types.HSBType;
 @NonNullByDefault
 public interface TradfriColorLight extends TradfriColorTempLight {
 
-    @Nullable
-    HSBType getColor();
+    Optional<HSBType> getColor();
 
     void setColor(HSBType value);
 }

@@ -10,12 +10,11 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.tradfri.internal.handler;
+package org.openhab.binding.tradfri.internal.handler.legacy;
 
 import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.library.types.DecimalType;
 import org.eclipse.smarthome.core.library.types.OnOffType;
 import org.eclipse.smarthome.core.thing.ChannelUID;
@@ -23,40 +22,32 @@ import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
-import org.openhab.binding.tradfri.internal.model.TradfriControllerData;
+import org.openhab.binding.tradfri.internal.model.legacy.TradfriSensorData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 
 /**
- * The {@link TradfriControllerHandler} is responsible for handling commands for individual controllers.
+ * The {@link TradfriSensorHandler} is responsible for handling commands for individual sensors.
  *
  * @author Christoph Weitkamp - Initial contribution
  */
 @NonNullByDefault
-public class TradfriControllerHandler extends TradfriThingHandler {
+public class TradfriSensorHandler extends TradfriThingHandler {
 
-    private final Logger logger = LoggerFactory.getLogger(TradfriControllerHandler.class);
+    private final Logger logger = LoggerFactory.getLogger(TradfriSensorHandler.class);
 
-    // keeps track of the current state for handling of increase/decrease
-    private @Nullable TradfriControllerData state;
-
-    public TradfriControllerHandler(Thing thing) {
+    public TradfriSensorHandler(Thing thing) {
         super(thing);
     }
 
     @Override
     public void onUpdate(JsonElement data) {
         if (active && !(data.isJsonNull())) {
-            state = new TradfriControllerData(data);
+            TradfriSensorData state = new TradfriSensorData(data);
             updateStatus(state.getReachabilityStatus() ? ThingStatus.ONLINE : ThingStatus.OFFLINE);
 
-            final TradfriControllerData state = this.state;
-
-            if (state == null) {
-                return;
-            }
             DecimalType batteryLevel = state.getBatteryLevel();
             if (batteryLevel != null) {
                 updateState(CHANNEL_BATTERY_LEVEL, batteryLevel);
@@ -70,7 +61,7 @@ public class TradfriControllerHandler extends TradfriThingHandler {
             updateDeviceProperties(state);
 
             logger.debug(
-                    "Updating thing for controllerId {} to state {batteryLevel: {}, batteryLow: {}, firmwareVersion: {}, modelId: {}, vendor: {}}",
+                    "Updating thing for sensorId {} to state {batteryLevel: {}, batteryLow: {}, firmwareVersion: {}, modelId: {}, vendor: {}}",
                     state.getDeviceId(), batteryLevel, batteryLow, state.getFirmwareVersion(), state.getModelId(),
                     state.getVendor());
         }
@@ -85,7 +76,7 @@ public class TradfriControllerHandler extends TradfriThingHandler {
                 return;
             }
 
-            logger.debug("The controller is a read-only device and cannot handle commands.");
+            logger.debug("The sensor is a read-only device and cannot handle commands.");
         }
     }
 }

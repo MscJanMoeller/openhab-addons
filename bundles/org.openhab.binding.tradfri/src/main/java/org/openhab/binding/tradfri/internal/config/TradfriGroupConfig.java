@@ -14,7 +14,8 @@ package org.openhab.binding.tradfri.internal.config;
 
 /**
  * The {@link TradfriGroupConfig} holds the
- * configuration information needed to access groups of the gateway.
+ * configuration information needed to access groups managed
+ * by the gateway.
  *
  * @author Jan Möller - Initial contribution
  */

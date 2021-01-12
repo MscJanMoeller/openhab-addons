@@ -13,25 +13,21 @@
 
 package org.openhab.binding.tradfri.internal.model;
 
+import java.util.Optional;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
 
 /**
- * {@link TradfriGroup} represents a single group and provides:
- * - access to the data
- * - notifies about changes
- * - forwards commands
+ * {@link TradfriGroup} represents a single group
  *
  * @author Jan Möller - Initial contribution
  *
  */
 
 @NonNullByDefault
-public interface TradfriGroup extends TradfriResource {
+public interface TradfriGroup extends TradfriThingResource {
 
-    @Nullable
-    TradfriScene getActiveScene();
+    Optional<TradfriScene> getActiveScene();
 
-    @Nullable
-    TradfriScene getSceneById(String id);
+    Optional<TradfriScene> getSceneById(String id);
 }

@@ -13,24 +13,21 @@
 
 package org.openhab.binding.tradfri.internal.model;
 
-import java.util.Optional;
-
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.smarthome.core.library.types.PercentType;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapColorTempLight;
+import org.eclipse.smarthome.core.thing.ThingTypeUID;
 
 /**
- * {@link TradfriCoapColorTempLight} represents a light
- * that supports different color temperature settings.
+ * {@link TradfriThingResource} extends {@link TradfriResource} to provide the matching {@link ThingTypeUID}.
+ * An instance of {@link TradfriThingResource} represents a Tradfri resource mapped to a thing for openHAB.
  *
  * @author Jan Möller - Initial contribution
  *
  */
 
 @NonNullByDefault
-public interface TradfriColorTempLight extends TradfriDimmableLight {
+public interface TradfriThingResource extends TradfriResource {
 
-    Optional<PercentType> getColorTemperature();
+    ThingTypeUID getThingType();
 
-    void setColorTemperature(PercentType value);
+    boolean matches(ThingTypeUID thingType);
 }

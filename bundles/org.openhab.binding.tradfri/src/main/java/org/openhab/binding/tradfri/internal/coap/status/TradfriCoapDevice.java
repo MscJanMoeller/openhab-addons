@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.tradfri.internal.coap.status;
 
+import java.util.Optional;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
@@ -85,8 +87,8 @@ public class TradfriCoapDevice extends TradfriCoapResource {
         return currentOtaUpdateState;
     }
 
-    public @Nullable TradfriCoapDeviceInfo getDeviceInfo() {
-        return deviceInfo;
+    public Optional<TradfriCoapDeviceInfo> getDeviceInfo() {
+        return (this.deviceInfo != null) ? Optional.of(this.deviceInfo) : Optional.empty();
     }
 
     public boolean isAlive() {

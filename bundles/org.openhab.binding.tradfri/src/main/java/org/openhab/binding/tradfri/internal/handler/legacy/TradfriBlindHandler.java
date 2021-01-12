@@ -10,7 +10,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.tradfri.internal.handler;
+package org.openhab.binding.tradfri.internal.handler.legacy;
 
 import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 
@@ -25,7 +25,7 @@ import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
-import org.openhab.binding.tradfri.internal.model.TradfriBlindData;
+import org.openhab.binding.tradfri.internal.model.legacy.TradfriBlindData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

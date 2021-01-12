@@ -13,6 +13,7 @@
 
 package org.openhab.binding.tradfri.internal.coap;
 
+import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -51,9 +52,9 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
     private final TradfriCoapClient coapClient;
     private @Nullable CoapObserveRelation observeRelation;
 
-    protected final TradfriCoapResourceCache resourceCache;
+    private final TradfriCoapResourceCache resourceCache;
 
-    protected @Nullable TradfriCoapResource cachedData;
+    private @Nullable TradfriCoapResource cachedData;
 
     protected TradfriCoapResourceProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient,
             ScheduledExecutorService scheduler) {
@@ -70,6 +71,11 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
         this.scheduler = scheduler;
     }
 
+    @Override
+    public <T extends TradfriResource> Optional<T> as(Class<T> resourceClass) {
+        return getClass().equals(resourceClass) ? Optional.of(resourceClass.cast(this)) : Optional.empty();
+    }
+
     public void initialize(TradfriCoapResource data) {
         this.cachedData = data;
         this.resourceCache.add(this);
@@ -78,21 +84,13 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
     }
 
     @Override
-    public @Nullable String getInstanceId() {
-        String id = null;
-        if (this.cachedData != null) {
-            id = this.cachedData.getInstanceId();
-        }
-        return id;
+    public Optional<String> getInstanceId() {
+        return (this.cachedData != null) ? this.cachedData.getInstanceId() : Optional.empty();
     }
 
     @Override
-    public @Nullable String getName() {
-        String name = null;
-        if (this.cachedData != null) {
-            name = this.cachedData.getName();
-        }
-        return name;
+    public Optional<String> getName() {
+        return (this.cachedData != null) ? this.cachedData.getName() : Optional.empty();
     }
 
     @Override
@@ -138,6 +136,19 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
         this.cachedData = null;
     }
 
+    protected TradfriCoapResourceCache getResourceCache() {
+        return this.resourceCache;
+    }
+
+    protected <T extends TradfriCoapResource> Optional<T> getDataAs(Class<T> resourceClass) {
+        return (this.cachedData != null) ? Optional.of(resourceClass.cast(this.cachedData)) : Optional.empty();
+    }
+
+    protected void updateData(TradfriCoapResource data) {
+        this.cachedData = data;
+        this.resourceCache.updated(this);
+    }
+
     protected void observe() {
         if (this.observeRelation != null) {
             this.observeRelation.reactiveCancel();
@@ -148,10 +159,4 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
             observeRelation = coapClient.observe(this);
         }, 1, TimeUnit.SECONDS);
     }
-
-    protected void updateData(TradfriCoapResource data) {
-        this.cachedData = data;
-        this.resourceCache.updated(this);
-    }
-
 }

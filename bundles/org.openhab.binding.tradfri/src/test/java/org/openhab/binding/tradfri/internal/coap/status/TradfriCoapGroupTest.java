@@ -37,12 +37,12 @@ public class TradfriCoapGroupTest {
         TradfriCoapGroup grp = this.gson.fromJson(json, TradfriCoapGroup.class);
 
         // Check data of class TradfriCoapResource
-        assertThat(grp.getInstanceId(), is("131079"));
-        assertThat(grp.getName(), is("Living room dining table"));
+        assertThat(grp.getInstanceId().get(), is("131079"));
+        assertThat(grp.getName().get(), is("Living room dining table"));
         assertThat(grp.getTimestampCreatedAt(), is(1572085357L));
 
         // Check data of class TradfriCoapGroup
-        assertThat(grp.getSceneId(), is("196635"));
+        assertThat(grp.getSceneId().get(), is("196635"));
         assertThat(grp.getGroupType(), is(0));
         TradfriCoapResourceIdList idList = grp.getMembers();
         assertNotNull(idList);

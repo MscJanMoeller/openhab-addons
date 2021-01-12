@@ -12,6 +12,8 @@
  */
 package org.openhab.binding.tradfri.internal.coap.status;
 
+import java.util.Optional;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
@@ -34,16 +36,19 @@ public class TradfriCoapResource {
     @SerializedName(value = TradfriBindingConstants.RESOURCE_INSTANCE_ID)
     private @Nullable String instanceId;
 
-    public @Nullable String getName() {
-        return name;
+    public <T extends TradfriCoapResource> Optional<T> as(Class<T> resourceClass) {
+        return getClass().equals(resourceClass) ? Optional.of(resourceClass.cast(this)) : Optional.empty();
+    }
+
+    public Optional<String> getName() {
+        return (this.name != null) ? Optional.of(this.name) : Optional.empty();
     }
 
     public long getTimestampCreatedAt() {
         return timestampCreatedAt;
     }
 
-    public @Nullable String getInstanceId() {
-        return instanceId;
+    public Optional<String> getInstanceId() {
+        return (this.instanceId != null) ? Optional.of(this.instanceId) : Optional.empty();
     }
-
 }

@@ -13,15 +13,13 @@
 
 package org.openhab.binding.tradfri.internal.model;
 
+import java.util.Optional;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
 
 /**
  * {@link TradfriResource} is a base class of a single resource
- * like a device, group or scene to provide:
- * - access to the data
- * - notifies about changes
- * - forwards commands
+ * like a device, group or scene.
  *
  * @author Jan Möller - Initial contribution
  *
@@ -30,11 +28,11 @@ import org.eclipse.jdt.annotation.Nullable;
 @NonNullByDefault
 public interface TradfriResource {
 
-    @Nullable
-    String getInstanceId();
+    <T extends TradfriResource> Optional<T> as(Class<T> resourceClass);
 
-    @Nullable
-    String getName();
+    Optional<String> getInstanceId();
+
+    Optional<String> getName();
 
     void triggerUpdate();
 
