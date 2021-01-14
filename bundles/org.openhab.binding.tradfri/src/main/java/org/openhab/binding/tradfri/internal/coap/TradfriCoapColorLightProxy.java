@@ -61,8 +61,23 @@ public class TradfriCoapColorLightProxy extends TradfriCoapDimmableLightProxy im
 
     @Override
     public void setColorTemperature(PercentType value) {
-        // TODO Auto-generated method stub
+        final TradfriColor color = new TradfriColor(value);
+        final int x = color.xyX;
+        final int y = color.xyY;
 
+        // TODO: create CoapCommand
+    }
+
+    @Override
+    public void increaseColorTemperatureBy(PercentType value) {
+        getColorTemperature().ifPresent(current -> setColorTemperature(
+                new PercentType(Math.min(current.intValue() + value.intValue(), PercentType.HUNDRED.intValue()))));
+    }
+
+    @Override
+    public void decreaseColorTemperatureBy(PercentType value) {
+        getColorTemperature().ifPresent(current -> setColorTemperature(
+                new PercentType(Math.max(current.intValue() - value.intValue(), PercentType.ZERO.intValue()))));
     }
 
     @Override

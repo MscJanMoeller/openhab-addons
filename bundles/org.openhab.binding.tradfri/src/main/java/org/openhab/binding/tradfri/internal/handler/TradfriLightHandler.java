@@ -34,7 +34,6 @@ import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
 import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriThingResource;
-import org.openhab.binding.tradfri.internal.model.legacy.TradfriLightData;
 
 /**
  * The {@link TradfriLightHandler} is responsible for handling commands for individual lights.
@@ -48,7 +47,7 @@ import org.openhab.binding.tradfri.internal.model.legacy.TradfriLightData;
 public class TradfriLightHandler extends TradfriDeviceHandler {
 
     // step size for increase/decrease commands
-    private static final int STEP = 10;
+    private static final PercentType STEP = new PercentType(10);
 
     public TradfriLightHandler(Thing thing) {
         super(thing);
@@ -117,13 +116,14 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
             }
             switch (channelUID.getId()) {
                 case CHANNEL_BRIGHTNESS:
-                    handleBrightnessCommand(command);
+                    getResourceAs(TradfriDimmableLight.class).ifPresent(bulb -> handleBrightnessCommand(command, bulb));
                     break;
                 case CHANNEL_COLOR_TEMPERATURE:
-                    handleColorTemperatureCommand(command);
+                    getResourceAs(TradfriColorTempLight.class)
+                            .ifPresent(bulb -> handleColorTemperatureCommand(command, bulb));
                     break;
                 case CHANNEL_COLOR:
-                    handleColorCommand(command);
+                    getResourceAs(TradfriColorLight.class).ifPresent(bulb -> handleColorCommand(command, bulb));
                     break;
                 default:
                     logger.error("Unknown channel UID {}", channelUID);
@@ -133,72 +133,51 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
         }
     }
 
-    private void handleBrightnessCommand(Command command) {
+    private void handleBrightnessCommand(Command command, TradfriDimmableLight bulb) {
         if (command instanceof PercentType) {
-            setBrightness((PercentType) command);
+            bulb.setBrightness((PercentType) command);
         } else if (command instanceof OnOffType) {
-            setState(((OnOffType) command));
+            bulb.setOnOff(((OnOffType) command));
         } else if (command instanceof IncreaseDecreaseType) {
-            final TradfriLightData state = this.state;
-            if (state != null && state.getBrightness() != null) {
-                @SuppressWarnings("null")
-                int current = state.getBrightness().intValue();
-                if (IncreaseDecreaseType.INCREASE.equals(command)) {
-                    setBrightness(new PercentType(Math.min(current + STEP, PercentType.HUNDRED.intValue())));
-                } else {
-                    setBrightness(new PercentType(Math.max(current - STEP, PercentType.ZERO.intValue())));
-                }
+            if (IncreaseDecreaseType.INCREASE.equals(command)) {
+                bulb.increaseBrightnessBy(STEP);
             } else {
-                logger.debug("Cannot handle inc/dec as current state is not known.");
+                bulb.decreaseBrightnessBy(STEP);
             }
         } else {
             logger.debug("Cannot handle command {} for channel {}", command, CHANNEL_BRIGHTNESS);
         }
     }
 
-    private void handleColorTemperatureCommand(Command command) {
+    private void handleColorTemperatureCommand(Command command, TradfriColorTempLight bulb) {
         if (command instanceof PercentType) {
-            setColorTemperature((PercentType) command);
+            bulb.setColorTemperature((PercentType) command);
         } else if (command instanceof IncreaseDecreaseType) {
-            final TradfriLightData state = this.state;
-            if (state != null && state.getColorTemperature() != null) {
-                @SuppressWarnings("null")
-                int current = state.getColorTemperature().intValue();
-                if (IncreaseDecreaseType.INCREASE.equals(command)) {
-                    setColorTemperature(new PercentType(Math.min(current + STEP, PercentType.HUNDRED.intValue())));
-                } else {
-                    setColorTemperature(new PercentType(Math.max(current - STEP, PercentType.ZERO.intValue())));
-                }
+            if (IncreaseDecreaseType.INCREASE.equals(command)) {
+                bulb.increaseBrightnessBy(STEP);
             } else {
-                logger.debug("Cannot handle inc/dec as current state is not known.");
+                bulb.decreaseBrightnessBy(STEP);
             }
         } else {
             logger.debug("Can't handle command {} on channel {}", command, CHANNEL_COLOR_TEMPERATURE);
         }
     }
 
-    private void handleColorCommand(Command command) {
+    private void handleColorCommand(Command command, TradfriColorLight bulb) {
         if (command instanceof HSBType) {
-            setColor((HSBType) command);
-            setBrightness(((HSBType) command).getBrightness());
+            bulb.setColor((HSBType) command);
+            // TODO: is this call required?
+            bulb.setBrightness(((HSBType) command).getBrightness());
         } else if (command instanceof OnOffType) {
-            setState(((OnOffType) command));
+            bulb.setOnOff(((OnOffType) command));
         } else if (command instanceof PercentType) {
             // PaperUI sends PercentType on color channel when changing Brightness
-            setBrightness((PercentType) command);
+            bulb.setBrightness((PercentType) command);
         } else if (command instanceof IncreaseDecreaseType) {
-            final TradfriLightData state = this.state;
-            // increase or decrease only the brightness, but keep color
-            if (state != null && state.getBrightness() != null) {
-                @SuppressWarnings("null")
-                int current = state.getBrightness().intValue();
-                if (IncreaseDecreaseType.INCREASE.equals(command)) {
-                    setBrightness(new PercentType(Math.min(current + STEP, PercentType.HUNDRED.intValue())));
-                } else {
-                    setBrightness(new PercentType(Math.max(current - STEP, PercentType.ZERO.intValue())));
-                }
+            if (IncreaseDecreaseType.INCREASE.equals(command)) {
+                bulb.increaseBrightnessBy(STEP);
             } else {
-                logger.debug("Cannot handle inc/dec for color as current brightness is not known.");
+                bulb.decreaseBrightnessBy(STEP);
             }
         } else {
             logger.debug("Can't handle command {} on channel {}", command, CHANNEL_COLOR);

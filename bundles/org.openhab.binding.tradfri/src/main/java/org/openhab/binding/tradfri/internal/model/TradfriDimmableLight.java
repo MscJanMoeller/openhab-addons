@@ -14,6 +14,7 @@
 package org.openhab.binding.tradfri.internal.model;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.smarthome.core.library.types.OnOffType;
 import org.eclipse.smarthome.core.library.types.PercentType;
 
 /**
@@ -31,7 +32,13 @@ public interface TradfriDimmableLight extends TradfriDevice {
 
     boolean isOff();
 
+    void setOnOff(OnOffType value);
+
     PercentType getBrightness();
 
     void setBrightness(PercentType value);
+
+    void increaseBrightnessBy(PercentType value);
+
+    void decreaseBrightnessBy(PercentType value);
 }

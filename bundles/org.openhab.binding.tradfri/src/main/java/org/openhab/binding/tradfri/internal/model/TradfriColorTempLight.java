@@ -33,4 +33,8 @@ public interface TradfriColorTempLight extends TradfriDimmableLight {
     Optional<PercentType> getColorTemperature();
 
     void setColorTemperature(PercentType value);
+
+    void increaseColorTemperatureBy(PercentType value);
+
+    void decreaseColorTemperatureBy(PercentType value);
 }

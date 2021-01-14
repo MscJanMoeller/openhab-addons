@@ -20,6 +20,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.smarthome.core.library.types.OnOffType;
 import org.eclipse.smarthome.core.library.types.PercentType;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.openhab.binding.tradfri.internal.TradfriColor;
@@ -61,27 +62,33 @@ public class TradfriCoapDimmableLightProxy extends TradfriCoapDeviceProxy implem
     }
 
     @Override
+    public void setOnOff(OnOffType value) {
+        // TODO Auto-generated method stub
+    }
+
+    @Override
     public PercentType getBrightness() {
         return isOn() ? TradfriColor.xyBrightnessToPercentType(getDimmer()) : PercentType.ZERO;
     }
 
     @Override
     public void setBrightness(PercentType value) {
-        // TODO Auto-generated method stub
+        setBrightness(convertToAbsoluteBrightness(value));
+    }
+
+    @Override
+    public void increaseBrightnessBy(PercentType value) {
+        setBrightness(Math.min(getDimmer() + convertToAbsoluteBrightness(value), 254));
+    }
+
+    @Override
+    public void decreaseBrightnessBy(PercentType value) {
+        setBrightness(Math.max(getDimmer() - convertToAbsoluteBrightness(value), 0));
     }
 
     @Override
     public TradfriCoapDevice parsePayload(String coapPayload) {
         return gson.fromJson(coapPayload, TradfriCoapDimmableLight.class);
-    }
-
-    protected int getOnOff() {
-        int onOff = -1;
-        TradfriCoapDimmableLightSetting lightSetting = getDimmableLightSetting();
-        if (lightSetting != null) {
-            onOff = lightSetting.getOnOff();
-        }
-        return onOff;
     }
 
     protected int getDimmer() {
@@ -97,6 +104,23 @@ public class TradfriCoapDimmableLightProxy extends TradfriCoapDeviceProxy implem
         Optional<TradfriCoapDimmableLightSetting> lightSetting = getDataAs(TradfriCoapDimmableLight.class)
                 .flatMap(light -> light.getLightSetting());
         return lightSetting.isPresent() ? lightSetting.get() : null;
+    }
+
+    private int getOnOff() {
+        int onOff = -1;
+        TradfriCoapDimmableLightSetting lightSetting = getDimmableLightSetting();
+        if (lightSetting != null) {
+            onOff = lightSetting.getOnOff();
+        }
+        return onOff;
+    }
+
+    private void setBrightness(int value) {
+        // TODO implement
+    }
+
+    private int convertToAbsoluteBrightness(PercentType relativeBrightness) {
+        return (int) Math.floor(relativeBrightness.doubleValue() * 2.54);
     }
 
 }
