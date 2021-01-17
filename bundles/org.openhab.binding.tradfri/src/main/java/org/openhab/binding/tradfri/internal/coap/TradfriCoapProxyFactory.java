@@ -84,7 +84,7 @@ public class TradfriCoapProxyFactory {
                     logger.trace("Received empty CoAP response");
                     return;
                 }
-                logger.trace("CoAP response\noptions: {}\npayload: {}", response.getOptions(),
+                logger.trace("Creating proxy based on CoAP response. Options: {}  Payload: {}", response.getOptions(),
                         response.getResponseText());
                 if (response.isSuccess()) {
                     try {
@@ -100,17 +100,20 @@ public class TradfriCoapProxyFactory {
                                     .newInstance(resourceCache, coapClient, scheduler);
                             newProxy.initialize(newProxy.parsePayload(response.getResponseText()));
                         } else {
-                            logger.info("Ignoring unknown device of TRADFRI gateway:\npayload: {}",
-                                    response.getResponseText());
+                            logger.info("Ignoring unknown device of TRADFRI gateway. Options: {}  Payload: {}",
+                                    response.getOptions(), response.getResponseText());
                         }
                     } catch (JsonSyntaxException ex) {
-                        logger.error("Unexpected CoAP response: {}", response);
+                        logger.error("Unexpected CoAP response. Options: {}  Payload: {}", response.getOptions(),
+                                response.getResponseText());
                     } catch (ReflectiveOperationException e) {
-                        logger.error("Unexpected error while creating device proxy based on CoAP response: {}",
-                                response);
+                        logger.error(
+                                "Unexpected error while creating device proxy based on CoAP response. Options: {}  Payload: {}",
+                                response.getOptions(), response.getResponseText());
                     } catch (IllegalArgumentException e) {
-                        logger.error("Unexpected error while creating device proxy based on CoAP response: {}",
-                                response);
+                        logger.error(
+                                "Unexpected error while creating device proxy based on CoAP response. Options: {}  Payload: {}",
+                                response.getOptions(), response.getResponseText());
                     }
                 } else {
                     logger.error("CoAP error: {}. Failed to get device data for {}.", response.getCode(),

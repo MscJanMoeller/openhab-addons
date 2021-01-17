@@ -62,7 +62,8 @@ public class TradfriCoapHandler implements CoapHandler {
             logger.trace("received empty CoAP response");
             return;
         }
-        logger.debug("CoAP response\noptions: {}\npayload: {}", response.getOptions(), response.getResponseText());
+        logger.trace("Received CoAP response. Options: {}  Payload: {}", response.getOptions(),
+                response.getResponseText());
         if (response.isSuccess()) {
             final CoapCallback callback = this.callback;
             if (callback != null) {
@@ -73,7 +74,8 @@ public class TradfriCoapHandler implements CoapHandler {
                 }
             }
         } else {
-            logger.debug("CoAP error {}", response.getCode());
+            logger.debug("CoAP error: '{}' '{}'   payload: '{}'", response.getCode(), response.getCode().name(),
+                    response.getResponseText());
             if (callback != null) {
                 callback.onError(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR);
             }

@@ -13,12 +13,9 @@
 
 package org.openhab.binding.tradfri.internal.coap;
 
-import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.ENDPOINT_SCENES;
-
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 
-import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapScene;
 import org.openhab.binding.tradfri.internal.model.TradfriScene;
@@ -32,9 +29,9 @@ import org.openhab.binding.tradfri.internal.model.TradfriScene;
 @NonNullByDefault
 public class TradfriCoapSceneProxy extends TradfriCoapResourceProxy implements TradfriScene {
 
-    public TradfriCoapSceneProxy(TradfriCoapResourceCache resourceCache, String gatewayUri, String groupId,
-            Endpoint endpoint, ScheduledExecutorService scheduler) {
-        super(resourceCache, gatewayUri + "/" + ENDPOINT_SCENES + "/" + groupId, endpoint, scheduler);
+    public TradfriCoapSceneProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient,
+            ScheduledExecutorService scheduler) {
+        super(resourceCache, coapClient, scheduler);
     }
 
     @Override

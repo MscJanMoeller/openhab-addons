@@ -84,7 +84,7 @@ public class TradfriResourceListObserver implements CoapCallback {
          * for lists of devices, groups and scenes. Therefore the ResourceListObserver are polling
          * the gateway every POLL_PERIOD seconds for changes.
          */
-        if (this.updateJob != null) {
+        if (this.updateJob == null) {
             this.updateJob = this.scheduler.scheduleWithFixedDelay(this::triggerUpdate, 1, POLL_PERIOD,
                     TimeUnit.SECONDS);
         }

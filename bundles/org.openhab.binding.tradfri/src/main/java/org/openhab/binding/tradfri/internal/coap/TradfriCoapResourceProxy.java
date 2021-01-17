@@ -20,7 +20,6 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapObserveRelation;
 import org.eclipse.californium.core.CoapResponse;
-import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapResource;
@@ -63,17 +62,9 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
         this.scheduler = scheduler;
     }
 
-    protected TradfriCoapResourceProxy(TradfriCoapResourceCache resourceCache, String uri, Endpoint endpoint,
-            ScheduledExecutorService scheduler) {
-        this.resourceCache = resourceCache;
-        this.coapClient = new TradfriCoapClient(uri);
-        this.coapClient.setEndpoint(endpoint);
-        this.scheduler = scheduler;
-    }
-
     @Override
     public <T extends TradfriResource> Optional<T> as(Class<T> resourceClass) {
-        return getClass().equals(resourceClass) ? Optional.of(resourceClass.cast(this)) : Optional.empty();
+        return resourceClass.isAssignableFrom(getClass()) ? Optional.of(resourceClass.cast(this)) : Optional.empty();
     }
 
     public void initialize(TradfriCoapResource data) {
@@ -107,7 +98,8 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
             logger.trace("received empty CoAP response");
             return;
         }
-        logger.debug("CoAP response\noptions: {}\npayload: {}", response.getOptions(), response.getResponseText());
+        logger.trace("Processing CoAP response. Options: {}  Payload: {}", response.getOptions(),
+                response.getResponseText());
         if (response.isSuccess()) {
             try {
                 updateData(parsePayload(response.getResponseText()));
@@ -115,7 +107,8 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
                 logger.error("Coap response is no valid json: {}, {}", response.getResponseText(), e.getMessage());
             }
         } else {
-            logger.debug("CoAP error {}", response.getCode());
+            logger.debug("CoAP error: '{}' '{}'  Options: {}  Payload: {}", response.getCode(),
+                    response.getCode().name(), response.getOptions(), response.getResponseText());
             // TODO: implement generic error reaction for resource proxy
         }
     }

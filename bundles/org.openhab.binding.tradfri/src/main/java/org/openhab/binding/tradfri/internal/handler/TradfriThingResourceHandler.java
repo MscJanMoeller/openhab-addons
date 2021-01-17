@@ -23,6 +23,7 @@ import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.eclipse.smarthome.core.thing.ThingStatusInfo;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
+import org.openhab.binding.tradfri.internal.config.TradfriDeviceConfig;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
 import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
@@ -51,6 +52,7 @@ public abstract class TradfriThingResourceHandler extends BaseThingHandler {
 
     @Override
     public synchronized void initialize() {
+        logger.trace("Start initializing thing with id {}", getThingId());
 
         final Bridge tradfriGateway = getBridge();
         if (tradfriGateway == null) {
@@ -71,7 +73,8 @@ public abstract class TradfriThingResourceHandler extends BaseThingHandler {
 
     @TradfriEventHandler(EType.RESOURCE_ADDED)
     public void onResourceInitialized(TradfriEvent event, TradfriThingResource thingResource) {
-        if (getThingId().equals(thingResource.getInstanceId())) {
+        logger.trace("Processing RESOURCE_ADDED event for resource with id {}", thingResource.getInstanceId().get());
+        if (getThingId().equals(thingResource.getInstanceId().get())) {
             onResourceInitialized(thingResource);
         }
     }
@@ -101,7 +104,7 @@ public abstract class TradfriThingResourceHandler extends BaseThingHandler {
     }
 
     protected String getThingId() {
-        return getThing().getUID().getId();
+        return getConfig().get(TradfriDeviceConfig.CONFIG_ID).toString();
     }
 
     protected Optional<TradfriResourceCache> getResourceCache() {
@@ -113,19 +116,16 @@ public abstract class TradfriThingResourceHandler extends BaseThingHandler {
     }
 
     protected <T extends TradfriResource> Optional<T> getResourceAs(Class<T> resourceClass) {
-        Optional<T> resource = Optional.empty();
-        if (getResourceCache().isPresent()) {
-            resource = getResourceCache().get().getAs(getThingId(), resourceClass);
-        }
-        return resource;
+        return getResourceCache().flatMap(cache -> cache.getAs(getThingId(), resourceClass));
     }
 
     protected void onResourceInitialized(TradfriThingResource thingResource) {
+        logger.trace("Initializing resource: id={} type={}", thingResource.getInstanceId().get(), getThingType());
         if (thingResource.matches(getThingType())) {
             onResourceUpdated(thingResource);
         } else {
             updateStatus(ThingStatus.UNINITIALIZED, ThingStatusDetail.CONFIGURATION_ERROR, String.format(
-                    "Configuration error. Thing type of thing with id '{}' doesn't match.\nExpected: '{}'\nActual: '{}'",
+                    "Configuration error. Thing type of thing with id {} doesn't match. Expected: {}  Actual: {}",
                     getThingId(), getThingType().getId(), thingResource.getThingType().getId()));
         }
     }

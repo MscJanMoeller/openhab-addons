@@ -17,6 +17,7 @@ import static org.junit.Assert.*;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.LinkedList;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -25,11 +26,15 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapColorLight;
+import org.openhab.binding.tradfri.internal.model.TradfriColorLight;
+import org.openhab.binding.tradfri.internal.model.TradfriColorTempLight;
 import org.openhab.binding.tradfri.internal.model.TradfriDevice;
+import org.openhab.binding.tradfri.internal.model.TradfriDimmableLight;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
 import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriResource;
+import org.openhab.binding.tradfri.internal.model.TradfriThingResource;
 
 import com.google.gson.Gson;
 
@@ -79,7 +84,41 @@ public class TradfriCoapResourceCacheTest {
     }
 
     @Test
-    public void subscribeEventsForDeviceWithoutIdAndType() {
+    public void getLight() {
+        final TradfriCoapResourceProxy device = new TradfriCoapColorLightProxy(this.resourceCache, this.coapClient,
+                this.scheduler);
+
+        final TradfriCoapColorLight bulbData = createTradfriCoapColorLight();
+        final String resourceId = bulbData.getInstanceId().get();
+        assertNotNull(resourceId);
+        device.initialize(bulbData);
+
+        final Optional<TradfriThingResource> asThingResource = this.resourceCache.getAs(resourceId,
+                TradfriThingResource.class);
+        assertThat(asThingResource.isPresent(), is(true));
+        assertThat(asThingResource.get().getInstanceId().get(), is(resourceId));
+
+        final Optional<TradfriDevice> asDevice = this.resourceCache.getAs(resourceId, TradfriDevice.class);
+        assertThat(asDevice.isPresent(), is(true));
+        assertThat(asDevice.get().getInstanceId().get(), is(resourceId));
+
+        final Optional<TradfriDimmableLight> asDimmableLight = this.resourceCache.getAs(resourceId,
+                TradfriDimmableLight.class);
+        assertThat(asDimmableLight.isPresent(), is(true));
+        assertThat(asDimmableLight.get().getInstanceId().get(), is(resourceId));
+
+        final Optional<TradfriColorTempLight> asColorTempLight = this.resourceCache.getAs(resourceId,
+                TradfriColorTempLight.class);
+        assertThat(asColorTempLight.isPresent(), is(true));
+        assertThat(asColorTempLight.get().getInstanceId().get(), is(resourceId));
+
+        final Optional<TradfriColorLight> asColorLight = this.resourceCache.getAs(resourceId, TradfriColorLight.class);
+        assertThat(asColorLight.isPresent(), is(true));
+        assertThat(asColorLight.get().getInstanceId().get(), is(resourceId));
+    }
+
+    @Test
+    public void subscribeAllEventsForDeviceWithoutIdAndType() {
         Object subscriber = new Object() {
             @TradfriEventHandler
             public void onAddedOrUpdatedOrRemoved(TradfriEvent event, TradfriDevice device) {
@@ -110,6 +149,40 @@ public class TradfriCoapResourceCacheTest {
 
         assertThat(expectedResources.size(), is(3));
         assertThat(expectedResources.remove(), is(device));
+        assertThat(expectedResources.remove(), is(device));
+        assertThat(expectedResources.remove(), is(device));
+    }
+
+    @Test
+    public void subscribeAddedAndUpdatedEventsForDeviceWithoutIdAndType() {
+        Object subscriber = new Object() {
+            @TradfriEventHandler({ EType.RESOURCE_ADDED, EType.RESOURCE_UPDATED })
+            public void onAddedOrUpdated(TradfriEvent event, TradfriDevice device) {
+                expectedEvents.add(event);
+                expectedResources.add(device);
+            }
+        };
+        this.resourceCache.subscribeEvents(subscriber);
+
+        final TradfriCoapResourceProxy device = new TradfriCoapColorLightProxy(this.resourceCache, this.coapClient,
+                this.scheduler);
+
+        final TradfriCoapColorLight actualBulbData = createTradfriCoapColorLight();
+        final String actualResourceId = actualBulbData.getInstanceId().get();
+        assertNotNull(actualResourceId);
+
+        // Generates event RESOURCE_ADDED
+        device.initialize(actualBulbData);
+        // Generates event RESOURCE_UPDATED
+        this.resourceCache.updated(device);
+        // Generates event RESOURCE_REMOVED
+        this.resourceCache.remove(actualResourceId);
+
+        assertThat(expectedEvents.size(), is(2));
+        assertThat(expectedEvents.remove().getType(), is(EType.RESOURCE_ADDED));
+        assertThat(expectedEvents.remove().getType(), is(EType.RESOURCE_UPDATED));
+
+        assertThat(expectedResources.size(), is(2));
         assertThat(expectedResources.remove(), is(device));
         assertThat(expectedResources.remove(), is(device));
     }

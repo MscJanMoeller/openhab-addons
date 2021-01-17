@@ -88,4 +88,9 @@ public class TradfriEventSubscription {
         TradfriEventSubscription other = (TradfriEventSubscription) obj;
         return Objects.equals(id, other.id) && Objects.equals(types, other.types);
     }
+
+    @Override
+    public String toString() {
+        return String.format("id: %S  types: %s", id == null ? "ALL" : id, types.isEmpty() ? "ALL" : types);
+    }
 }

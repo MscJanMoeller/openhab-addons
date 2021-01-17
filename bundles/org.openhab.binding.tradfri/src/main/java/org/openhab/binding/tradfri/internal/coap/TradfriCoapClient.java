@@ -83,7 +83,7 @@ public class TradfriCoapClient extends CoapClient {
      * @param callback the callback to use for the response
      */
     public void asyncGet(CoapCallback callback) {
-        logger.debug("CoAP GET request\nuri: {}", getURI());
+        logger.debug("Scheduled CoAP GET request. Uri: {}", getURI());
         get(new TradfriCoapHandler(callback));
     }
 

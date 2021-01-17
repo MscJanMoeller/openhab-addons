@@ -84,7 +84,6 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
 
     @Override
     public void subscribeEvents(Object subscriber) {
-        Optional.empty();
         subscribe(TradfriEventSubscription.allEvents(), subscriber);
     }
 
@@ -115,12 +114,14 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
 
     @Override
     public Optional<TradfriCoapResourceProxy> get(String id) {
-        return Optional.of(this.proxyMap.get(id));
+        logger.trace("Resource with id {} requested", id);
+        return Optional.ofNullable(this.proxyMap.get(id));
     }
 
     @Override
     public <T extends TradfriResource> Optional<T> getAs(String id, Class<T> resourceClass) {
-        return get(id).isPresent() ? get(id).get().as(resourceClass) : Optional.empty();
+        logger.trace("Resource with id {} as {} requested", id, resourceClass);
+        return get(id).flatMap(resource -> resource.as(resourceClass));
     }
 
     @Override
@@ -155,7 +156,7 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
                  */
                 this.proxyFactory.createDeviceProxy(id);
             } else {
-                logger.error("Unexpected initializaion error. Device with ID {} couldn't be added.", id);
+                logger.error("Unexpected initializaion error. Device with id {} couldn't be added.", id);
             }
         }
     }
@@ -169,7 +170,7 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
                  */
                 this.proxyFactory.createGroupProxy(id);
             } else {
-                logger.error("Unexpected initializaion error. Group with ID {} couldn't be added.", id);
+                logger.error("Unexpected initializaion error. Group with id {} couldn't be added.", id);
             }
         }
     }
@@ -183,7 +184,7 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
                  */
                 this.proxyFactory.createSceneProxy(groupId, sceneId);
             } else {
-                logger.error("Unexpected initializaion error. Scene with ID {} couldn't be added.", sceneId);
+                logger.error("Unexpected initializaion error. Scene with id {} couldn't be added.", sceneId);
             }
         }
     }
@@ -192,6 +193,7 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
         proxy.getInstanceId().ifPresent(id -> {
             if (!contains(id)) {
                 this.proxyMap.put(id, proxy);
+                logger.trace("Added resource with id {} to resource cache.", id);
                 publish(EType.RESOURCE_ADDED, proxy);
             }
         });
@@ -202,10 +204,9 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
     }
 
     public Optional<TradfriCoapResourceProxy> remove(String id) {
-        Optional<TradfriCoapResourceProxy> proxy = get(id);
+        final Optional<TradfriCoapResourceProxy> proxy = get(id);
         if (proxy.isPresent()) {
-            this.proxyMap.remove(id);
-            publish(EType.RESOURCE_REMOVED, proxy.get());
+            publish(EType.RESOURCE_REMOVED, this.proxyMap.remove(id));
         }
         return proxy;
     }
@@ -215,6 +216,7 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
             eventHandlerMap.put(eventSubscription, new CopyOnWriteArraySet<WeakReference<Object>>());
         }
         eventHandlerMap.get(eventSubscription).add(new WeakReference<>(subscriber));
+        logger.trace("Added event subscription for {}", eventSubscription);
     }
 
     private void publish(EType eventType, TradfriCoapResourceProxy proxy) {
@@ -244,11 +246,12 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
     private <T, R extends TradfriResource> void deliverEvent(T subscriber, Method method, TradfriEvent event,
             R resource) {
         final Class<?>[] paramClasses = method.getParameterTypes();
-        if ((paramClasses.length == 2) && paramClasses[0].equals(TradfriEvent.class)
-                && paramClasses[1].isAssignableFrom(resource.getClass())) {
+        if ((paramClasses.length == 2) && paramClasses[0].equals(TradfriEvent.class)) {
             try {
-                method.setAccessible(true);
-                method.invoke(subscriber, event, resource);
+                if (paramClasses[1].isAssignableFrom(resource.getClass())) {
+                    method.setAccessible(true);
+                    method.invoke(subscriber, event, resource);
+                }
             } catch (Exception e) {
                 logger.debug("Error while invoking annotated method {}. Exception:\n {}", method.getName(),
                         e.getMessage());

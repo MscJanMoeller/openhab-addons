@@ -309,7 +309,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         // Requesting info about the gateway and add firmware version
         requestGatewayInfo();
 
-        // Connect TradfriDiscoveryService with resource storage to get events for devices and groups
+        // Connect TradfriDiscoveryService with resource cache to get events for devices and groups
         this.resourceCache.subscribeEvents(this);
 
         String baseUri = getGatewayURI();

@@ -85,7 +85,7 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
     protected void onDimmableLightUpdated(TradfriDimmableLight bulb) {
         onDeviceUpdated(bulb);
         updateState(CHANNEL_BRIGHTNESS, bulb.getBrightness());
-        logger.debug("Updated thing for light bulb with Id {} to state {dimmer: {}}", bulb.getInstanceId(),
+        logger.debug("Updated thing for light bulb with id {} to state {dimmer: {}}", bulb.getInstanceId().get(),
                 bulb.getBrightness());
     }
 
@@ -93,16 +93,16 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
         onDeviceUpdated(bulb);
         updateState(CHANNEL_BRIGHTNESS, bulb.getBrightness());
         bulb.getColorTemperature().ifPresent(colorTemp -> updateState(CHANNEL_COLOR_TEMPERATURE, colorTemp));
-        logger.debug("Updated thing for light bulb with Id {} to state {dimmer: {}, colorTemp: {}}",
-                bulb.getInstanceId(), bulb.getBrightness(), bulb.getColorTemperature());
+        logger.debug("Updated thing for light bulb with id {} to state {dimmer: {}, colorTemp: {}}",
+                bulb.getInstanceId().get(), bulb.getBrightness(), bulb.getColorTemperature().get());
     }
 
     protected void onColorLightUpdated(TradfriColorLight bulb) {
         onDeviceUpdated(bulb);
         bulb.getColorTemperature().ifPresent(colorTemp -> updateState(CHANNEL_COLOR_TEMPERATURE, colorTemp));
         bulb.getColor().ifPresent(color -> updateState(CHANNEL_COLOR, color));
-        logger.debug("Updated thing for light bulb with Id {} to state {colorTemp: {}, color: {}}",
-                bulb.getInstanceId(), bulb.getColorTemperature(), bulb.getColor());
+        logger.debug("Updated thing for light bulb with id {} to state {colorTemp: {}, color: {}}",
+                bulb.getInstanceId().get(), bulb.getColorTemperature().get(), bulb.getColor().get());
     }
 
     @Override
