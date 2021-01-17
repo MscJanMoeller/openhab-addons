@@ -404,13 +404,15 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
      */
     public void startBackgroundDiscovery() {
         this.activeScans.getAndIncrement();
+        logger.trace("Start background discovery. Num active scan: {}", this.activeScans.toString());
     }
 
     /**
      * Disables background discovery of devices, groups and scenes
      */
     public void stopBackgroundDiscovery() {
-        this.activeScans.getAndDecrement();
+        this.activeScans.getAndUpdate(i -> i > 0 ? i - 1 : 0);
+        logger.trace("Stop background discovery. Num active scan: {}", this.activeScans.toString());
     }
 
     /**
@@ -418,6 +420,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
      */
     public synchronized void startScan() {
         this.activeScans.getAndIncrement();
+        logger.trace("Start discovery. Num active scan: {}", this.activeScans.toString());
 
         this.resourceCache.refresh();
     }
@@ -426,7 +429,8 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
      * Stops the scan of devices, groups and scenes
      */
     public synchronized void stopScan() {
-        this.activeScans.getAndDecrement();
+        this.activeScans.getAndUpdate(i -> i > 0 ? i - 1 : 0);
+        logger.trace("Stop discovery. Num active scan: {}", this.activeScans.toString());
     }
 
     @Override
