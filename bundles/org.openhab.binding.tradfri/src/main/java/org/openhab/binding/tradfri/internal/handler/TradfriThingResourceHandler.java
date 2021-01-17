@@ -124,6 +124,7 @@ public abstract class TradfriThingResourceHandler extends BaseThingHandler {
         if (thingResource.matches(getThingType())) {
             onResourceUpdated(thingResource);
         } else {
+            getResourceCache().ifPresent(cache -> cache.unsubscribeEvents(this));
             updateStatus(ThingStatus.UNINITIALIZED, ThingStatusDetail.CONFIGURATION_ERROR, String.format(
                     "Configuration error. Thing type of thing with id {} doesn't match. Expected: {}  Actual: {}",
                     getThingId(), getThingType().getId(), thingResource.getThingType().getId()));

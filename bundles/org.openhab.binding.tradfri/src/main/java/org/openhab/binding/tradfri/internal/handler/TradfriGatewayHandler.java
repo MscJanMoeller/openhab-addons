@@ -373,6 +373,8 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     public void dispose() {
         stopScan();
 
+        this.resourceCache.unsubscribeEvents(this);
+
         this.resourceCache.clear();
 
         if (this.supvJob != null) {

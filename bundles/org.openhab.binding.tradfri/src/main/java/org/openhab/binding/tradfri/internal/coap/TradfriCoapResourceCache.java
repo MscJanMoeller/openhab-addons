@@ -15,7 +15,6 @@ package org.openhab.binding.tradfri.internal.coap;
 
 import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 
-import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -55,14 +54,14 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
 
     private final ConcurrentHashMap<String, TradfriCoapResourceProxy> proxyMap;
 
-    private final ConcurrentHashMap<TradfriEventSubscription, Set<WeakReference<Object>>> eventHandlerMap;
+    private final ConcurrentHashMap<TradfriEventSubscription, Set<Object>> eventHandlerMap;
 
     private @Nullable TradfriCoapProxyFactory proxyFactory;
 
     public TradfriCoapResourceCache() {
 
         this.proxyMap = new ConcurrentHashMap<String, TradfriCoapResourceProxy>();
-        this.eventHandlerMap = new ConcurrentHashMap<TradfriEventSubscription, Set<WeakReference<Object>>>();
+        this.eventHandlerMap = new ConcurrentHashMap<TradfriEventSubscription, Set<Object>>();
     }
 
     public boolean isInitialized() {
@@ -104,7 +103,13 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
 
     @Override
     public void unsubscribeEvents(Object subscriber) {
-
+        this.eventHandlerMap.entrySet().forEach((entry) -> {
+            if (entry.getValue().remove(subscriber)) {
+                if (entry.getValue().isEmpty()) {
+                    this.eventHandlerMap.remove(entry.getKey());
+                }
+            }
+        });
     }
 
     @Override
@@ -141,7 +146,7 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
         // Implicitly disposes all resources by triggering RESOURCE_REMOVED event
         disposeResourceListObserver();
 
-        this.eventHandlerMap.values().parallelStream().forEach((handlers) -> handlers.clear());
+        this.eventHandlerMap.values().parallelStream().forEach((subscribers) -> subscribers.clear());
         this.eventHandlerMap.clear();
 
         this.proxyMap.clear();
@@ -213,9 +218,9 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
 
     private void subscribe(TradfriEventSubscription eventSubscription, Object subscriber) {
         if (!eventHandlerMap.containsKey(eventSubscription)) {
-            eventHandlerMap.put(eventSubscription, new CopyOnWriteArraySet<WeakReference<Object>>());
+            eventHandlerMap.put(eventSubscription, new CopyOnWriteArraySet<Object>());
         }
-        eventHandlerMap.get(eventSubscription).add(new WeakReference<>(subscriber));
+        eventHandlerMap.get(eventSubscription).add(subscriber);
         logger.trace("Added event subscription for {}", eventSubscription);
     }
 
@@ -224,15 +229,14 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
             final TradfriEvent event = TradfriEvent.from(id, eventType);
             this.eventHandlerMap.entrySet().forEach((entry) -> {
                 if (entry.getKey().covers(event)) {
-                    entry.getValue().parallelStream().forEach((subscriberRef) -> {
-                        Object subscriberObj = subscriberRef.get();
-                        for (final Method method : subscriberObj.getClass().getMethods()) {
+                    entry.getValue().parallelStream().forEach((subscriber) -> {
+                        for (final Method method : subscriber.getClass().getMethods()) {
                             TradfriEventHandler annotation = method.getAnnotation(getTrafriEventHandlerAnnotation());
                             if (annotation != null) {
                                 EType[] definedETypes = annotation.value();
                                 if (definedETypes.length == 0 || Arrays.stream(definedETypes)
                                         .anyMatch(definedEType -> definedEType == eventType)) {
-                                    deliverEvent(subscriberObj, method, event, proxy);
+                                    deliverEvent(subscriber, method, event, proxy);
                                 }
                             }
                         }

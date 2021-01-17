@@ -16,6 +16,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.MockitoAnnotations.initMocks;
 
+import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.Optional;
 import java.util.Queue;
@@ -183,6 +184,75 @@ public class TradfriCoapResourceCacheTest {
         assertThat(expectedEvents.remove().getType(), is(EType.RESOURCE_UPDATED));
 
         assertThat(expectedResources.size(), is(2));
+        assertThat(expectedResources.remove(), is(device));
+        assertThat(expectedResources.remove(), is(device));
+    }
+
+    @Test
+    public void unsubscribe() {
+        final TradfriCoapColorLight actualBulbData = createTradfriCoapColorLight();
+        final String actualResourceId = actualBulbData.getInstanceId().get();
+        assertNotNull(actualResourceId);
+
+        Object subscriber1 = new Object() {
+            @TradfriEventHandler
+            public void onAddedOrUpdatedOrRemoved(TradfriEvent event, TradfriDevice device) {
+                expectedEvents.add(event);
+                expectedResources.add(device);
+            }
+        };
+        this.resourceCache.subscribeEvents(subscriber1);
+
+        Object subscriber2 = new Object() {
+            @TradfriEventHandler
+            public void onAddedOrUpdated(TradfriEvent event, TradfriDevice device) {
+                expectedEvents.add(event);
+                expectedResources.add(device);
+            }
+        };
+        this.resourceCache.subscribeEvents(actualResourceId, EnumSet.of(EType.RESOURCE_ADDED, EType.RESOURCE_UPDATED),
+                subscriber2);
+
+        final TradfriCoapResourceProxy device = new TradfriCoapColorLightProxy(this.resourceCache, this.coapClient,
+                this.scheduler);
+
+        // Generates event RESOURCE_ADDED
+        device.initialize(actualBulbData);
+        // Generates event RESOURCE_UPDATED
+        this.resourceCache.updated(device);
+        // Generates event RESOURCE_REMOVED
+        this.resourceCache.remove(actualResourceId);
+
+        assertThat(expectedEvents.size(), is(5));
+        assertThat(expectedEvents.remove().getType(), is(EType.RESOURCE_ADDED));
+        assertThat(expectedEvents.remove().getType(), is(EType.RESOURCE_ADDED));
+        assertThat(expectedEvents.remove().getType(), is(EType.RESOURCE_UPDATED));
+        assertThat(expectedEvents.remove().getType(), is(EType.RESOURCE_UPDATED));
+        assertThat(expectedEvents.remove().getType(), is(EType.RESOURCE_REMOVED));
+
+        assertThat(expectedResources.size(), is(5));
+        assertThat(expectedResources.remove(), is(device));
+        assertThat(expectedResources.remove(), is(device));
+        assertThat(expectedResources.remove(), is(device));
+        assertThat(expectedResources.remove(), is(device));
+        assertThat(expectedResources.remove(), is(device));
+
+        this.resourceCache.unsubscribeEvents(subscriber2);
+
+        // Generates event RESOURCE_ADDED
+        device.initialize(actualBulbData);
+        // Generates event RESOURCE_UPDATED
+        this.resourceCache.updated(device);
+        // Generates event RESOURCE_REMOVED
+        this.resourceCache.remove(actualResourceId);
+
+        assertThat(expectedEvents.size(), is(3));
+        assertThat(expectedEvents.remove().getType(), is(EType.RESOURCE_ADDED));
+        assertThat(expectedEvents.remove().getType(), is(EType.RESOURCE_UPDATED));
+        assertThat(expectedEvents.remove().getType(), is(EType.RESOURCE_REMOVED));
+
+        assertThat(expectedResources.size(), is(3));
+        assertThat(expectedResources.remove(), is(device));
         assertThat(expectedResources.remove(), is(device));
         assertThat(expectedResources.remove(), is(device));
     }
