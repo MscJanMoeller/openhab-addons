@@ -12,6 +12,7 @@
  */
 package org.openhab.binding.tradfri.internal.coap.status;
 
+import java.util.Collections;
 import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
@@ -29,8 +30,14 @@ import com.google.gson.annotations.SerializedName;
 
 @NonNullByDefault
 public class TradfriCoapResourceIdList {
+    private static final TradfriCoapResourceIdList EMPTY = new TradfriCoapResourceIdList();
+
     @SerializedName(value = TradfriBindingConstants.RESOURCE_INSTANCE_ID)
     private @Nullable Set<String> instanceIDs;
+
+    public static TradfriCoapResourceIdList empty() {
+        return EMPTY;
+    }
 
     public int size() {
         int size = 0;
@@ -52,7 +59,7 @@ public class TradfriCoapResourceIdList {
         return containsId;
     }
 
-    public @Nullable Set<String> toSet() {
-        return instanceIDs;
+    public Set<String> toSet() {
+        return (this.instanceIDs != null) ? this.instanceIDs : Collections.emptySet();
     }
 }

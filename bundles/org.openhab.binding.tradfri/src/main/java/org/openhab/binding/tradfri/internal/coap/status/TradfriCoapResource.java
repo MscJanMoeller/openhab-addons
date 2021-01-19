@@ -37,7 +37,7 @@ public class TradfriCoapResource {
     private @Nullable String instanceId;
 
     public <T extends TradfriCoapResource> Optional<T> as(Class<T> resourceClass) {
-        return getClass().equals(resourceClass) ? Optional.of(resourceClass.cast(this)) : Optional.empty();
+        return resourceClass.isAssignableFrom(getClass()) ? Optional.of(resourceClass.cast(this)) : Optional.empty();
     }
 
     public Optional<String> getName() {

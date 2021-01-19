@@ -36,9 +36,13 @@ public interface TradfriResourceCache {
 
     void subscribeEvents(EnumSet<EType> eventTypes, Object subscriber);
 
+    void subscribeEvents(String id, EType eventType, Object subscriber);
+
     void subscribeEvents(String id, EnumSet<EType> eventTypes, Object subscriber);
 
     void unsubscribeEvents(Object subscriber);
+
+    void unsubscribeEvents(String id, EType eventType, Object subscriber);
 
     boolean contains(String id);
 

@@ -42,7 +42,7 @@ import com.google.gson.JsonSyntaxException;
 @NonNullByDefault
 public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriResource {
 
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     protected final static Gson gson = new Gson();
 
@@ -53,13 +53,14 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
 
     private final TradfriCoapResourceCache resourceCache;
 
-    private @Nullable TradfriCoapResource cachedData;
+    private TradfriCoapResource cachedData;
 
     protected TradfriCoapResourceProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient,
-            ScheduledExecutorService scheduler) {
+            ScheduledExecutorService scheduler, TradfriCoapResource initialData) {
         this.resourceCache = resourceCache;
         this.coapClient = coapClient;
         this.scheduler = scheduler;
+        this.cachedData = initialData;
     }
 
     @Override
@@ -67,21 +68,19 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
         return resourceClass.isAssignableFrom(getClass()) ? Optional.of(resourceClass.cast(this)) : Optional.empty();
     }
 
-    public void initialize(TradfriCoapResource data) {
-        this.cachedData = data;
-        this.resourceCache.add(this);
+    public void initialize() {
         // Start observation of resource updates
         observe();
     }
 
     @Override
     public Optional<String> getInstanceId() {
-        return (this.cachedData != null) ? this.cachedData.getInstanceId() : Optional.empty();
+        return this.cachedData.getInstanceId();
     }
 
     @Override
     public Optional<String> getName() {
-        return (this.cachedData != null) ? this.cachedData.getName() : Optional.empty();
+        return this.cachedData.getName();
     }
 
     @Override
@@ -89,8 +88,6 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
         // Asynchronous call
         this.coapClient.get(this);
     }
-
-    public abstract TradfriCoapResource parsePayload(String coapPayload) throws JsonSyntaxException;
 
     @Override
     public void onLoad(@Nullable CoapResponse response) {
@@ -126,7 +123,6 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
             this.observeRelation = null;
         }
         this.coapClient.shutdown();
-        this.cachedData = null;
     }
 
     protected TradfriCoapResourceCache getResourceCache() {
@@ -134,12 +130,19 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
     }
 
     protected <T extends TradfriCoapResource> Optional<T> getDataAs(Class<T> resourceClass) {
-        return (this.cachedData != null) ? Optional.of(resourceClass.cast(this.cachedData)) : Optional.empty();
+        return this.cachedData.as(resourceClass);
     }
 
+    protected abstract TradfriCoapResource parsePayload(String coapPayload) throws JsonSyntaxException;
+
     protected void updateData(TradfriCoapResource data) {
+        final TradfriCoapResource old = this.cachedData;
         this.cachedData = data;
+        this.onUpdate(old, data);
         this.resourceCache.updated(this);
+    }
+
+    protected void onUpdate(TradfriCoapResource oldData, TradfriCoapResource newData) {
     }
 
     protected void observe() {

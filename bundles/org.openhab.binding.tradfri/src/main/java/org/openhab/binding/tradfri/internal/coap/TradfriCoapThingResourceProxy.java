@@ -17,6 +17,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapResource;
 import org.openhab.binding.tradfri.internal.model.TradfriThingResource;
 
 /**
@@ -31,8 +32,8 @@ public abstract class TradfriCoapThingResourceProxy extends TradfriCoapResourceP
     private final ThingTypeUID thingType;
 
     protected TradfriCoapThingResourceProxy(TradfriCoapResourceCache resourceCache, ThingTypeUID thingType,
-            TradfriCoapClient coapClient, ScheduledExecutorService scheduler) {
-        super(resourceCache, coapClient, scheduler);
+            TradfriCoapClient coapClient, ScheduledExecutorService scheduler, TradfriCoapResource initialData) {
+        super(resourceCache, coapClient, scheduler, initialData);
         this.thingType = thingType;
     }
 

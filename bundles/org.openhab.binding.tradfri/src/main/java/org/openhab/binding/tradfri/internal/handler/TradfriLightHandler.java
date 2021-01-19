@@ -34,6 +34,8 @@ import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
 import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriThingResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The {@link TradfriLightHandler} is responsible for handling commands for individual lights.
@@ -45,6 +47,8 @@ import org.openhab.binding.tradfri.internal.model.TradfriThingResource;
  */
 @NonNullByDefault
 public class TradfriLightHandler extends TradfriDeviceHandler {
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     // step size for increase/decrease commands
     private static final PercentType STEP = new PercentType(10);

@@ -59,17 +59,17 @@ public class TradfriCoapProxyFactory {
         this.scheduler = scheduler;
     }
 
-    public void createDeviceProxy(String id) {
+    public void createAndAddDeviceProxy(String id) {
         TradfriCoapClient coapClient = new TradfriCoapClient(this.baseUri + "/" + ENDPOINT_DEVICES + "/" + id);
         createProxy(coapClient);
     }
 
-    public void createGroupProxy(String id) {
+    public void createAndAddGroupProxy(String id) {
         TradfriCoapClient coapClient = new TradfriCoapClient(this.baseUri + "/" + ENDPOINT_GROUPS + "/" + id);
         createProxy(coapClient);
     }
 
-    public void createSceneProxy(String groupId, String sceneId) {
+    public void createAndAddSceneProxy(String groupId, String sceneId) {
         TradfriCoapClient coapClient = new TradfriCoapClient(
                 this.baseUri + "/" + ENDPOINT_SCENES + "/" + groupId + "/" + sceneId);
         createProxy(coapClient);
@@ -96,9 +96,10 @@ public class TradfriCoapProxyFactory {
                         if (proxyClass != null) {
                             TradfriCoapResourceProxy newProxy = proxyClass
                                     .getConstructor(TradfriCoapResourceCache.class, TradfriCoapClient.class,
-                                            ScheduledExecutorService.class)
-                                    .newInstance(resourceCache, coapClient, scheduler);
-                            newProxy.initialize(newProxy.parsePayload(response.getResponseText()));
+                                            ScheduledExecutorService.class, JsonObject.class)
+                                    .newInstance(resourceCache, coapClient, scheduler, payload);
+                            resourceCache.add(newProxy);
+                            newProxy.initialize();
                         } else {
                             logger.info("Ignoring unknown device of TRADFRI gateway. Options: {}  Payload: {}",
                                     response.getOptions(), response.getResponseText());

@@ -29,6 +29,8 @@ import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapDimmableLight
 import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapDimmableLightSetting;
 import org.openhab.binding.tradfri.internal.model.TradfriDimmableLight;
 
+import com.google.gson.JsonObject;
+
 /**
  * {@link TradfriCoapDimmableLightProxy} represents a single light bulb
  * that has continuous brightness control.
@@ -42,13 +44,14 @@ public class TradfriCoapDimmableLightProxy extends TradfriCoapDeviceProxy implem
     private static final ThingTypeUID thingType = THING_TYPE_DIMMABLE_LIGHT;
 
     public TradfriCoapDimmableLightProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient,
-            ScheduledExecutorService scheduler) {
-        this(resourceCache, thingType, coapClient, scheduler);
+            ScheduledExecutorService scheduler, JsonObject coapPayload) {
+        this(resourceCache, thingType, coapClient, scheduler,
+                gson.fromJson(coapPayload, TradfriCoapDimmableLight.class));
     }
 
     protected TradfriCoapDimmableLightProxy(TradfriCoapResourceCache resourceCache, ThingTypeUID thingType,
-            TradfriCoapClient coapClient, ScheduledExecutorService scheduler) {
-        super(resourceCache, thingType, coapClient, scheduler);
+            TradfriCoapClient coapClient, ScheduledExecutorService scheduler, TradfriCoapDevice initialData) {
+        super(resourceCache, thingType, coapClient, scheduler, initialData);
     }
 
     @Override
@@ -87,7 +90,7 @@ public class TradfriCoapDimmableLightProxy extends TradfriCoapDeviceProxy implem
     }
 
     @Override
-    public TradfriCoapDevice parsePayload(String coapPayload) {
+    protected TradfriCoapDevice parsePayload(String coapPayload) {
         return gson.fromJson(coapPayload, TradfriCoapDimmableLight.class);
     }
 

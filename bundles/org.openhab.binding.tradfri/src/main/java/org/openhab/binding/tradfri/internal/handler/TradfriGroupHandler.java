@@ -15,7 +15,6 @@ package org.openhab.binding.tradfri.internal.handler;
 import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.library.types.IncreaseDecreaseType;
 import org.eclipse.smarthome.core.library.types.OnOffType;
 import org.eclipse.smarthome.core.library.types.PercentType;
@@ -30,6 +29,9 @@ import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
 import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriGroup;
+import org.openhab.binding.tradfri.internal.model.TradfriThingResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The {@link TradfriGroupHandler} is responsible for handling commands of individual groups.
@@ -39,21 +41,25 @@ import org.openhab.binding.tradfri.internal.model.TradfriGroup;
 @NonNullByDefault
 public class TradfriGroupHandler extends TradfriThingResourceHandler {
 
-    // the unique instance id of the group
-    protected @Nullable String id;
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     public TradfriGroupHandler(Thing thing) {
         super(thing);
     }
 
+    @Override
+    protected void onResourceUpdated(TradfriThingResource resource) {
+        if (resource.matches(THING_TYPE_GROUP)) {
+            resource.as(TradfriGroup.class).ifPresent(group -> onGroupUpdated(group));
+        } else {
+            // Delegate
+            super.onResourceUpdated(resource);
+        }
+    }
+
     @TradfriEventHandler(EType.RESOURCE_UPDATED)
     public void onGroupUpdated(TradfriEvent event, TradfriGroup group) {
-        onResourceUpdated(group);
-
-        group.getActiveScene().ifPresent(
-                scene -> scene.getSceneName().ifPresent(name -> updateState(CHANNEL_SCENE, StringType.valueOf(name))));
-
-        // TODO update channels: brightness, color_temperature, color
+        onGroupUpdated(group);
     }
 
     @Override
@@ -85,6 +91,16 @@ public class TradfriGroupHandler extends TradfriThingResourceHandler {
         } else {
             logger.debug("Gateway not online. Cannot handle command {} for channel {}", command, channelUID);
         }
+    }
+
+    private void onGroupUpdated(TradfriGroup group) {
+        // TODO update channels: brightness, color_temperature, color
+
+        group.getActiveScene().ifPresent(
+                scene -> scene.getSceneName().ifPresent(name -> updateState(CHANNEL_SCENE, StringType.valueOf(name))));
+
+        // TODO: switch to offline if all connected device are offline?
+        updateStatus(ThingStatus.ONLINE);
     }
 
     private void handleBrightnessCommand(Command command) {

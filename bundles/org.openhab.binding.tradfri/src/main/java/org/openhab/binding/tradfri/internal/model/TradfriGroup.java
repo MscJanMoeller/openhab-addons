@@ -16,6 +16,8 @@ package org.openhab.binding.tradfri.internal.model;
 import java.util.Optional;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.smarthome.core.library.types.OnOffType;
+import org.eclipse.smarthome.core.library.types.PercentType;
 
 /**
  * {@link TradfriGroup} represents a single group
@@ -26,6 +28,20 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 
 @NonNullByDefault
 public interface TradfriGroup extends TradfriThingResource {
+
+    boolean isOn();
+
+    boolean isOff();
+
+    void setOnOff(OnOffType value);
+
+    PercentType getBrightness();
+
+    void setBrightness(PercentType value);
+
+    void increaseBrightnessBy(PercentType value);
+
+    void decreaseBrightnessBy(PercentType value);
 
     Optional<TradfriScene> getActiveScene();
 

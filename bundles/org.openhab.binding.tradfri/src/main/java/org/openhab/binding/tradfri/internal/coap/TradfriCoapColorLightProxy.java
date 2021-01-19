@@ -30,6 +30,8 @@ import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapDevice;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapDimmableLightSetting;
 import org.openhab.binding.tradfri.internal.model.TradfriColorLight;
 
+import com.google.gson.JsonObject;
+
 /**
  * {@link TradfriCoapColorLightProxy} represents a single light bulb
  * that supports full colors and color temperature settings.
@@ -43,8 +45,8 @@ public class TradfriCoapColorLightProxy extends TradfriCoapDimmableLightProxy im
     private static final ThingTypeUID thingType = THING_TYPE_COLOR_LIGHT;
 
     public TradfriCoapColorLightProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient,
-            ScheduledExecutorService scheduler) {
-        super(resourceCache, thingType, coapClient, scheduler);
+            ScheduledExecutorService scheduler, JsonObject coapPayload) {
+        super(resourceCache, thingType, coapClient, scheduler, gson.fromJson(coapPayload, TradfriCoapColorLight.class));
     }
 
     @Override

@@ -58,11 +58,12 @@ public class TradfriCoapGroup extends TradfriCoapResource {
         return groupType;
     }
 
-    public @Nullable TradfriCoapResourceIdList getMembers() {
+    public TradfriCoapResourceIdList getMembers() {
         if (this.deviceLinks != null) {
-            return this.deviceLinks.resourceLinks;
+            return this.deviceLinks.resourceLinks != null ? this.deviceLinks.resourceLinks
+                    : TradfriCoapResourceIdList.empty();
         }
-        return null;
+        return TradfriCoapResourceIdList.empty();
     }
 
 }

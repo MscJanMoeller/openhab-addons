@@ -18,6 +18,7 @@ import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,9 +53,9 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
     private @Nullable TradfriResourceListObserver deviceListObserver;
     private @Nullable TradfriResourceListObserver groupListObserver;
 
-    private final ConcurrentHashMap<String, TradfriCoapResourceProxy> proxyMap;
+    private final Map<String, TradfriCoapResourceProxy> proxyMap;
 
-    private final ConcurrentHashMap<TradfriEventSubscription, Set<Object>> eventHandlerMap;
+    private final Map<TradfriEventSubscription, Set<Object>> eventHandlerMap;
 
     private @Nullable TradfriCoapProxyFactory proxyFactory;
 
@@ -97,6 +98,11 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
     }
 
     @Override
+    public void subscribeEvents(String id, EType eventType, Object subscriber) {
+        subscribe(new TradfriEventSubscription(id, EnumSet.of(eventType)), subscriber);
+    }
+
+    @Override
     public void subscribeEvents(String id, EnumSet<EType> eventTypes, Object subscriber) {
         subscribe(new TradfriEventSubscription(id, eventTypes), subscriber);
     }
@@ -107,6 +113,19 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
             if (entry.getValue().remove(subscriber)) {
                 if (entry.getValue().isEmpty()) {
                     this.eventHandlerMap.remove(entry.getKey());
+                }
+            }
+        });
+    }
+
+    @Override
+    public void unsubscribeEvents(String id, EType eventType, Object subscriber) {
+        this.eventHandlerMap.entrySet().forEach((entry) -> {
+            if (entry.getKey().covers(id, eventType)) {
+                if (entry.getValue().remove(subscriber)) {
+                    if (entry.getValue().isEmpty()) {
+                        this.eventHandlerMap.remove(entry.getKey());
+                    }
                 }
             }
         });
@@ -152,42 +171,42 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
         this.proxyMap.clear();
     }
 
-    public void createDeviceProxy(String id) {
+    public void createAndAddDeviceProxy(String id) {
         if (!contains(id)) {
             if (this.proxyFactory != null) {
                 /**
                  * Create new proxy for added device
                  * New proxy adds itself automatically to the resource storage
                  */
-                this.proxyFactory.createDeviceProxy(id);
+                this.proxyFactory.createAndAddDeviceProxy(id);
             } else {
                 logger.error("Unexpected initializaion error. Device with id {} couldn't be added.", id);
             }
         }
     }
 
-    public void createGroupProxy(String id) {
+    public void createAndAddGroupProxy(String id) {
         if (!contains(id)) {
             if (this.proxyFactory != null) {
                 /**
                  * Create new proxy for added group
                  * New proxy adds itself automatically to the resource storage
                  */
-                this.proxyFactory.createGroupProxy(id);
+                this.proxyFactory.createAndAddGroupProxy(id);
             } else {
                 logger.error("Unexpected initializaion error. Group with id {} couldn't be added.", id);
             }
         }
     }
 
-    public void createSceneProxy(String groupId, String sceneId) {
+    public void createAndAddSceneProxy(String groupId, String sceneId) {
         if (!contains(sceneId)) {
             if (this.proxyFactory != null) {
                 /**
                  * Create new proxy for added scene
                  * New proxy adds itself automatically to the resource storage
                  */
-                this.proxyFactory.createSceneProxy(groupId, sceneId);
+                this.proxyFactory.createAndAddSceneProxy(groupId, sceneId);
             } else {
                 logger.error("Unexpected initializaion error. Scene with id {} couldn't be added.", sceneId);
             }
@@ -306,7 +325,7 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
         final String id = event.getId();
         // A device was added.
         if (event.is(EType.RESOURCE_ADDED)) {
-            createDeviceProxy(id);
+            createAndAddDeviceProxy(id);
             // A device was removed
         } else if (event.is(EType.RESOURCE_REMOVED)) {
             // Remove proxy of removed device
@@ -319,7 +338,7 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
         final String id = event.getId();
         // A group was added
         if (event.is(EType.RESOURCE_ADDED)) {
-            createGroupProxy(id);
+            createAndAddGroupProxy(id);
             // A group was removed
         } else if (event.is(EType.RESOURCE_REMOVED)) {
             // Remove proxy of removed group

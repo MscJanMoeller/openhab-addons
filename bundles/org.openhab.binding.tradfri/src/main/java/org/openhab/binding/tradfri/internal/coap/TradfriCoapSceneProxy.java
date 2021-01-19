@@ -20,6 +20,8 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapScene;
 import org.openhab.binding.tradfri.internal.model.TradfriScene;
 
+import com.google.gson.JsonObject;
+
 /**
  * {@link TradfriCoapSceneProxy} observes changes of a single scene
  *
@@ -30,8 +32,8 @@ import org.openhab.binding.tradfri.internal.model.TradfriScene;
 public class TradfriCoapSceneProxy extends TradfriCoapResourceProxy implements TradfriScene {
 
     public TradfriCoapSceneProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient,
-            ScheduledExecutorService scheduler) {
-        super(resourceCache, coapClient, scheduler);
+            ScheduledExecutorService scheduler, JsonObject coapPayload) {
+        super(resourceCache, coapClient, scheduler, gson.fromJson(coapPayload, TradfriCoapScene.class));
     }
 
     @Override
@@ -40,7 +42,7 @@ public class TradfriCoapSceneProxy extends TradfriCoapResourceProxy implements T
     }
 
     @Override
-    public TradfriCoapScene parsePayload(String coapPayload) {
+    protected TradfriCoapScene parsePayload(String coapPayload) {
         return gson.fromJson(coapPayload, TradfriCoapScene.class);
     }
 }

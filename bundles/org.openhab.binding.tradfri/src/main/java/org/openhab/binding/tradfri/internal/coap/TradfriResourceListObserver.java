@@ -20,7 +20,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.jdt.annotation.Nullable;
@@ -44,7 +43,7 @@ import com.google.gson.reflect.TypeToken;
  */
 public class TradfriResourceListObserver implements CoapCallback {
 
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     protected final Gson gson = new Gson();
 
@@ -103,20 +102,16 @@ public class TradfriResourceListObserver implements CoapCallback {
             }.getType();
             Set<String> currentResources = gson.fromJson(data, setType);
 
-            Set<String> addedResources = currentResources.stream().filter(r -> !cachedResources.contains(r))
-                    .collect(Collectors.toSet());
-            Set<String> removedResources = cachedResources.stream().filter(r -> !currentResources.contains(r))
-                    .collect(Collectors.toSet());
-
-            addedResources.forEach(id -> updateHandler
+            // Inform listener about added resources
+            currentResources.stream().filter(id -> !cachedResources.contains(id)).forEach(id -> updateHandler
                     .forEach(listener -> listener.onUpdate(TradfriEvent.from(id, EType.RESOURCE_ADDED))));
 
-            removedResources.forEach(id -> updateHandler
+            // Inform listener about removed resources
+            cachedResources.stream().filter(id -> !currentResources.contains(id)).forEach(id -> updateHandler
                     .forEach(listener -> listener.onUpdate(TradfriEvent.from(id, EType.RESOURCE_REMOVED))));
 
             this.cachedResources = currentResources;
         }
-
         updateCounter++;
     }
 

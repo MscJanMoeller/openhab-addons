@@ -56,17 +56,21 @@ public class TradfriEventSubscription {
         return ALL;
     }
 
+    public boolean covers(String otherId) {
+        final String id = this.id;
+        return (id == null) || id.equals(otherId);
+    }
+
     public boolean covers(EType other) {
-        return this.types.contains(other);
+        return this.types.isEmpty() || this.types.contains(other);
+    }
+
+    public boolean covers(String id, EType other) {
+        return covers(id) && covers(other);
     }
 
     public boolean covers(TradfriEvent event) {
-        final String id = this.id;
-
-        boolean idMatch = (id == null) || id.equals(event.getId());
-        boolean typeMatch = this.types.isEmpty() || covers(event.getType());
-
-        return idMatch && typeMatch;
+        return covers(event.getId(), event.getType());
     }
 
     @Override

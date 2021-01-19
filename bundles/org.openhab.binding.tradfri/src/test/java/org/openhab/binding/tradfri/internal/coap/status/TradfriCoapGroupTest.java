@@ -13,7 +13,7 @@
 package org.openhab.binding.tradfri.internal.coap.status;
 
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 import org.junit.Test;
 
@@ -45,7 +45,6 @@ public class TradfriCoapGroupTest {
         assertThat(grp.getSceneId().get(), is("196635"));
         assertThat(grp.getGroupType(), is(0));
         TradfriCoapResourceIdList idList = grp.getMembers();
-        assertNotNull(idList);
         assertThat(idList.size(), is(3));
         assertThat(idList.toSet(), contains("65552", "65553", "65554"));
     }
