@@ -120,10 +120,12 @@ public class TradfriDiscoveryServiceTest {
                 .get(any(CoapHandler.class));
 
         // Stub behavior of resource cache and use call to inform discovery service
-        doAnswer(answerVoid((proxy) -> {
+        when(resourceCache.add(any(TradfriCoapResourceProxy.class))).thenAnswer((invocation) -> {
+            TradfriCoapResourceProxy proxy = invocation.getArgument(0);
             TradfriGroup discoveredGroup = (TradfriGroup) proxy;
             discovery.onGroupUpdated(handler.getThing(), discoveredGroup);
-        })).when(resourceCache).add(any(TradfriCoapResourceProxy.class));
+            return proxy;
+        });
 
         // Create proxy for discovered resource
         this.proxyFactory.createProxy(this.coapClient);
@@ -141,10 +143,12 @@ public class TradfriDiscoveryServiceTest {
                 .get(any(CoapHandler.class));
 
         // Stub behavior of resource cache and use call to inform discovery service
-        doAnswer(answerVoid((proxy) -> {
+        when(resourceCache.add(any(TradfriCoapResourceProxy.class))).thenAnswer((invocation) -> {
+            TradfriCoapResourceProxy proxy = invocation.getArgument(0);
             TradfriDevice discoveredDevice = (TradfriDevice) proxy;
             discovery.onDeviceUpdated(handler.getThing(), discoveredDevice);
-        })).when(resourceCache).add(any(TradfriCoapResourceProxy.class));
+            return proxy;
+        });
 
         // Create proxy for discovered resource
         this.proxyFactory.createProxy(this.coapClient);

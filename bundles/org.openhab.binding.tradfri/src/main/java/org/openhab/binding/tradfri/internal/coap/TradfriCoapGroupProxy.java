@@ -46,8 +46,8 @@ public class TradfriCoapGroupProxy extends TradfriCoapThingResourceProxy impleme
 
     public TradfriCoapGroupProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient,
             ScheduledExecutorService scheduler, JsonObject coapPayload) {
-        super(resourceCache, THING_TYPE_GROUP, coapClient, scheduler,
-                gson.fromJson(coapPayload, TradfriCoapGroup.class));
+        super(resourceCache, coapClient, scheduler, gson.fromJson(coapPayload, TradfriCoapGroup.class),
+                THING_TYPE_GROUP);
 
         String sceneListUri = coapClient.getURI().replaceFirst(ENDPOINT_GROUPS, ENDPOINT_SCENES);
         this.sceneListObserver = new TradfriResourceListObserver(sceneListUri, coapClient.getEndpoint(), scheduler);

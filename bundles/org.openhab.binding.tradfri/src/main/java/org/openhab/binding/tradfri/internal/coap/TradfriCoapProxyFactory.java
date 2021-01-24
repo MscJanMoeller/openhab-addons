@@ -94,12 +94,10 @@ public class TradfriCoapProxyFactory {
                         Class<? extends TradfriCoapResourceProxy> proxyClass = TradfriProxyClassMap
                                 .getProxyClassFrom(payload);
                         if (proxyClass != null) {
-                            TradfriCoapResourceProxy newProxy = proxyClass
+                            resourceCache.add(proxyClass
                                     .getConstructor(TradfriCoapResourceCache.class, TradfriCoapClient.class,
                                             ScheduledExecutorService.class, JsonObject.class)
-                                    .newInstance(resourceCache, coapClient, scheduler, payload);
-                            resourceCache.add(newProxy);
-                            newProxy.initialize();
+                                    .newInstance(resourceCache, coapClient, scheduler, payload)).initialize();
                         } else {
                             logger.info("Ignoring unknown device of TRADFRI gateway. Options: {}  Payload: {}",
                                     response.getOptions(), response.getResponseText());

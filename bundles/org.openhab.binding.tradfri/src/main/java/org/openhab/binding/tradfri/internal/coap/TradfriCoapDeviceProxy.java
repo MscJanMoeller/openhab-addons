@@ -31,9 +31,9 @@ import org.openhab.binding.tradfri.internal.model.TradfriDevice;
 @NonNullByDefault
 public class TradfriCoapDeviceProxy extends TradfriCoapThingResourceProxy implements TradfriDevice {
 
-    protected TradfriCoapDeviceProxy(TradfriCoapResourceCache resourceCache, ThingTypeUID thingType,
-            TradfriCoapClient coapClient, ScheduledExecutorService scheduler, TradfriCoapDevice initialData) {
-        super(resourceCache, thingType, coapClient, scheduler, initialData);
+    public TradfriCoapDeviceProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient,
+            ScheduledExecutorService scheduler, TradfriCoapDevice initialData, ThingTypeUID thingType) {
+        super(resourceCache, coapClient, scheduler, initialData, thingType);
     }
 
     @Override

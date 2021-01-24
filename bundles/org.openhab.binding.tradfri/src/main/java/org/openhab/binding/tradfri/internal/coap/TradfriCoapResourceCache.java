@@ -213,7 +213,7 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
         }
     }
 
-    public void add(TradfriCoapResourceProxy proxy) {
+    public TradfriCoapResourceProxy add(TradfriCoapResourceProxy proxy) {
         proxy.getInstanceId().ifPresent(id -> {
             if (!contains(id)) {
                 this.proxyMap.put(id, proxy);
@@ -221,6 +221,7 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
                 publish(EType.RESOURCE_ADDED, proxy);
             }
         });
+        return proxy;
     }
 
     public void updated(TradfriCoapResourceProxy proxy) {

@@ -13,6 +13,8 @@
 
 package org.openhab.binding.tradfri.internal.model;
 
+import java.util.Set;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 
@@ -30,4 +32,6 @@ public interface TradfriThingResource extends TradfriResource {
     ThingTypeUID getThingType();
 
     boolean matches(ThingTypeUID thingType);
+
+    boolean matchesOneOf(Set<ThingTypeUID> thingTypes);
 }

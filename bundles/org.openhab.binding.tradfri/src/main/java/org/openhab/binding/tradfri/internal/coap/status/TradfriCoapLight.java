@@ -21,20 +21,20 @@ import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * The {@link TradfriCoapColorTempLight} class is a Java wrapper for raw JSON data related to a light bulb
- * that supports different color temperature settings.
+ * The {@link TradfriCoapLight} class is a Java wrapper for raw JSON data related to a dimmable light bulb with
+ * color temperature settings and full color support.
  *
  * @author Jan Möller - Initial contribution
  */
 
 @NonNullByDefault
-public class TradfriCoapColorTempLight extends TradfriCoapDevice {
+public class TradfriCoapLight extends TradfriCoapDevice {
 
     @SerializedName(value = TradfriBindingConstants.LIGHT)
-    private TradfriCoapColorTempLightSetting @Nullable [] lightSettings;
+    private TradfriCoapLightSetting @Nullable [] lightSettings;
 
-    public Optional<TradfriCoapColorTempLightSetting> getLightSetting() {
-        TradfriCoapColorTempLightSetting[] lightSettingArray = this.lightSettings;
+    public Optional<TradfriCoapLightSetting> getLightSetting() {
+        TradfriCoapLightSetting[] lightSettingArray = this.lightSettings;
         if (lightSettingArray != null && lightSettingArray.length > 0) {
             return Optional.of(lightSettingArray[0]);
         } else {

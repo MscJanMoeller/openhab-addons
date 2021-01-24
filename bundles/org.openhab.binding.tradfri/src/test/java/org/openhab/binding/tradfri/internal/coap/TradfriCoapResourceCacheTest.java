@@ -26,14 +26,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapColorLight;
-import org.openhab.binding.tradfri.internal.model.TradfriColorLight;
-import org.openhab.binding.tradfri.internal.model.TradfriColorTempLight;
+import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapLight;
 import org.openhab.binding.tradfri.internal.model.TradfriDevice;
-import org.openhab.binding.tradfri.internal.model.TradfriDimmableLight;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
 import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
+import org.openhab.binding.tradfri.internal.model.TradfriLight;
 import org.openhab.binding.tradfri.internal.model.TradfriResource;
 import org.openhab.binding.tradfri.internal.model.TradfriThingResource;
 
@@ -59,13 +57,13 @@ public class TradfriCoapResourceCacheTest {
     private Queue<TradfriEvent> expectedEvents;
     private Queue<TradfriResource> expectedResources;
 
-    private static TradfriCoapColorLight createTradfriCoapColorLight() {
+    private static TradfriCoapLight createTradfriCoapLightWithColorSupport() {
         String json = "{\"3\":{\"0\":\"IKEA of Sweden\",\"6\":1,\"1\":\"TRADFRI bulb E27 CWS opal 600lm\","
                 + "\"2\":\"\",\"3\":\"1.3.013\"},\"9001\":\"LR Floor Lamp\",\"9003\":65539,\"9002\":1538425240,"
                 + "\"9020\":1603481417,\"9054\":0,\"9019\":1,\"5750\":2,\"3311\":[{\"5850\":1,\"5851\":254,\"5707\":1490,"
                 + "\"5708\":61206,\"5709\":40632,\"5710\":22282,\"5706\":\"da5d41\",\"9003\":0}]}";
 
-        return gson.fromJson(json, TradfriCoapColorLight.class);
+        return gson.fromJson(json, TradfriCoapLight.class);
     }
 
     @Before
@@ -86,10 +84,10 @@ public class TradfriCoapResourceCacheTest {
 
     @Test
     public void getLight() {
-        final TradfriCoapColorLight bulbData = createTradfriCoapColorLight();
+        final TradfriCoapLight bulbData = createTradfriCoapLightWithColorSupport();
 
         final TradfriCoapResourceProxy device = new TradfriCoapColorLightProxy(this.resourceCache, this.coapClient,
-                this.scheduler, gson.toJsonTree(bulbData, TradfriCoapColorLight.class).getAsJsonObject());
+                this.scheduler, gson.toJsonTree(bulbData, TradfriCoapLight.class).getAsJsonObject());
 
         this.resourceCache.add(device);
 
@@ -105,20 +103,9 @@ public class TradfriCoapResourceCacheTest {
         assertThat(asDevice.isPresent(), is(true));
         assertThat(asDevice.get().getInstanceId().get(), is(actualResourceId));
 
-        final Optional<TradfriDimmableLight> asDimmableLight = this.resourceCache.getAs(actualResourceId,
-                TradfriDimmableLight.class);
+        final Optional<TradfriLight> asDimmableLight = this.resourceCache.getAs(actualResourceId, TradfriLight.class);
         assertThat(asDimmableLight.isPresent(), is(true));
         assertThat(asDimmableLight.get().getInstanceId().get(), is(actualResourceId));
-
-        final Optional<TradfriColorTempLight> asColorTempLight = this.resourceCache.getAs(actualResourceId,
-                TradfriColorTempLight.class);
-        assertThat(asColorTempLight.isPresent(), is(true));
-        assertThat(asColorTempLight.get().getInstanceId().get(), is(actualResourceId));
-
-        final Optional<TradfriColorLight> asColorLight = this.resourceCache.getAs(actualResourceId,
-                TradfriColorLight.class);
-        assertThat(asColorLight.isPresent(), is(true));
-        assertThat(asColorLight.get().getInstanceId().get(), is(actualResourceId));
     }
 
     @Test
@@ -132,10 +119,10 @@ public class TradfriCoapResourceCacheTest {
         };
         this.resourceCache.subscribeEvents(subscriber);
 
-        final TradfriCoapColorLight bulbData = createTradfriCoapColorLight();
+        final TradfriCoapLight bulbData = createTradfriCoapLightWithColorSupport();
 
         final TradfriCoapResourceProxy device = new TradfriCoapColorLightProxy(this.resourceCache, this.coapClient,
-                this.scheduler, gson.toJsonTree(bulbData, TradfriCoapColorLight.class).getAsJsonObject());
+                this.scheduler, gson.toJsonTree(bulbData, TradfriCoapLight.class).getAsJsonObject());
 
         final String actualResourceId = bulbData.getInstanceId().get();
         assertNotNull(actualResourceId);
@@ -169,10 +156,10 @@ public class TradfriCoapResourceCacheTest {
         };
         this.resourceCache.subscribeEvents(subscriber);
 
-        final TradfriCoapColorLight bulbData = createTradfriCoapColorLight();
+        final TradfriCoapLight bulbData = createTradfriCoapLightWithColorSupport();
 
         final TradfriCoapResourceProxy device = new TradfriCoapColorLightProxy(this.resourceCache, this.coapClient,
-                this.scheduler, gson.toJsonTree(bulbData, TradfriCoapColorLight.class).getAsJsonObject());
+                this.scheduler, gson.toJsonTree(bulbData, TradfriCoapLight.class).getAsJsonObject());
 
         final String actualResourceId = bulbData.getInstanceId().get();
         assertNotNull(actualResourceId);
@@ -195,7 +182,7 @@ public class TradfriCoapResourceCacheTest {
 
     @Test
     public void unsubscribe() {
-        final TradfriCoapColorLight bulbData = createTradfriCoapColorLight();
+        final TradfriCoapLight bulbData = createTradfriCoapLightWithColorSupport();
 
         final String actualResourceId = bulbData.getInstanceId().get();
         assertNotNull(actualResourceId);
@@ -220,7 +207,7 @@ public class TradfriCoapResourceCacheTest {
                 subscriber2);
 
         final TradfriCoapResourceProxy device = new TradfriCoapColorLightProxy(this.resourceCache, this.coapClient,
-                this.scheduler, gson.toJsonTree(bulbData, TradfriCoapColorLight.class).getAsJsonObject());
+                this.scheduler, gson.toJsonTree(bulbData, TradfriCoapLight.class).getAsJsonObject());
 
         // Generates event RESOURCE_ADDED
         this.resourceCache.add(device);

@@ -27,12 +27,10 @@ import org.eclipse.smarthome.core.thing.Thing;
 import org.eclipse.smarthome.core.thing.ThingStatus;
 import org.eclipse.smarthome.core.types.Command;
 import org.eclipse.smarthome.core.types.RefreshType;
-import org.openhab.binding.tradfri.internal.model.TradfriColorLight;
-import org.openhab.binding.tradfri.internal.model.TradfriColorTempLight;
-import org.openhab.binding.tradfri.internal.model.TradfriDimmableLight;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
 import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
+import org.openhab.binding.tradfri.internal.model.TradfriLight;
 import org.openhab.binding.tradfri.internal.model.TradfriThingResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,55 +56,38 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
     }
 
     @TradfriEventHandler(EType.RESOURCE_UPDATED)
-    public void onLightUpdated(TradfriEvent event, TradfriDimmableLight bulb) {
-        onDimmableLightUpdated(bulb);
-    }
-
-    @TradfriEventHandler(EType.RESOURCE_UPDATED)
-    public void onLightUpdated(TradfriEvent event, TradfriColorTempLight bulb) {
-        onColorTempLightUpdated(bulb);
-    }
-
-    @TradfriEventHandler(EType.RESOURCE_UPDATED)
-    public void onLightUpdated(TradfriEvent event, TradfriColorLight bulb) {
-        onColorLightUpdated(bulb);
+    public void onLightUpdated(TradfriEvent event, TradfriLight bulb) {
+        onLightUpdated(bulb);
     }
 
     @Override
     protected void onResourceUpdated(TradfriThingResource resource) {
-        if (resource.matches(THING_TYPE_DIMMABLE_LIGHT)) {
-            resource.as(TradfriDimmableLight.class).ifPresent(bulb -> onDimmableLightUpdated(bulb));
-        } else if (resource.matches(THING_TYPE_COLOR_TEMP_LIGHT)) {
-            resource.as(TradfriColorTempLight.class).ifPresent(bulb -> onColorTempLightUpdated(bulb));
-        } else if (resource.matches(THING_TYPE_COLOR_LIGHT)) {
-            resource.as(TradfriColorLight.class).ifPresent(bulb -> onColorLightUpdated(bulb));
+        if (resource.matchesOneOf(SUPPORTED_LIGHT_TYPES_UIDS)) {
+            resource.as(TradfriLight.class).ifPresent(bulb -> onLightUpdated(bulb));
         } else {
             // Delegate
             super.onResourceUpdated(resource);
         }
     }
 
-    protected void onDimmableLightUpdated(TradfriDimmableLight bulb) {
+    protected void onLightUpdated(TradfriLight bulb) {
         onDeviceUpdated(bulb);
+
         updateState(CHANNEL_BRIGHTNESS, bulb.getBrightness());
-        logger.debug("Updated thing for light bulb with id {} to state {dimmer: {}}", bulb.getInstanceId().get(),
+        logger.debug("Updated channel {} of light bulb {} to {}}", CHANNEL_BRIGHTNESS, bulb.getInstanceId().get(),
                 bulb.getBrightness());
-    }
 
-    protected void onColorTempLightUpdated(TradfriColorTempLight bulb) {
-        onDeviceUpdated(bulb);
-        updateState(CHANNEL_BRIGHTNESS, bulb.getBrightness());
-        bulb.getColorTemperature().ifPresent(colorTemp -> updateState(CHANNEL_COLOR_TEMPERATURE, colorTemp));
-        logger.debug("Updated thing for light bulb with id {} to state {dimmer: {}, colorTemp: {}}",
-                bulb.getInstanceId().get(), bulb.getBrightness(), bulb.getColorTemperature().get());
-    }
+        if (thingSupportsColorTemperature() && bulb.supportsColorTemperature()) {
+            bulb.getColorTemperature().ifPresent(colorTemp -> updateState(CHANNEL_COLOR_TEMPERATURE, colorTemp));
+            logger.debug("Updated channel {} of light bulb {} to {}}", CHANNEL_COLOR_TEMPERATURE,
+                    bulb.getInstanceId().get(), bulb.getColorTemperature().get());
+        }
 
-    protected void onColorLightUpdated(TradfriColorLight bulb) {
-        onDeviceUpdated(bulb);
-        bulb.getColorTemperature().ifPresent(colorTemp -> updateState(CHANNEL_COLOR_TEMPERATURE, colorTemp));
-        bulb.getColor().ifPresent(color -> updateState(CHANNEL_COLOR, color));
-        logger.debug("Updated thing for light bulb with id {} to state {colorTemp: {}, color: {}}",
-                bulb.getInstanceId().get(), bulb.getColorTemperature().get(), bulb.getColor().get());
+        if (thingSupportsColor() & bulb.supportsColor()) {
+            bulb.getColor().ifPresent(color -> updateState(CHANNEL_COLOR, color));
+            logger.debug("Updated channel {} of light bulb {} to {}}", CHANNEL_COLOR, bulb.getInstanceId().get(),
+                    bulb.getColor().get());
+        }
     }
 
     @Override
@@ -118,26 +99,29 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
                 getResource().ifPresent(resource -> resource.triggerUpdate());
                 return;
             }
+            final Optional<TradfriLight> lightBulb = getResourceAs(TradfriLight.class);
             switch (channelUID.getId()) {
                 case CHANNEL_BRIGHTNESS:
-                    getResourceAs(TradfriDimmableLight.class).ifPresent(bulb -> handleBrightnessCommand(command, bulb));
+                    lightBulb.ifPresent(bulb -> handleBrightnessCommand(command, bulb));
                     break;
                 case CHANNEL_COLOR_TEMPERATURE:
-                    getResourceAs(TradfriColorTempLight.class)
+                    lightBulb.filter(bulb -> bulb.supportsColorTemperature())
                             .ifPresent(bulb -> handleColorTemperatureCommand(command, bulb));
                     break;
                 case CHANNEL_COLOR:
-                    getResourceAs(TradfriColorLight.class).ifPresent(bulb -> handleColorCommand(command, bulb));
+                    lightBulb.filter(bulb -> bulb.supportsColor()).ifPresent(bulb -> handleColorCommand(command, bulb));
                     break;
                 default:
                     logger.error("Unknown channel UID {}", channelUID);
             }
-        } else {
+        } else
+
+        {
             logger.debug("Bridge not online. Cannot handle command {} for channel {}", command, channelUID);
         }
     }
 
-    private void handleBrightnessCommand(Command command, TradfriDimmableLight bulb) {
+    private void handleBrightnessCommand(Command command, TradfriLight bulb) {
         if (command instanceof PercentType) {
             bulb.setBrightness((PercentType) command);
         } else if (command instanceof OnOffType) {
@@ -153,7 +137,7 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
         }
     }
 
-    private void handleColorTemperatureCommand(Command command, TradfriColorTempLight bulb) {
+    private void handleColorTemperatureCommand(Command command, TradfriLight bulb) {
         if (command instanceof PercentType) {
             bulb.setColorTemperature((PercentType) command);
         } else if (command instanceof IncreaseDecreaseType) {
@@ -167,7 +151,7 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
         }
     }
 
-    private void handleColorCommand(Command command, TradfriColorLight bulb) {
+    private void handleColorCommand(Command command, TradfriLight bulb) {
         if (command instanceof HSBType) {
             bulb.setColor((HSBType) command);
             // TODO: is this call required?
@@ -191,14 +175,10 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
     /**
      * Checks if this light supports color temperature.
      *
-     * @return true if the light supports full color
+     * @return true if the light supports color temperature
      */
-    private boolean hasThingColorTempSupport() {
+    private boolean thingSupportsColorTemperature() {
         return thing.getThingTypeUID().getId().equals(THING_TYPE_COLOR_TEMP_LIGHT.getId());
-    }
-
-    private Optional<TradfriColorTempLight> getColorTempLight() {
-        return getResourceAs(TradfriColorTempLight.class);
     }
 
     /**
@@ -206,11 +186,7 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
      *
      * @return true if the light supports full color
      */
-    private boolean hasThingColorSupport() {
+    private boolean thingSupportsColor() {
         return thing.getThingTypeUID().getId().equals(THING_TYPE_COLOR_LIGHT.getId());
-    }
-
-    private Optional<TradfriColorLight> getColorLight() {
-        return getResourceAs(TradfriColorLight.class);
     }
 }

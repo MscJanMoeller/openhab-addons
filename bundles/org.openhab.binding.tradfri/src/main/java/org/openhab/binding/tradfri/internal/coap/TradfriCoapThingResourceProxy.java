@@ -13,6 +13,7 @@
 
 package org.openhab.binding.tradfri.internal.coap;
 
+import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
@@ -31,8 +32,8 @@ public abstract class TradfriCoapThingResourceProxy extends TradfriCoapResourceP
 
     private final ThingTypeUID thingType;
 
-    protected TradfriCoapThingResourceProxy(TradfriCoapResourceCache resourceCache, ThingTypeUID thingType,
-            TradfriCoapClient coapClient, ScheduledExecutorService scheduler, TradfriCoapResource initialData) {
+    protected TradfriCoapThingResourceProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient,
+            ScheduledExecutorService scheduler, TradfriCoapResource initialData, ThingTypeUID thingType) {
         super(resourceCache, coapClient, scheduler, initialData);
         this.thingType = thingType;
     }
@@ -45,5 +46,10 @@ public abstract class TradfriCoapThingResourceProxy extends TradfriCoapResourceP
     @Override
     public boolean matches(ThingTypeUID thingType) {
         return this.thingType.equals(thingType);
+    }
+
+    @Override
+    public boolean matchesOneOf(Set<ThingTypeUID> thingTypes) {
+        return thingTypes.contains(this.thingType);
     }
 }
