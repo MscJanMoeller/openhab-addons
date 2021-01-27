@@ -11,13 +11,15 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.openhab.binding.tradfri.internal.coap;
+package org.openhab.binding.tradfri.internal.coap.proxy;
 
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
+import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
+import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceCache;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapDevice;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapDeviceInfo;
 import org.openhab.binding.tradfri.internal.model.TradfriDevice;
@@ -29,9 +31,9 @@ import org.openhab.binding.tradfri.internal.model.TradfriDevice;
  *
  */
 @NonNullByDefault
-public class TradfriCoapDeviceProxy extends TradfriCoapThingResourceProxy implements TradfriDevice {
+public abstract class TradfriCoapDeviceProxy extends TradfriCoapThingResourceProxy implements TradfriDevice {
 
-    public TradfriCoapDeviceProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient,
+    protected TradfriCoapDeviceProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient,
             ScheduledExecutorService scheduler, TradfriCoapDevice initialData, ThingTypeUID thingType) {
         super(resourceCache, coapClient, scheduler, initialData, thingType);
     }
@@ -64,11 +66,6 @@ public class TradfriCoapDeviceProxy extends TradfriCoapThingResourceProxy implem
     @Override
     public int getBatteryLevel() {
         return getDeviceInfo().map(deviceInfo -> deviceInfo.getBatteryLevel()).orElse(-1);
-    }
-
-    @Override
-    protected TradfriCoapDevice parsePayload(String coapPayload) {
-        return gson.fromJson(coapPayload, TradfriCoapDevice.class);
     }
 
     private Optional<TradfriCoapDeviceInfo> getDeviceInfo() {

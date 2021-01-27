@@ -14,6 +14,8 @@ package org.openhab.binding.tradfri.internal.handler;
 
 import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 
+import java.util.Optional;
+
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.smarthome.core.library.types.IncreaseDecreaseType;
 import org.eclipse.smarthome.core.library.types.OnOffType;
@@ -43,6 +45,9 @@ public class TradfriGroupHandler extends TradfriThingResourceHandler {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    // step size for increase/decrease commands
+    private static final PercentType STEP = new PercentType(10);
+
     public TradfriGroupHandler(Thing thing) {
         super(thing);
     }
@@ -71,19 +76,19 @@ public class TradfriGroupHandler extends TradfriThingResourceHandler {
                 getResource().ifPresent(resource -> resource.triggerUpdate());
                 return;
             }
-
+            final Optional<TradfriGroup> group = getResourceAs(TradfriGroup.class);
             switch (channelUID.getId()) {
                 case CHANNEL_BRIGHTNESS:
-                    handleBrightnessCommand(command);
+                    group.ifPresent(g -> handleBrightnessCommand(command, g));
                     break;
                 case CHANNEL_COLOR_TEMPERATURE:
-                    handleColorTemperatureCommand(command);
+                    group.ifPresent(g -> handleColorTemperatureCommand(command, g));
                     break;
                 case CHANNEL_COLOR:
-                    handleColorCommand(command);
+                    group.ifPresent(g -> handleColorCommand(command, g));
                     break;
                 case CHANNEL_SCENE:
-                    handleSceneCommand(command);
+                    group.ifPresent(g -> handleSceneCommand(command, g));
                     break;
                 default:
                     logger.error("Unknown channel UID {}", channelUID);
@@ -94,39 +99,45 @@ public class TradfriGroupHandler extends TradfriThingResourceHandler {
     }
 
     private void onGroupUpdated(TradfriGroup group) {
-        // TODO update channels: brightness, color_temperature, color
+        updateState(CHANNEL_BRIGHTNESS, group.getBrightness());
+        logger.debug("Updated channel {} of group {} to {}}", CHANNEL_BRIGHTNESS, group.getInstanceId().get(),
+                group.getBrightness());
+
+        // TODO update channels: color_temperature, color
 
         group.getActiveScene().ifPresent(
                 scene -> scene.getSceneName().ifPresent(name -> updateState(CHANNEL_SCENE, StringType.valueOf(name))));
 
-        // TODO: switch to offline if all connected device are offline?
         updateStatus(ThingStatus.ONLINE);
     }
 
-    private void handleBrightnessCommand(Command command) {
-        // TODO: implement command to set brightness of a group
+    private void handleBrightnessCommand(Command command, TradfriGroup group) {
         if (command instanceof PercentType) {
-            logger.info("Command {} for channel {} not implemented yet.", command, CHANNEL_BRIGHTNESS);
+            group.setBrightness((PercentType) command);
         } else if (command instanceof OnOffType) {
-            logger.info("Command {} for channel {} not implemented yet.", command, CHANNEL_BRIGHTNESS);
+            group.setOnOff(((OnOffType) command));
         } else if (command instanceof IncreaseDecreaseType) {
-            logger.info("Command {} for channel {} not implemented yet.", command, CHANNEL_BRIGHTNESS);
+            if (IncreaseDecreaseType.INCREASE.equals(command)) {
+                group.increaseBrightnessBy(STEP);
+            } else {
+                group.decreaseBrightnessBy(STEP);
+            }
         } else {
-            logger.error("Cannot handle command {} for channel {}", command, CHANNEL_BRIGHTNESS);
+            logger.debug("Cannot handle command {} for channel {}", command, CHANNEL_BRIGHTNESS);
         }
     }
 
-    private void handleColorTemperatureCommand(Command command) {
+    private void handleColorTemperatureCommand(Command command, TradfriGroup group) {
         // TODO: implement command to set color temperature of group
         logger.info("Command {} for channel {} not implemented yet.", command, CHANNEL_COLOR_TEMPERATURE);
     }
 
-    private void handleColorCommand(Command command) {
+    private void handleColorCommand(Command command, TradfriGroup group) {
         // TODO: implement command to set color of group
         logger.info("Command {} for channel {} not implemented yet.", command, CHANNEL_COLOR);
     }
 
-    private void handleSceneCommand(Command command) {
+    private void handleSceneCommand(Command command, TradfriGroup group) {
         // TODO: implement command to set scene of group
         if (command instanceof StringType) {
             logger.info("Command {} for channel {} not implemented yet.", command, CHANNEL_SCENE);

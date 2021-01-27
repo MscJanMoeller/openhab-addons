@@ -11,13 +11,15 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.openhab.binding.tradfri.internal.coap;
+package org.openhab.binding.tradfri.internal.coap.proxy;
 
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
+import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
+import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceCache;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapResource;
 import org.openhab.binding.tradfri.internal.model.TradfriThingResource;
 

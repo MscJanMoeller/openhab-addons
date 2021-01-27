@@ -26,6 +26,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
+import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapColorLightProxy;
+import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapResourceProxy;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapLight;
 import org.openhab.binding.tradfri.internal.model.TradfriDevice;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent;

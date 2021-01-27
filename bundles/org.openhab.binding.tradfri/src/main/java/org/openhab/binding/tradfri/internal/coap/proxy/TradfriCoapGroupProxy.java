@@ -11,7 +11,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.openhab.binding.tradfri.internal.coap;
+package org.openhab.binding.tradfri.internal.coap.proxy;
 
 import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 
@@ -19,16 +19,22 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.smarthome.core.library.types.OnOffType;
 import org.eclipse.smarthome.core.library.types.PercentType;
+import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
+import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceCache;
+import org.openhab.binding.tradfri.internal.coap.TradfriResourceListObserver;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapGroup;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapResource;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
+import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriGroup;
+import org.openhab.binding.tradfri.internal.model.TradfriLight;
 import org.openhab.binding.tradfri.internal.model.TradfriScene;
 
 import com.google.gson.JsonObject;
@@ -56,10 +62,8 @@ public class TradfriCoapGroupProxy extends TradfriCoapThingResourceProxy impleme
 
     @Override
     protected void onUpdate(TradfriCoapResource oldData, TradfriCoapResource newData) {
-        final Set<String> cachedDevices = oldData.as(TradfriCoapGroup.class).map(group -> group.getMembers().toSet())
-                .orElse(Collections.emptySet());
-        final Set<String> currentDevices = newData.as(TradfriCoapGroup.class).map(group -> group.getMembers().toSet())
-                .orElse(Collections.emptySet());
+        final Set<String> cachedDevices = getDeviceIds(oldData);
+        final Set<String> currentDevices = getDeviceIds(newData);
         // Subscribe update event of added devices
         currentDevices.stream().filter(id -> !cachedDevices.contains(id))
                 .forEach(id -> getResourceCache().subscribeEvents(id, EType.RESOURCE_UPDATED, this));
@@ -68,15 +72,20 @@ public class TradfriCoapGroupProxy extends TradfriCoapThingResourceProxy impleme
                 .forEach(id -> getResourceCache().unsubscribeEvents(id, EType.RESOURCE_UPDATED, this));
     }
 
-    @Override
-    public boolean isOn() {
-        // TODO: implement
-        return false;
+    @TradfriEventHandler(EType.RESOURCE_UPDATED)
+    public void onDeviceUpdated(TradfriEvent event, TradfriCoapThingResourceProxy device) {
+        // TODO: trigger only if light bulbs changed
+        getResourceCache().updated(device);
     }
 
     @Override
-    public boolean isOff() {
-        return !this.isOn();
+    public boolean lightsOn() {
+        return getLights().map(light -> light.isAlive() && light.isOn()).reduce(Boolean::logicalOr).orElse(false);
+    }
+
+    @Override
+    public boolean lightsOff() {
+        return !this.lightsOn();
     }
 
     @Override
@@ -86,8 +95,8 @@ public class TradfriCoapGroupProxy extends TradfriCoapThingResourceProxy impleme
 
     @Override
     public PercentType getBrightness() {
-        // TODO: implement
-        return PercentType.ZERO;
+        return new PercentType((int) Math.round(getLights().filter(light -> light.isAlive() && light.isOn())
+                .mapToInt(light -> light.getBrightness().intValue()).average().orElse(0)));
     }
 
     @Override
@@ -153,4 +162,19 @@ public class TradfriCoapGroupProxy extends TradfriCoapThingResourceProxy impleme
             getResourceCache().remove(event.getId()).ifPresent(proxy -> proxy.dispose());
         }
     }
+
+    private Stream<TradfriLight> getLights() {
+        return getDeviceIds().stream().map(id -> getResourceCache().getAs(id, TradfriLight.class))
+                .filter(Optional::isPresent).map(light -> light.get());
+    }
+
+    private Set<String> getDeviceIds() {
+        return getDeviceIds(getData());
+    }
+
+    private Set<String> getDeviceIds(TradfriCoapResource groupData) {
+        return groupData.as(TradfriCoapGroup.class).map(group -> group.getMembers().toSet())
+                .orElse(Collections.emptySet());
+    }
+
 }

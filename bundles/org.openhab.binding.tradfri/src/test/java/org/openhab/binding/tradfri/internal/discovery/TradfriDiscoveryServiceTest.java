@@ -41,7 +41,7 @@ import org.mockito.Mock;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapProxyFactory;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceCache;
-import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceProxy;
+import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapResourceProxy;
 import org.openhab.binding.tradfri.internal.config.TradfriGroupConfig;
 import org.openhab.binding.tradfri.internal.handler.TradfriGatewayHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriDevice;

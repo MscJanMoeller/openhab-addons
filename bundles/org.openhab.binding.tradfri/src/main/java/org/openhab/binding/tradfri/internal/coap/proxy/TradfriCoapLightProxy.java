@@ -11,7 +11,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.openhab.binding.tradfri.internal.coap;
+package org.openhab.binding.tradfri.internal.coap.proxy;
 
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
@@ -22,7 +22,8 @@ import org.eclipse.smarthome.core.library.types.OnOffType;
 import org.eclipse.smarthome.core.library.types.PercentType;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.openhab.binding.tradfri.internal.TradfriColor;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapDevice;
+import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
+import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceCache;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapLight;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapLightSetting;
 import org.openhab.binding.tradfri.internal.model.TradfriLight;
@@ -139,7 +140,7 @@ public abstract class TradfriCoapLightProxy extends TradfriCoapDeviceProxy imple
     }
 
     @Override
-    protected TradfriCoapDevice parsePayload(String coapPayload) {
+    protected TradfriCoapLight parsePayload(String coapPayload) {
         return gson.fromJson(coapPayload, TradfriCoapLight.class);
     }
 

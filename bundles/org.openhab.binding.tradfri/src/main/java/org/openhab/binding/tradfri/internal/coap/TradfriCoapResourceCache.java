@@ -28,6 +28,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapResourceProxy;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
 import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;

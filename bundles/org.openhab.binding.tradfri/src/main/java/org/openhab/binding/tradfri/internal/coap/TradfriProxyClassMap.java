@@ -19,6 +19,13 @@ import java.util.Arrays;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapColorLightProxy;
+import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapColorTempLightProxy;
+import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapDeviceProxy;
+import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapDimmableLightProxy;
+import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapGroupProxy;
+import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapResourceProxy;
+import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapSceneProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

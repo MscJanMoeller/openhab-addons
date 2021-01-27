@@ -11,30 +11,33 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.openhab.binding.tradfri.internal.coap;
+package org.openhab.binding.tradfri.internal.coap.proxy;
 
-import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.THING_TYPE_COLOR_TEMP_LIGHT;
+import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.THING_TYPE_COLOR_LIGHT;
 
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
+import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceCache;
 
 import com.google.gson.JsonObject;
 
 /**
- * {@link TradfriCoapColorTempLightProxy} represents a single light bulb that:
+ * {@link TradfriCoapColorLightProxy} represents a single light bulb that:
  * - has continuous brightness control and
- * - supports different color temperature settings
+ * - supports different color temperature settings and
+ * - support full color
  *
  * @author Jan Möller - Initial contribution
  *
  */
 @NonNullByDefault
-public class TradfriCoapColorTempLightProxy extends TradfriCoapLightProxy {
+public class TradfriCoapColorLightProxy extends TradfriCoapLightProxy {
 
-    public TradfriCoapColorTempLightProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient,
+    public TradfriCoapColorLightProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient,
             ScheduledExecutorService scheduler, JsonObject initialData) {
-        super(resourceCache, coapClient, scheduler, initialData, THING_TYPE_COLOR_TEMP_LIGHT);
+        super(resourceCache, coapClient, scheduler, initialData, THING_TYPE_COLOR_LIGHT);
     }
 
     @Override
@@ -44,6 +47,6 @@ public class TradfriCoapColorTempLightProxy extends TradfriCoapLightProxy {
 
     @Override
     public boolean supportsColor() {
-        return false;
+        return true;
     }
 }

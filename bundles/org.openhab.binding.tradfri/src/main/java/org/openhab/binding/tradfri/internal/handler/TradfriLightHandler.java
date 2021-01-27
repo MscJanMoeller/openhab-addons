@@ -71,8 +71,6 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
     }
 
     protected void onLightUpdated(TradfriLight bulb) {
-        onDeviceUpdated(bulb);
-
         updateState(CHANNEL_BRIGHTNESS, bulb.getBrightness());
         logger.debug("Updated channel {} of light bulb {} to {}}", CHANNEL_BRIGHTNESS, bulb.getInstanceId().get(),
                 bulb.getBrightness());
@@ -88,6 +86,8 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
             logger.debug("Updated channel {} of light bulb {} to {}}", CHANNEL_COLOR, bulb.getInstanceId().get(),
                     bulb.getColor().get());
         }
+
+        onDeviceUpdated(bulb);
     }
 
     @Override
@@ -114,9 +114,7 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
                 default:
                     logger.error("Unknown channel UID {}", channelUID);
             }
-        } else
-
-        {
+        } else {
             logger.debug("Bridge not online. Cannot handle command {} for channel {}", command, channelUID);
         }
     }

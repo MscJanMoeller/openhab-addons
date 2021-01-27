@@ -11,7 +11,7 @@
  * SPDX-License-Identifier: EPL-2.0
  */
 
-package org.openhab.binding.tradfri.internal.coap;
+package org.openhab.binding.tradfri.internal.coap.proxy;
 
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
@@ -22,6 +22,8 @@ import org.eclipse.californium.core.CoapObserveRelation;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
+import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceCache;
 import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapResource;
 import org.openhab.binding.tradfri.internal.model.TradfriResource;
 import org.slf4j.Logger;
@@ -127,6 +129,10 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
 
     protected TradfriCoapResourceCache getResourceCache() {
         return this.resourceCache;
+    }
+
+    protected TradfriCoapResource getData() {
+        return this.cachedData;
     }
 
     protected <T extends TradfriCoapResource> Optional<T> getDataAs(Class<T> resourceClass) {

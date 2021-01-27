@@ -22,6 +22,7 @@ import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapResourceProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -29,9 +29,9 @@ import org.eclipse.smarthome.core.library.types.PercentType;
 @NonNullByDefault
 public interface TradfriGroup extends TradfriThingResource {
 
-    boolean isOn();
+    boolean lightsOn();
 
-    boolean isOff();
+    boolean lightsOff();
 
     void setOnOff(OnOffType value);
 
