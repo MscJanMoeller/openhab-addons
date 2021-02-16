@@ -77,9 +77,7 @@ public class TradfriCoapClient {
     }
 
     public ScheduledFuture<?> poll(String relPath, CoapHandler handler, long pollPeriod) {
-        return this.scheduler.scheduleWithFixedDelay(() -> {
-            this.coapClient.advanced(handler, newGet(relPath));
-        }, 1, pollPeriod, TimeUnit.SECONDS);
+        return this.scheduler.scheduleWithFixedDelay(() -> get(relPath, handler), 1, pollPeriod, TimeUnit.SECONDS);
     }
 
     public synchronized void execute(TradfriCoapCommand command, String relPath) {
