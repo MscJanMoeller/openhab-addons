@@ -17,21 +17,18 @@ import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
-import org.eclipse.californium.core.network.Endpoint;
+import org.eclipse.californium.core.CoapHandler;
+import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.jdt.annotation.Nullable;
-import org.eclipse.smarthome.core.thing.ThingStatus;
-import org.eclipse.smarthome.core.thing.ThingStatusDetail;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
 
 /**
@@ -41,15 +38,15 @@ import com.google.gson.reflect.TypeToken;
  * @author Jan Möller - Initial contribution
  *
  */
-public class TradfriResourceListObserver implements CoapCallback {
+public class TradfriResourceListObserver implements CoapHandler {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     protected final Gson gson = new Gson();
 
-    protected final ScheduledExecutorService scheduler;
+    private final TradfriCoapClient coapClient;
+    private final String coapPath;
 
-    private TradfriCoapClient coapClient;
     private @Nullable ScheduledFuture<?> updateJob;
 
     private final Set<TradfriResourceListEventHandler> updateHandler = new CopyOnWriteArraySet<>();
@@ -61,10 +58,9 @@ public class TradfriResourceListObserver implements CoapCallback {
 
     private int POLL_PERIOD = 60;
 
-    public TradfriResourceListObserver(String uri, Endpoint endpoint, ScheduledExecutorService scheduler) {
-        this.coapClient = new TradfriCoapClient(uri);
-        this.coapClient.setEndpoint(endpoint);
-        this.scheduler = scheduler;
+    public TradfriResourceListObserver(TradfriCoapClient coapClient, String coapPath) {
+        this.coapClient = coapClient;
+        this.coapPath = coapPath;
     }
 
     /**
@@ -84,40 +80,39 @@ public class TradfriResourceListObserver implements CoapCallback {
          * the gateway every POLL_PERIOD seconds for changes.
          */
         if (this.updateJob == null) {
-            this.updateJob = this.scheduler.scheduleWithFixedDelay(this::triggerUpdate, 1, POLL_PERIOD,
-                    TimeUnit.SECONDS);
+            this.updateJob = this.coapClient.poll(coapPath, this, POLL_PERIOD);
         }
     }
 
     public void triggerUpdate() {
-        this.coapClient.asyncGet(this);
+        this.coapClient.get(coapPath, this);
     }
 
     @Override
-    public synchronized void onUpdate(JsonElement data) {
-        logger.debug("onUpdate response: {}", data);
-
-        if (data.isJsonArray()) {
-            Type setType = new TypeToken<Set<String>>() {
-            }.getType();
-            Set<String> currentResources = gson.fromJson(data, setType);
-
-            // Inform listener about added resources
-            currentResources.stream().filter(id -> !cachedResources.contains(id)).forEach(id -> updateHandler
-                    .forEach(listener -> listener.onUpdate(TradfriEvent.from(id, EType.RESOURCE_ADDED))));
-
-            // Inform listener about removed resources
-            cachedResources.stream().filter(id -> !currentResources.contains(id)).forEach(id -> updateHandler
-                    .forEach(listener -> listener.onUpdate(TradfriEvent.from(id, EType.RESOURCE_REMOVED))));
-
-            this.cachedResources = currentResources;
+    public void onLoad(CoapResponse response) {
+        if (response == null) {
+            logger.trace("Received empty CoAP response.");
+            return;
         }
-        updateCounter++;
+        logger.trace("Processing CoAP response. Options: {}  Payload: {}", response.getOptions(),
+                response.getResponseText());
+        if (response.isSuccess()) {
+            try {
+                Type setType = new TypeToken<Set<String>>() {
+                }.getType();
+                onUpdate(gson.fromJson(response.getResponseText(), setType));
+            } catch (JsonParseException e) {
+                logger.error("Coap response is no valid json: {}, {}", response.getResponseText(), e.getMessage());
+            }
+        } else {
+            logger.debug("CoAP error: '{}' '{}'  Options: {}  Payload: {}", response.getCode(),
+                    response.getCode().name(), response.getOptions(), response.getResponseText());
+        }
     }
 
     @Override
-    public synchronized void onError(ThingStatus status, ThingStatusDetail statusDetail) {
-        logger.warn("CoAP error. Failed to get resource list update for {}.", this.coapClient.getURI());
+    public synchronized void onError() {
+        logger.warn("CoAP error. Failed to get resource list update for {}.", this.coapPath);
     }
 
     public synchronized void dispose() {
@@ -132,10 +127,6 @@ public class TradfriResourceListObserver implements CoapCallback {
         if (this.updateJob != null) {
             this.updateJob.cancel(true);
             this.updateJob = null;
-        }
-
-        if (this.coapClient != null) {
-            this.coapClient.shutdown();
         }
     }
 
@@ -156,4 +147,18 @@ public class TradfriResourceListObserver implements CoapCallback {
     public void unregisterHandler(TradfriResourceListEventHandler handler) {
         this.updateHandler.remove(handler);
     }
+
+    private synchronized void onUpdate(Set<String> currentResources) {
+        // Inform listener about added resources
+        currentResources.stream().filter(id -> !cachedResources.contains(id)).forEach(id -> updateHandler
+                .forEach(listener -> listener.onUpdate(TradfriEvent.from(id, EType.RESOURCE_ADDED))));
+
+        // Inform listener about removed resources
+        cachedResources.stream().filter(id -> !currentResources.contains(id)).forEach(id -> updateHandler
+                .forEach(listener -> listener.onUpdate(TradfriEvent.from(id, EType.RESOURCE_REMOVED))));
+
+        this.cachedResources = currentResources;
+        updateCounter++;
+    }
+
 }

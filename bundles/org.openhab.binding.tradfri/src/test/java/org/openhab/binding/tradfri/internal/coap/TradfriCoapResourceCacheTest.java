@@ -15,12 +15,12 @@ package org.openhab.binding.tradfri.internal.coap;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.MockitoAnnotations.initMocks;
+import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.ENDPOINT_DEVICES;
 
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.Optional;
 import java.util.Queue;
-import java.util.concurrent.ScheduledExecutorService;
 
 import org.junit.After;
 import org.junit.Before;
@@ -50,9 +50,6 @@ public class TradfriCoapResourceCacheTest {
 
     @Mock
     private TradfriCoapClient coapClient;
-
-    @Mock
-    private ScheduledExecutorService scheduler;
 
     private TradfriCoapResourceCache resourceCache;
 
@@ -88,8 +85,9 @@ public class TradfriCoapResourceCacheTest {
     public void getLight() {
         final TradfriCoapLight bulbData = createTradfriCoapLightWithColorSupport();
 
+        final String coapPath = ENDPOINT_DEVICES + "/" + bulbData.getInstanceId().get();
         final TradfriCoapResourceProxy device = new TradfriCoapColorLightProxy(this.resourceCache, this.coapClient,
-                this.scheduler, gson.toJsonTree(bulbData, TradfriCoapLight.class).getAsJsonObject());
+                coapPath, gson.toJsonTree(bulbData, TradfriCoapLight.class).getAsJsonObject());
 
         this.resourceCache.add(device);
 
@@ -123,8 +121,9 @@ public class TradfriCoapResourceCacheTest {
 
         final TradfriCoapLight bulbData = createTradfriCoapLightWithColorSupport();
 
+        final String coapPath = ENDPOINT_DEVICES + "/" + bulbData.getInstanceId().get();
         final TradfriCoapResourceProxy device = new TradfriCoapColorLightProxy(this.resourceCache, this.coapClient,
-                this.scheduler, gson.toJsonTree(bulbData, TradfriCoapLight.class).getAsJsonObject());
+                coapPath, gson.toJsonTree(bulbData, TradfriCoapLight.class).getAsJsonObject());
 
         final String actualResourceId = bulbData.getInstanceId().get();
         assertNotNull(actualResourceId);
@@ -160,8 +159,9 @@ public class TradfriCoapResourceCacheTest {
 
         final TradfriCoapLight bulbData = createTradfriCoapLightWithColorSupport();
 
+        final String coapPath = ENDPOINT_DEVICES + "/" + bulbData.getInstanceId().get();
         final TradfriCoapResourceProxy device = new TradfriCoapColorLightProxy(this.resourceCache, this.coapClient,
-                this.scheduler, gson.toJsonTree(bulbData, TradfriCoapLight.class).getAsJsonObject());
+                coapPath, gson.toJsonTree(bulbData, TradfriCoapLight.class).getAsJsonObject());
 
         final String actualResourceId = bulbData.getInstanceId().get();
         assertNotNull(actualResourceId);
@@ -208,8 +208,9 @@ public class TradfriCoapResourceCacheTest {
         this.resourceCache.subscribeEvents(actualResourceId, EnumSet.of(EType.RESOURCE_ADDED, EType.RESOURCE_UPDATED),
                 subscriber2);
 
+        final String coapPath = ENDPOINT_DEVICES + "/" + actualResourceId;
         final TradfriCoapResourceProxy device = new TradfriCoapColorLightProxy(this.resourceCache, this.coapClient,
-                this.scheduler, gson.toJsonTree(bulbData, TradfriCoapLight.class).getAsJsonObject());
+                coapPath, gson.toJsonTree(bulbData, TradfriCoapLight.class).getAsJsonObject());
 
         // Generates event RESOURCE_ADDED
         this.resourceCache.add(device);

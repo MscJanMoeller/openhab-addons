@@ -13,128 +13,121 @@
 package org.openhab.binding.tradfri.internal.coap;
 
 import java.net.URI;
-import java.util.LinkedList;
-import java.util.concurrent.Future;
+import java.util.Deque;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.californium.core.CoapClient;
+import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapObserveRelation;
+import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
+import org.eclipse.californium.core.coap.Request;
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
+import org.openhab.binding.tradfri.internal.coap.command.TradfriCoapCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The {@link TradfriCoapClient} provides some convenience features over the
+ * The {@link TradfriCoapClient} encapsulates access to the
  * plain {@link CoapClient} from californium.
  *
  * @author Kai Kreuzer - Initial contribution
+ * @author Jan Möller - Refactoring
  */
 @NonNullByDefault
-public class TradfriCoapClient extends CoapClient {
+public class TradfriCoapClient {
 
-    public static final long TIMEOUT = 2000;
-    private static final int DEFAULT_DELAY_MILLIS = 600;
+    private static final long TIMEOUT = 2000;
+    private static final long COMMAND_DELAY_MILLIS = 70;
+
     private final Logger logger = LoggerFactory.getLogger(TradfriCoapClient.class);
-    private final LinkedList<PayloadCallbackPair> commandsQueue = new LinkedList<>();
-    private @Nullable Future<?> job;
 
-    public TradfriCoapClient(URI uri) {
-        this(uri.toString());
+    private final CoapClient coapClient;
+
+    private final URI gatewayURI;
+    private final ScheduledExecutorService scheduler;
+
+    private final Deque<ScheduledFuture<?>> commandsQueue = new ConcurrentLinkedDeque<>();
+
+    public TradfriCoapClient(URI gatewayURI, CoapClient coapClient, ScheduledExecutorService scheduler) {
+        super();
+        this.gatewayURI = gatewayURI;
+        this.scheduler = scheduler;
+        this.coapClient = coapClient;
+        this.coapClient.setTimeout(TIMEOUT);
     }
 
-    public TradfriCoapClient(String uri) {
-        super(uri);
-        setTimeout(TIMEOUT);
+    public URI getGatewayURI() {
+        return this.gatewayURI;
     }
 
-    private void executeCommands() {
-        while (true) {
-            try {
-                synchronized (commandsQueue) {
-                    if (commandsQueue.isEmpty()) {
-                        return;
-                    }
-                    PayloadCallbackPair payloadCallbackPair = commandsQueue.poll();
-                    logger.debug("CoAP PUT request\nuri: {}\npayload: {}", getURI(), payloadCallbackPair.payload);
-                    put(new TradfriCoapHandler(payloadCallbackPair.callback), payloadCallbackPair.payload,
-                            MediaTypeRegistry.TEXT_PLAIN);
-                }
-                Thread.sleep(DEFAULT_DELAY_MILLIS);
-            } catch (InterruptedException e) {
-                logger.debug("commandExecutorThread was interrupted", e);
+    public boolean ping() {
+        return this.coapClient.ping();
+    }
+
+    public void get(String relPath, CoapHandler handler) {
+        this.coapClient.advanced(handler, newGet(relPath));
+    }
+
+    public CoapObserveRelation observe(String relPath, CoapHandler handler) {
+        return this.coapClient.observe(newGet(relPath).setObserve(), handler);
+    }
+
+    public ScheduledFuture<?> poll(String relPath, CoapHandler handler, long pollPeriod) {
+        return this.scheduler.scheduleWithFixedDelay(() -> {
+            this.coapClient.advanced(handler, newGet(relPath));
+        }, 1, pollPeriod, TimeUnit.SECONDS);
+    }
+
+    public synchronized void execute(TradfriCoapCommand command, String relPath) {
+        final long delay = getCurrentCommandDelay();
+
+        this.commandsQueue.add(this.scheduler.schedule(() -> {
+            if (logger.isTraceEnabled()) {
+                logger.trace("CoAP PUT request. URI: {} Payload: {}", getResourceURI(relPath).toString(),
+                        command.getPayload());
             }
-        }
-    }
+            this.coapClient.advanced(command, newPut(relPath, command.getPayload()));
+        }, delay, TimeUnit.MILLISECONDS));
 
-    /**
-     * Starts observation of the resource and uses the given callback to provide updates.
-     *
-     * @param callback the callback to use for updates
-     */
-    public CoapObserveRelation startObserve(CoapCallback callback) {
-        return observe(new TradfriCoapHandler(callback));
-    }
-
-    /**
-     * Asynchronously executes a GET on the resource and provides the result to a given callback.
-     *
-     * @param callback the callback to use for the response
-     */
-    public void asyncGet(CoapCallback callback) {
-        logger.debug("Scheduled CoAP GET request. Uri: {}", getURI());
-        get(new TradfriCoapHandler(callback));
-    }
-
-    /**
-     * Asynchronously executes a PUT on the resource with a payload, provides the result to a given callback
-     * and blocks sending new requests to the resource for specified amount of milliseconds.
-     *
-     * @param payload the payload to send with the PUT request
-     * @param callback the callback to use for the response
-     * @param scheduler scheduler to be used for sending commands
-     */
-    public void asyncPut(String payload, CoapCallback callback, ScheduledExecutorService scheduler) {
-        asyncPut(new PayloadCallbackPair(payload, callback), scheduler);
-    }
-
-    /**
-     * Asynchronously executes a PUT on the resource with a payload and provides the result to a given callback.
-     *
-     * @param payloadCallbackPair object which holds the payload and callback process the PUT request
-     * @param scheduler scheduler to be used for sending commands
-     */
-    public void asyncPut(PayloadCallbackPair payloadCallbackPair, ScheduledExecutorService scheduler) {
-        synchronized (this.commandsQueue) {
-            if (this.commandsQueue.isEmpty()) {
-                this.commandsQueue.offer(payloadCallbackPair);
-                final Future<?> job = this.job;
-                if (job == null || job.isDone()) {
-                    this.job = scheduler.submit(() -> executeCommands());
-                }
-            } else {
-                this.commandsQueue.offer(payloadCallbackPair);
+        this.commandsQueue.add(this.scheduler.schedule(() -> {
+            while (!this.commandsQueue.isEmpty() && commandsQueue.peek().isDone()) {
+                this.commandsQueue.poll();
             }
-        }
+        }, delay + COMMAND_DELAY_MILLIS, TimeUnit.MILLISECONDS));
     }
 
-    @Override
     public void shutdown() {
-        if (job != null) {
-            job.cancel(true);
-        }
+        this.coapClient.shutdown();
 
-        super.shutdown();
+        // TODO cleanup pending commands
     }
 
-    public final class PayloadCallbackPair {
-        public final String payload;
-        public final CoapCallback callback;
+    private long getCurrentCommandDelay() {
+        return this.commandsQueue.isEmpty() ? 0
+                : Math.max(0, this.commandsQueue.peekLast().getDelay(TimeUnit.MILLISECONDS));
+    }
 
-        public PayloadCallbackPair(String payload, CoapCallback callback) {
-            this.payload = payload;
-            this.callback = callback;
-        }
+    private Request newGet(String path) {
+        return applyRequestType(Request.newGet().setURI(getResourceURI(path)));
+    }
+
+    private Request newPut(String path, String payload) {
+        final Request request = applyRequestType(Request.newPut().setURI(getResourceURI(path)));
+        request.setPayload(payload);
+        request.getOptions().setContentFormat(MediaTypeRegistry.TEXT_PLAIN);
+        return request;
+    }
+
+    private Request applyRequestType(Request request) {
+        request.setType(Type.CON);
+        return request;
+    }
+
+    private URI getResourceURI(String path) {
+        return getGatewayURI().resolve(path);
     }
 }

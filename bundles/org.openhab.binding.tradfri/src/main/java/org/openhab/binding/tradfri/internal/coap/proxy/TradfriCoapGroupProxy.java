@@ -18,7 +18,6 @@ import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
@@ -50,13 +49,13 @@ public class TradfriCoapGroupProxy extends TradfriCoapThingResourceProxy impleme
 
     private @Nullable TradfriResourceListObserver sceneListObserver;
 
-    public TradfriCoapGroupProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient,
-            ScheduledExecutorService scheduler, JsonObject coapPayload) {
-        super(resourceCache, coapClient, scheduler, gson.fromJson(coapPayload, TradfriCoapGroup.class),
+    public TradfriCoapGroupProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient, String coapPath,
+            JsonObject coapPayload) {
+        super(resourceCache, coapClient, coapPath, gson.fromJson(coapPayload, TradfriCoapGroup.class),
                 THING_TYPE_GROUP);
 
-        String sceneListUri = coapClient.getURI().replaceFirst(ENDPOINT_GROUPS, ENDPOINT_SCENES);
-        this.sceneListObserver = new TradfriResourceListObserver(sceneListUri, coapClient.getEndpoint(), scheduler);
+        this.sceneListObserver = new TradfriResourceListObserver(coapClient,
+                ENDPOINT_SCENES + "/" + getInstanceId().get());
         this.sceneListObserver.registerHandler(this::handleSceneListChange);
     }
 

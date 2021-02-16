@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
 
-import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapResourceProxy;
@@ -77,10 +76,10 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
         return observerInitialzed;
     }
 
-    public void initialize(String baseUri, Endpoint endpoint, ScheduledExecutorService scheduler) {
-        this.proxyFactory = new TradfriCoapProxyFactory(this, baseUri, endpoint, scheduler);
+    public void initialize(final TradfriCoapClient coapClient, final ScheduledExecutorService scheduler) {
+        this.proxyFactory = new TradfriCoapProxyFactory(this, coapClient);
 
-        initializeResourceListObserver(baseUri, endpoint, scheduler);
+        initializeResourceListObserver(coapClient, scheduler);
     }
 
     @Override
@@ -293,17 +292,16 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
      * for lists of devices and groups. Therefore the ResourceListObserver are polling
      * the gateway every 60 seconds for changes.
      */
-    private void initializeResourceListObserver(String baseUri, Endpoint endpoint, ScheduledExecutorService scheduler) {
+    private void initializeResourceListObserver(final TradfriCoapClient coapClient,
+            final ScheduledExecutorService scheduler) {
         // Create observer for devices, groups and scenes and observe lists
 
-        TradfriResourceListObserver deviceListObserver = new TradfriResourceListObserver(
-                baseUri + "/" + ENDPOINT_DEVICES, endpoint, scheduler);
+        TradfriResourceListObserver deviceListObserver = new TradfriResourceListObserver(coapClient, ENDPOINT_DEVICES);
         this.deviceListObserver = deviceListObserver;
         deviceListObserver.registerHandler(this::handleDeviceListChange);
         deviceListObserver.observe();
 
-        TradfriResourceListObserver groupListObserver = new TradfriResourceListObserver(baseUri + "/" + ENDPOINT_GROUPS,
-                endpoint, scheduler);
+        TradfriResourceListObserver groupListObserver = new TradfriResourceListObserver(coapClient, ENDPOINT_GROUPS);
         this.groupListObserver = groupListObserver;
         groupListObserver.registerHandler(this::handleGroupListChange);
         groupListObserver.observe();

@@ -14,8 +14,6 @@
 package org.openhab.binding.tradfri.internal.coap.proxy;
 
 import java.util.Optional;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapObserveRelation;
@@ -48,9 +46,8 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
 
     protected final static Gson gson = new Gson();
 
-    protected final ScheduledExecutorService scheduler;
-
     private final TradfriCoapClient coapClient;
+    private final String coapPath;
     private @Nullable CoapObserveRelation observeRelation;
 
     private final TradfriCoapResourceCache resourceCache;
@@ -58,10 +55,10 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
     private TradfriCoapResource cachedData;
 
     protected TradfriCoapResourceProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient,
-            ScheduledExecutorService scheduler, TradfriCoapResource initialData) {
+            String coapPath, TradfriCoapResource initialData) {
         this.resourceCache = resourceCache;
         this.coapClient = coapClient;
-        this.scheduler = scheduler;
+        this.coapPath = coapPath;
         this.cachedData = initialData;
     }
 
@@ -88,13 +85,13 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
     @Override
     public void triggerUpdate() {
         // Asynchronous call
-        this.coapClient.get(this);
+        this.coapClient.get(coapPath, this);
     }
 
     @Override
     public void onLoad(@Nullable CoapResponse response) {
         if (response == null) {
-            logger.trace("received empty CoAP response");
+            logger.trace("Received empty CoAP response.");
             return;
         }
         logger.trace("Processing CoAP response. Options: {}  Payload: {}", response.getOptions(),
@@ -114,7 +111,7 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
 
     @Override
     public void onError() {
-        logger.warn("CoAP error. Failed to get resource update for {}.", this.coapClient.getURI());
+        logger.warn("CoAP error. Failed to get resource update for {}.", this.coapPath);
         // TODO: implement generic error reaction for resource proxy
     }
 
@@ -151,14 +148,12 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
     protected void onUpdate(TradfriCoapResource oldData, TradfriCoapResource newData) {
     }
 
-    protected void observe() {
+    protected synchronized void observe() {
         if (this.observeRelation != null) {
             this.observeRelation.reactiveCancel();
             this.observeRelation = null;
         }
 
-        scheduler.schedule(() -> {
-            observeRelation = coapClient.observe(this);
-        }, 1, TimeUnit.SECONDS);
+        observeRelation = coapClient.observe(this.coapPath, this);
     }
 }

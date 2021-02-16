@@ -14,7 +14,6 @@
 package org.openhab.binding.tradfri.internal.coap.proxy;
 
 import java.util.Optional;
-import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
@@ -34,8 +33,8 @@ import org.openhab.binding.tradfri.internal.model.TradfriDevice;
 public abstract class TradfriCoapDeviceProxy extends TradfriCoapThingResourceProxy implements TradfriDevice {
 
     protected TradfriCoapDeviceProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient,
-            ScheduledExecutorService scheduler, TradfriCoapDevice initialData, ThingTypeUID thingType) {
-        super(resourceCache, coapClient, scheduler, initialData, thingType);
+            String coapPath, TradfriCoapDevice initialData, ThingTypeUID thingType) {
+        super(resourceCache, coapClient, coapPath, initialData, thingType);
     }
 
     @Override

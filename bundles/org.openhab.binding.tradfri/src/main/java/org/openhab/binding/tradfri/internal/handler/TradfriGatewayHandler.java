@@ -87,10 +87,9 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
 
     private static final Gson gson = new Gson();
 
-    private @Nullable String gatewayURI;
+    private @Nullable URI gatewayURI;
 
-    private @Nullable CoapClient gatewayClient;
-    private @Nullable TradfriCoapClient gatewayInfoClient;
+    private @Nullable TradfriCoapClient gatewayClient;
 
     private @Nullable Endpoint endpoint;
 
@@ -127,13 +126,10 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
             return;
         }
 
-        // Create coap client for getting details about the gateway
+        // Validate host and port parameter of configuration
         try {
             // Use class URI to validate host
-            URI uri = new URI("coaps://" + configuration.host + ":" + configuration.port + "/");
-            this.gatewayURI = uri.toString();
-            this.gatewayClient = new CoapClient(uri);
-            this.gatewayInfoClient = new TradfriCoapClient(uri.toString() + ENDPOINT_GATEWAY_DETAILS);
+            this.gatewayURI = new URI("coaps://" + configuration.host + ":" + configuration.port + "/");
         } catch (URISyntaxException e) {
             logger.error("Illegal gateway URI '{}': {}", this.gatewayURI, e.getMessage());
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, e.getMessage());
@@ -276,12 +272,9 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         Endpoint endpoint = new CoapEndpoint.Builder().setConnector(dtlsConnector).build();
         this.endpoint = endpoint;
 
-        if (this.gatewayClient != null) {
-            this.gatewayClient.setEndpoint(getEndpoint());
-        }
-
-        if (this.gatewayInfoClient != null) {
-            this.gatewayInfoClient.setEndpoint(getEndpoint());
+        final URI uri = this.gatewayURI;
+        if (uri != null) {
+            this.gatewayClient = new TradfriCoapClient(uri, new CoapClient().setEndpoint(endpoint), scheduler);
         }
 
         // Schedule a CoAP ping every minute to check the connection
@@ -289,9 +282,8 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     }
 
     private void checkConnection() {
-        CoapClient gatewayClient = this.gatewayClient;
-        if (gatewayClient != null) {
-            if (gatewayClient.ping(TradfriCoapClient.TIMEOUT)) {
+        if (this.gatewayClient != null) {
+            if (this.gatewayClient.ping()) {
                 this.pingLosses = 0;
                 updateOnlineStatus();
             } else {
@@ -312,10 +304,8 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         // Connect TradfriDiscoveryService with resource cache to get events for devices and groups
         this.resourceCache.subscribeEvents(this);
 
-        String baseUri = getGatewayURI();
-        Endpoint endpoint = getEndpoint();
-        if (baseUri != null && endpoint != null) {
-            this.resourceCache.initialize(baseUri, endpoint, scheduler);
+        if (this.gatewayClient != null) {
+            this.resourceCache.initialize(this.gatewayClient, scheduler);
         }
     }
 
@@ -389,10 +379,6 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
             this.gatewayClient.shutdown();
             this.gatewayClient = null;
         }
-        if (this.gatewayInfoClient != null) {
-            this.gatewayInfoClient.shutdown();
-            this.gatewayInfoClient = null;
-        }
 
         super.dispose();
     }
@@ -453,7 +439,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
      *
      * @return root URI of the gateway with coaps scheme
      */
-    public @Nullable String getGatewayURI() {
+    public @Nullable URI getGatewayURI() {
         return this.gatewayURI;
     }
 
@@ -503,8 +489,8 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
     }
 
     private void requestGatewayInfo() {
-        if (gatewayInfoClient != null) {
-            gatewayInfoClient.get(new CoapHandler() {
+        if (this.gatewayClient != null) {
+            this.gatewayClient.get(ENDPOINT_GATEWAY_DETAILS, new CoapHandler() {
                 @Override
                 public void onLoad(@Nullable CoapResponse response) {
                     if (response == null) {

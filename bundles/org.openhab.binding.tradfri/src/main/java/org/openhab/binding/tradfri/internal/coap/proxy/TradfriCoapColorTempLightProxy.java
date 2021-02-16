@@ -15,8 +15,6 @@ package org.openhab.binding.tradfri.internal.coap.proxy;
 
 import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.THING_TYPE_COLOR_TEMP_LIGHT;
 
-import java.util.concurrent.ScheduledExecutorService;
-
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceCache;
@@ -35,8 +33,8 @@ import com.google.gson.JsonObject;
 public class TradfriCoapColorTempLightProxy extends TradfriCoapLightProxy {
 
     public TradfriCoapColorTempLightProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient,
-            ScheduledExecutorService scheduler, JsonObject initialData) {
-        super(resourceCache, coapClient, scheduler, initialData, THING_TYPE_COLOR_TEMP_LIGHT);
+            String coapPath, JsonObject initialData) {
+        super(resourceCache, coapClient, coapPath, initialData, THING_TYPE_COLOR_TEMP_LIGHT);
     }
 
     @Override

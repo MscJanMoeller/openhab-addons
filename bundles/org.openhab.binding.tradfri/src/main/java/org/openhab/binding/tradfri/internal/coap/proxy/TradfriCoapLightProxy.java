@@ -14,7 +14,6 @@
 package org.openhab.binding.tradfri.internal.coap.proxy;
 
 import java.util.Optional;
-import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.smarthome.core.library.types.HSBType;
@@ -43,8 +42,8 @@ import com.google.gson.JsonObject;
 public abstract class TradfriCoapLightProxy extends TradfriCoapDeviceProxy implements TradfriLight {
 
     protected TradfriCoapLightProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient,
-            ScheduledExecutorService scheduler, JsonObject initialData, ThingTypeUID thingType) {
-        super(resourceCache, coapClient, scheduler, gson.fromJson(initialData, TradfriCoapLight.class), thingType);
+            String coapPath, JsonObject initialData, ThingTypeUID thingType) {
+        super(resourceCache, coapClient, coapPath, gson.fromJson(initialData, TradfriCoapLight.class), thingType);
     }
 
     @Override

@@ -14,7 +14,6 @@
 package org.openhab.binding.tradfri.internal.coap.proxy;
 
 import java.util.Optional;
-import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
@@ -33,9 +32,9 @@ import com.google.gson.JsonObject;
 @NonNullByDefault
 public class TradfriCoapSceneProxy extends TradfriCoapResourceProxy implements TradfriScene {
 
-    public TradfriCoapSceneProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient,
-            ScheduledExecutorService scheduler, JsonObject coapPayload) {
-        super(resourceCache, coapClient, scheduler, gson.fromJson(coapPayload, TradfriCoapScene.class));
+    public TradfriCoapSceneProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient, String coapPath,
+            JsonObject coapPayload) {
+        super(resourceCache, coapClient, coapPath, gson.fromJson(coapPayload, TradfriCoapScene.class));
     }
 
     @Override

@@ -15,11 +15,8 @@ package org.openhab.binding.tradfri.internal.coap;
 
 import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 
-import java.util.concurrent.ScheduledExecutorService;
-
 import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapResponse;
-import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapResourceProxy;
@@ -47,38 +44,27 @@ public class TradfriCoapProxyFactory {
 
     private final TradfriCoapResourceCache resourceCache;
 
-    private final String baseUri;
-    private final Endpoint endpoint;
+    private final TradfriCoapClient coapClient;
 
-    private final ScheduledExecutorService scheduler;
-
-    public TradfriCoapProxyFactory(TradfriCoapResourceCache resourceCache, String baseUri, Endpoint endpoint,
-            ScheduledExecutorService scheduler) {
+    public TradfriCoapProxyFactory(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient) {
         this.resourceCache = resourceCache;
-        this.baseUri = baseUri;
-        this.endpoint = endpoint;
-        this.scheduler = scheduler;
+        this.coapClient = coapClient;
     }
 
     public void createAndAddDeviceProxy(String id) {
-        TradfriCoapClient coapClient = new TradfriCoapClient(this.baseUri + "/" + ENDPOINT_DEVICES + "/" + id);
-        createProxy(coapClient);
+        createProxy(ENDPOINT_DEVICES + "/" + id);
     }
 
     public void createAndAddGroupProxy(String id) {
-        TradfriCoapClient coapClient = new TradfriCoapClient(this.baseUri + "/" + ENDPOINT_GROUPS + "/" + id);
-        createProxy(coapClient);
+        createProxy(ENDPOINT_GROUPS + "/" + id);
     }
 
     public void createAndAddSceneProxy(String groupId, String sceneId) {
-        TradfriCoapClient coapClient = new TradfriCoapClient(
-                this.baseUri + "/" + ENDPOINT_SCENES + "/" + groupId + "/" + sceneId);
-        createProxy(coapClient);
+        createProxy(ENDPOINT_SCENES + "/" + groupId + "/" + sceneId);
     }
 
-    public void createProxy(TradfriCoapClient coapClient) {
-        coapClient.setEndpoint(this.endpoint);
-        coapClient.get(new CoapHandler() {
+    private void createProxy(String relPath) {
+        this.coapClient.get(relPath, new CoapHandler() {
             @Override
             public void onLoad(@Nullable CoapResponse response) {
                 if (response == null) {
@@ -97,8 +83,8 @@ public class TradfriCoapProxyFactory {
                         if (proxyClass != null) {
                             resourceCache.add(proxyClass
                                     .getConstructor(TradfriCoapResourceCache.class, TradfriCoapClient.class,
-                                            ScheduledExecutorService.class, JsonObject.class)
-                                    .newInstance(resourceCache, coapClient, scheduler, payload)).initialize();
+                                            String.class, JsonObject.class)
+                                    .newInstance(resourceCache, coapClient, relPath, payload)).initialize();
                         } else {
                             logger.info("Ignoring unknown device of TRADFRI gateway. Options: {}  Payload: {}",
                                     response.getOptions(), response.getResponseText());
@@ -116,14 +102,13 @@ public class TradfriCoapProxyFactory {
                                 response.getOptions(), response.getResponseText());
                     }
                 } else {
-                    logger.error("CoAP error: {}. Failed to get device data for {}.", response.getCode(),
-                            coapClient.getURI());
+                    logger.error("CoAP error: {}. Failed to get device data for {}.", response.getCode(), relPath);
                 }
             }
 
             @Override
             public void onError() {
-                logger.warn("CoAP error. Failed to get device data for {}.", coapClient.getURI());
+                logger.warn("CoAP error. Failed to get device data for {}.", relPath);
             }
         });
     }
