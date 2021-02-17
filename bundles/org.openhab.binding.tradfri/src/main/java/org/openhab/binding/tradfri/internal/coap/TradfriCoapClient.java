@@ -98,7 +98,7 @@ public class TradfriCoapClient {
         }, delay + COMMAND_DELAY_MILLIS, TimeUnit.MILLISECONDS));
     }
 
-    public void shutdown() {
+    public void dispose() {
         this.coapClient.shutdown();
 
         // TODO cleanup pending commands

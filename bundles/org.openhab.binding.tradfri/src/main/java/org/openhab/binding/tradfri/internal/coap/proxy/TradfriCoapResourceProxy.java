@@ -121,7 +121,6 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
             this.observeRelation.reactiveCancel();
             this.observeRelation = null;
         }
-        this.coapClient.shutdown();
     }
 
     protected TradfriCoapResourceCache getResourceCache() {

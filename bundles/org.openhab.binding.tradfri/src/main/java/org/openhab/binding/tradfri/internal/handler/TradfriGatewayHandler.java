@@ -376,7 +376,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
             this.endpoint = null;
         }
         if (this.gatewayClient != null) {
-            this.gatewayClient.shutdown();
+            this.gatewayClient.dispose();
             this.gatewayClient = null;
         }
 
