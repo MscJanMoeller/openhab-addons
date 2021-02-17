@@ -13,10 +13,10 @@
 package org.openhab.binding.tradfri.internal.coap;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 import static org.mockito.AdditionalAnswers.answerVoid;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.*;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.ENDPOINT_DEVICES;
 
@@ -27,6 +27,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapHandler;
+import org.eclipse.californium.core.CoapObserveRelation;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.Request;
@@ -85,5 +86,36 @@ public class TradfriCoapClientTest {
 
         assertThat(actualRequest.getURI(), is("coaps://127.0.0.1/" + ENDPOINT_DEVICES + "/65537"));
         assertThat(actualRequest.getType(), is(Type.CON));
+    }
+
+    @Test
+    public void observe() {
+        URI gatewayURI = URI.create("coaps://127.0.0.1:5684/");
+        TradfriCoapClient client = new TradfriCoapClient(gatewayURI, coapClient, scheduler);
+
+        // Stub behavior of CoapClient
+        when(coapClient.observe(any(Request.class), any(CoapHandler.class))).thenAnswer((invocation) -> {
+            expectedRequests.add(invocation.getArgument(0));
+            return mock(CoapObserveRelation.class);
+        });
+
+        CoapObserveRelation observeRelation = client.observe(ENDPOINT_DEVICES + "/65537", new CoapHandler() {
+            @Override
+            public void onLoad(@Nullable CoapResponse response) {
+            }
+
+            @Override
+            public void onError() {
+            }
+        });
+
+        assertNotNull(observeRelation);
+
+        assertThat(expectedRequests.size(), is(1));
+        Request actualRequest = expectedRequests.remove();
+
+        assertThat(actualRequest.getURI(), is("coaps://127.0.0.1/" + ENDPOINT_DEVICES + "/65537"));
+        assertThat(actualRequest.getType(), is(Type.CON));
+        assertThat(actualRequest.isObserve(), is(true));
     }
 }
