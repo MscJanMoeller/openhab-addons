@@ -22,6 +22,8 @@ import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapResourceProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 /**
@@ -39,15 +41,22 @@ public class TradfriCoapCmd implements CoapHandler {
     private static AtomicInteger numErrors = new AtomicInteger(0);
 
     private TradfriCoapResourceProxy proxy;
-    private String payload;
+    private JsonObject payload;
+    private JsonObject commandProperties;
 
-    public TradfriCoapCmd(TradfriCoapResourceProxy proxy, JsonObject payload) {
+    public TradfriCoapCmd(TradfriCoapResourceProxy proxy, String commandName) {
         this.proxy = proxy;
-        this.payload = payload.toString();
+
+        this.payload = new JsonObject();
+        this.commandProperties = new JsonObject();
+
+        JsonArray array = new JsonArray();
+        array.add(this.commandProperties);
+        this.payload.add(commandName, array);
     }
 
     public String getPayload() {
-        return this.payload;
+        return this.payload.toString();
     }
 
     @Override
@@ -62,8 +71,7 @@ public class TradfriCoapCmd implements CoapHandler {
             final int errors = numErrors.incrementAndGet();
             logger.error(
                     "CoAP error: '{}' '{}'. Failed to execute command for resource {}. Total num errors: {}  Command payload: {} ",
-                    response.getCode(), response.getCode().name(), this.proxy.getInstanceId().get(), errors,
-                    this.payload);
+                    response.getCode(), response.getCode().name(), getInstanceId(), errors, this.payload);
         }
     }
 
@@ -72,10 +80,19 @@ public class TradfriCoapCmd implements CoapHandler {
         final int errors = numErrors.incrementAndGet();
         logger.error(
                 "CoAP error. Failed to execute command for resource {}.  Total num errors: {}  Command payload: {} ",
-                this.proxy.getInstanceId().get(), errors, this.payload);
+                getInstanceId(), errors, this.payload);
     }
 
     public static int getNumCommandErrors() {
         return numErrors.get();
+    }
+
+    protected String getInstanceId() {
+        return this.proxy.getInstanceId().get();
+    }
+
+    protected TradfriCoapCmd addCommandProperty(String name, JsonElement value) {
+        this.commandProperties.add(name, value);
+        return this;
     }
 }

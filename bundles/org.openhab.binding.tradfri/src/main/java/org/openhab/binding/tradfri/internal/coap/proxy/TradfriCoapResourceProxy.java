@@ -22,6 +22,7 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceCache;
+import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapCmd;
 import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapResource;
 import org.openhab.binding.tradfri.internal.model.TradfriResource;
 import org.slf4j.Logger;
@@ -145,6 +146,10 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
     }
 
     protected void onUpdate(TradfriCoapResource oldData, TradfriCoapResource newData) {
+    }
+
+    protected void execute(TradfriCoapCmd command) {
+        this.coapClient.execute(command, this.coapPath);
     }
 
     protected synchronized void observe() {

@@ -24,6 +24,7 @@ import org.openhab.binding.tradfri.internal.TradfriColor;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceCache;
 import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapLight;
+import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapLightCmd;
 import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapLightSetting;
 import org.openhab.binding.tradfri.internal.model.TradfriLight;
 
@@ -58,7 +59,7 @@ public abstract class TradfriCoapLightProxy extends TradfriCoapDeviceProxy imple
 
     @Override
     public void setOnOff(OnOffType value) {
-        // TODO Auto-generated method stub
+        execute(new TradfriCoapLightCmd(this).setOnOff(value == OnOffType.ON ? 1 : 0));
     }
 
     @Override
@@ -95,11 +96,7 @@ public abstract class TradfriCoapLightProxy extends TradfriCoapDeviceProxy imple
 
     @Override
     public void setColorTemperature(PercentType value) {
-        final TradfriColor color = new TradfriColor(value);
-        final int x = color.xyX;
-        final int y = color.xyY;
-
-        // TODO: create CoapCommand
+        setColorXY(new TradfriColor(value));
     }
 
     @Override
@@ -134,8 +131,7 @@ public abstract class TradfriCoapLightProxy extends TradfriCoapDeviceProxy imple
 
     @Override
     public void setColor(HSBType value) {
-        // TODO Auto-generated method stub
-
+        setColorXY(new TradfriColor(value));
     }
 
     @Override
@@ -160,7 +156,14 @@ public abstract class TradfriCoapLightProxy extends TradfriCoapDeviceProxy imple
     }
 
     private void setBrightness(int value) {
-        // TODO implement
+        execute(new TradfriCoapLightCmd(this).setDimmer(value));
+    }
+
+    private void setColorXY(TradfriColor color) {
+        final int x = color.xyX;
+        final int y = color.xyY;
+
+        execute(new TradfriCoapLightCmd(this).setColorXY(x, y));
     }
 
     private int convertToAbsoluteBrightness(PercentType relativeBrightness) {

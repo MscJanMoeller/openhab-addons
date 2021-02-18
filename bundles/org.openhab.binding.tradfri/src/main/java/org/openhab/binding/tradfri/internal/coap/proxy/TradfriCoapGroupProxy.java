@@ -28,6 +28,7 @@ import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceCache;
 import org.openhab.binding.tradfri.internal.coap.TradfriResourceListObserver;
 import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapGroup;
+import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapLightCmd;
 import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapResource;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
@@ -89,7 +90,7 @@ public class TradfriCoapGroupProxy extends TradfriCoapThingResourceProxy impleme
 
     @Override
     public void setOnOff(OnOffType value) {
-        // TODO Auto-generated method stub
+        execute(new TradfriCoapLightCmd(this).setOnOff(value == OnOffType.ON ? 1 : 0));
     }
 
     @Override
@@ -100,22 +101,34 @@ public class TradfriCoapGroupProxy extends TradfriCoapThingResourceProxy impleme
 
     @Override
     public void setBrightness(PercentType value) {
-        // TODO: implement setBrightness(convertToAbsoluteBrightness(value));
+        setBrightness(convertToAbsoluteBrightness(value));
     }
 
     @Override
     public void increaseBrightnessBy(PercentType value) {
-        // TODO: implement setBrightness(Math.min(getDimmer() + convertToAbsoluteBrightness(value), 254));
+        setBrightness(new PercentType(
+                Math.min(getBrightness().intValue() + value.intValue(), PercentType.HUNDRED.intValue())));
     }
 
     @Override
     public void decreaseBrightnessBy(PercentType value) {
-        // TODO: implement setBrightness(Math.max(getDimmer() - convertToAbsoluteBrightness(value), 0));
+        setBrightness(
+                new PercentType(Math.max(getBrightness().intValue() - value.intValue(), PercentType.ZERO.intValue())));
     }
 
     @Override
     public Optional<TradfriScene> getActiveScene() {
         return getDataAs(TradfriCoapGroup.class).flatMap(group -> group.getSceneId().flatMap(id -> getSceneById(id)));
+    }
+
+    @Override
+    public void setActiveSceneByName(String name) {
+        // TODO implement command
+    }
+
+    @Override
+    public void setActiveSceneById(String id) {
+        // TODO implement command
     }
 
     @Override
@@ -162,6 +175,14 @@ public class TradfriCoapGroupProxy extends TradfriCoapThingResourceProxy impleme
         }
     }
 
+    private void setBrightness(int value) {
+        execute(new TradfriCoapLightCmd(this).setDimmer(value));
+    }
+
+    private int convertToAbsoluteBrightness(PercentType relativeBrightness) {
+        return (int) Math.floor(relativeBrightness.doubleValue() * 2.54);
+    }
+
     private Stream<TradfriLight> getLights() {
         return getDeviceIds().stream().map(id -> getResourceCache().getAs(id, TradfriLight.class))
                 .filter(Optional::isPresent).map(light -> light.get());
@@ -175,5 +196,4 @@ public class TradfriCoapGroupProxy extends TradfriCoapThingResourceProxy impleme
         return groupData.as(TradfriCoapGroup.class).map(group -> group.getMembers().toSet())
                 .orElse(Collections.emptySet());
     }
-
 }

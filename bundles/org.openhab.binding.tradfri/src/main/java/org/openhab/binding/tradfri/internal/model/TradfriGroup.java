@@ -45,5 +45,9 @@ public interface TradfriGroup extends TradfriThingResource {
 
     Optional<TradfriScene> getActiveScene();
 
+    void setActiveSceneByName(String name);
+
+    void setActiveSceneById(String id);
+
     Optional<TradfriScene> getSceneById(String id);
 }

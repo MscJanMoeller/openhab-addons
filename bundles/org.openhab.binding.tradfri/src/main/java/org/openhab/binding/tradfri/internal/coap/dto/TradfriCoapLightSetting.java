@@ -31,11 +31,11 @@ public class TradfriCoapLightSetting {
     @SerializedName(value = TradfriBindingConstants.RESOURCE_INSTANCE_ID)
     public int instanceId;
 
-    @SerializedName(value = TradfriBindingConstants.DIMMER)
-    private int dimmer = -1;
-
     @SerializedName(value = TradfriBindingConstants.ONOFF)
     private int onOff = -1;
+
+    @SerializedName(value = TradfriBindingConstants.DIMMER)
+    private int dimmer = -1;
 
     @SerializedName(value = TradfriBindingConstants.COLOR_TEMPERATURE)
     private int colorTemperature = -1;
