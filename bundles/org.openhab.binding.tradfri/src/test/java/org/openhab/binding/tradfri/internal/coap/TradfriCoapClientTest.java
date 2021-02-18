@@ -40,7 +40,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
-import org.openhab.binding.tradfri.internal.coap.command.TradfriCoapCommand;
+import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapCmd;
 
 /**
  * Tests for {@link TradfriCoapTest}.
@@ -147,8 +147,8 @@ public class TradfriCoapClientTest {
             expectedRequests.add(request);
         })).when(coapClient).advanced(any(CoapHandler.class), any(Request.class));
 
-        // Stub behavior of TradfriCoapCommand
-        TradfriCoapCommand command = mock(TradfriCoapCommand.class);
+        // Stub behavior of TradfriCoapCmd
+        TradfriCoapCmd command = mock(TradfriCoapCmd.class);
         when(command.getPayload()).thenReturn("coap payload");
 
         // Execute first CoAP command at time 0 ms

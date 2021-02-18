@@ -10,7 +10,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.tradfri.internal.coap.status;
+package org.openhab.binding.tradfri.internal.coap.dto;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
@@ -18,7 +18,7 @@ import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * The {@link TradfriCoapScene} class is a Java wrapper for raw JSON data related to a scene.
+ * The {@link TradfriCoapScene} class is used for a data transfer object (DTO) which contains data related to a scene.
  *
  * @author Jan Möller - Initial contribution
  */

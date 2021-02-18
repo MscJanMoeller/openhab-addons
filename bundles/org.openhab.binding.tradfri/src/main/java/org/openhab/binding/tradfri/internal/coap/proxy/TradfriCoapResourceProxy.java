@@ -22,7 +22,7 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceCache;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapResource;
+import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapResource;
 import org.openhab.binding.tradfri.internal.model.TradfriResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

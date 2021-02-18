@@ -23,8 +23,8 @@ import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.openhab.binding.tradfri.internal.TradfriColor;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceCache;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapLight;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapLightSetting;
+import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapLight;
+import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapLightSetting;
 import org.openhab.binding.tradfri.internal.model.TradfriLight;
 
 import com.google.gson.JsonObject;

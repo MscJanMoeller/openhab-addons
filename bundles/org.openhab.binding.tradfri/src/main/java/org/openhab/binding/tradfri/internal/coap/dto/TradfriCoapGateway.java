@@ -10,7 +10,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.tradfri.internal.coap.status;
+package org.openhab.binding.tradfri.internal.coap.dto;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
@@ -19,7 +19,8 @@ import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * The {@link TradfriCoapGateway} class is a Java wrapper for raw JSON data related to the Tradfri gateway.
+ * The {@link TradfriCoapGateway} class is used for a data transfer object (DTO) which contains data related to the
+ * Tradfri gateway.
  *
  * @author Jan Möller - Initial contribution
  */

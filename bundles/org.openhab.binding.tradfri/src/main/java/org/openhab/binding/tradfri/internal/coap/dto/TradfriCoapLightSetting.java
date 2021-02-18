@@ -10,7 +10,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.tradfri.internal.coap.status;
+package org.openhab.binding.tradfri.internal.coap.dto;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
@@ -19,8 +19,8 @@ import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * The {@link TradfriCoapLightSetting} class is a Java wrapper for raw JSON data related to a dimmable light bulb
- * with color temperature settings and full color support.
+ * The {@link TradfriCoapLightSetting} class is used for a data transfer object (DTO) which contains data related to a
+ * dimmable light bulb with color temperature settings and full color support.
  *
  * @author Jan Möller - Initial contribution
  */

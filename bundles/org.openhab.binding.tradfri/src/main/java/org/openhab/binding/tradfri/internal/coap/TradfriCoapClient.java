@@ -26,7 +26,7 @@ import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Request;
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.openhab.binding.tradfri.internal.coap.command.TradfriCoapCommand;
+import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapCmd;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +80,7 @@ public class TradfriCoapClient {
         return this.scheduler.scheduleWithFixedDelay(() -> get(relPath, handler), 1, pollPeriod, TimeUnit.SECONDS);
     }
 
-    public synchronized void execute(TradfriCoapCommand command, String relPath) {
+    public synchronized void execute(TradfriCoapCmd command, String relPath) {
         final long delay = getCurrentCommandDelay();
 
         this.commandsQueue.add(this.scheduler.schedule(() -> {

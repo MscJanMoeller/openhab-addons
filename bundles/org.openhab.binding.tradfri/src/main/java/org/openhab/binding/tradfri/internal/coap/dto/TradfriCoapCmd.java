@@ -10,7 +10,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.tradfri.internal.coap.command;
+package org.openhab.binding.tradfri.internal.coap.dto;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -25,14 +25,14 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.JsonObject;
 
 /**
- * The {@link TradfriCoapCommand} class is a Java wrapper for raw JSON data. It represents the payload
- * of CoAP commands for devices and groups.
+ * The {@link TradfriCoapCmd} class is used for a data transfer object (DTO). It represents the payload of CoAP commands
+ * for devices and groups.
  *
  * @author Jan Möller - Initial contribution
  */
 
 @NonNullByDefault
-public class TradfriCoapCommand implements CoapHandler {
+public class TradfriCoapCmd implements CoapHandler {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -41,7 +41,7 @@ public class TradfriCoapCommand implements CoapHandler {
     private TradfriCoapResourceProxy proxy;
     private String payload;
 
-    public TradfriCoapCommand(TradfriCoapResourceProxy proxy, JsonObject payload) {
+    public TradfriCoapCmd(TradfriCoapResourceProxy proxy, JsonObject payload) {
         this.proxy = proxy;
         this.payload = payload.toString();
     }

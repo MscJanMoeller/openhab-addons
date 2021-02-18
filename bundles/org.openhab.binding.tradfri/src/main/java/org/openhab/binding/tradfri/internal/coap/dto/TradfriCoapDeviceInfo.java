@@ -10,7 +10,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.tradfri.internal.coap.status;
+package org.openhab.binding.tradfri.internal.coap.dto;
 
 import java.util.Optional;
 
@@ -21,7 +21,8 @@ import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * The {@link TradfriCoapDeviceInfo} class is a Java wrapper for raw JSON data related to specific devices info.
+ * The {@link TradfriCoapDeviceInfo} class is used for a data transfer object (DTO) which contains data related to
+ * device details.
  *
  * @author Jan Möller - Initial contribution
  */

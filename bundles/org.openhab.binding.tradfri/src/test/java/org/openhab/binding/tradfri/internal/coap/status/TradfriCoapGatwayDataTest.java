@@ -16,7 +16,7 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 
 import org.junit.Test;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapGateway;
+import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapGateway;
 
 import com.google.gson.Gson;
 

@@ -19,8 +19,8 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.smarthome.core.thing.ThingTypeUID;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceCache;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapDevice;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapDeviceInfo;
+import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapDevice;
+import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapDeviceInfo;
 import org.openhab.binding.tradfri.internal.model.TradfriDevice;
 
 /**

@@ -50,7 +50,7 @@ import org.eclipse.smarthome.core.thing.binding.ThingHandler;
 import org.eclipse.smarthome.core.types.Command;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceCache;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapGateway;
+import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapGateway;
 import org.openhab.binding.tradfri.internal.config.TradfriGatewayConfig;
 import org.openhab.binding.tradfri.internal.discovery.TradfriDiscoveryService;
 import org.openhab.binding.tradfri.internal.model.TradfriDevice;

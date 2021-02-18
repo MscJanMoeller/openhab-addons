@@ -18,7 +18,7 @@ import java.util.Optional;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceCache;
-import org.openhab.binding.tradfri.internal.coap.status.TradfriCoapScene;
+import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapScene;
 import org.openhab.binding.tradfri.internal.model.TradfriScene;
 
 import com.google.gson.JsonObject;
