@@ -13,22 +13,18 @@
 package org.openhab.binding.tradfri.internal.coap;
 
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.core.AllOf.allOf;
-import static org.hamcrest.number.OrderingComparison.*;
 import static org.junit.Assert.*;
 import static org.mockito.AdditionalAnswers.answerVoid;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.ENDPOINT_DEVICES;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Queue;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.californium.core.CoapClient;
@@ -56,7 +52,8 @@ public class TradfriCoapClientTest {
     @Mock
     private CoapClient coapClient;
 
-    private ScheduledExecutorService scheduler = new ScheduledThreadPoolExecutor(3);
+    @Mock
+    private ScheduledExecutorService scheduler;
 
     private Queue<Request> expectedRequests;
 
@@ -122,8 +119,7 @@ public class TradfriCoapClientTest {
         assertNotNull(observeRelation);
 
         assertThat(expectedRequests.size(), is(1));
-        Request actualRequest = expectedRequests.remove();
-
+        final Request actualRequest = expectedRequests.remove();
         assertThat(actualRequest.getCode(), is(Code.GET));
         assertThat(actualRequest.getURI(), is("coaps://127.0.0.1/" + ENDPOINT_DEVICES + "/65537"));
         assertThat(actualRequest.getType(), is(Type.CON));
@@ -135,63 +131,131 @@ public class TradfriCoapClientTest {
         URI gatewayURI = URI.create("coaps://127.0.0.1:5684/");
         TradfriCoapClient client = new TradfriCoapClient(gatewayURI, coapClient, scheduler);
 
-        final int NUM_COMMANDS = 3;
+        final Queue<Runnable> scheduledJobs = new LinkedList<Runnable>();
+        final Queue<Long> expectedDelays = new LinkedList<Long>();
 
-        CountDownLatch commandsExecuted = new CountDownLatch(NUM_COMMANDS);
-
-        ArrayList<Long> executionTimes = new ArrayList<Long>(NUM_COMMANDS + 1);
+        final ScheduledFuture<?> job = mock(ScheduledFuture.class);
+        // Stub behavior of scheduler
+        when(scheduler.schedule(any(Runnable.class), anyLong(), eq(TimeUnit.MILLISECONDS))).thenAnswer((invocation) -> {
+            scheduledJobs.add(invocation.getArgument(0));
+            expectedDelays.add(invocation.getArgument(1));
+            return job;
+        });
 
         // Stub behavior of CoapClient
         doAnswer(answerVoid((CoapHandler callback, Request request) -> {
-            executionTimes.add(System.nanoTime());
             expectedRequests.add(request);
-            commandsExecuted.countDown();
         })).when(coapClient).advanced(any(CoapHandler.class), any(Request.class));
 
+        // Stub behavior of TradfriCoapCommand
         TradfriCoapCommand command = mock(TradfriCoapCommand.class);
         when(command.getPayload()).thenReturn("coap payload");
 
-        executionTimes.add(System.nanoTime());
-
+        // Execute first CoAP command at time 0 ms
         client.execute(command, ENDPOINT_DEVICES + "/65537");
-        client.execute(command, ENDPOINT_DEVICES + "/65538");
-        client.execute(command, ENDPOINT_DEVICES + "/65539");
+        // Verify that 2 jobs are scheduled
+        assertThat(scheduledJobs.size(), is(2));
+        // Verify delays of scheduled jobs
+        assertThat(expectedDelays.size(), is(2));
+        assertThat(expectedDelays.poll(), is(0L));
+        assertThat(expectedDelays.poll(), is(70L));
 
-        try {
-            commandsExecuted.await();
-        } catch (InterruptedException e) {
-        }
-
-        assertThat(expectedRequests.size(), is(NUM_COMMANDS));
-
-        final Request actualRequest1 = expectedRequests.remove();
+        // Simulate behavior of scheduler - execute job1 at time 1 ms
+        scheduledJobs.poll().run();
+        // Verify result of executed job1
+        assertThat(expectedRequests.size(), is(1));
+        final Request actualRequest1 = expectedRequests.poll();
         assertThat(actualRequest1.getCode(), is(Code.PUT));
         assertThat(actualRequest1.getURI(), is("coaps://127.0.0.1/" + ENDPOINT_DEVICES + "/65537"));
         assertThat(actualRequest1.getType(), is(Type.CON));
         assertThat(actualRequest1.getOptions().getContentFormat(), is(MediaTypeRegistry.TEXT_PLAIN));
         assertThat(actualRequest1.getPayloadString(), is("coap payload"));
-        final long delay1 = TimeUnit.MILLISECONDS.convert(executionTimes.get(1) - executionTimes.get(0),
-                TimeUnit.NANOSECONDS);
-        assertThat(delay1, allOf(greaterThan(10L), lessThan(70L)));
 
-        final Request actualRequest2 = expectedRequests.remove();
+        // Execute second CoAP command at time 5 ms
+        // Simulate that there are already commands in the queue
+        when(job.getDelay(TimeUnit.MILLISECONDS)).thenReturn(65L);
+        client.execute(command, ENDPOINT_DEVICES + "/65538");
+        // Verify that in total 3 jobs are pending
+        assertThat(scheduledJobs.size(), is(3));
+        // Verify delays of scheduled jobs
+        assertThat(expectedDelays.size(), is(2));
+        assertThat(expectedDelays.poll(), is(65L));
+        assertThat(expectedDelays.poll(), is(135L));
+
+        // Simulate behavior of scheduler - execute job2 at time 70 ms
+        // job1 already executed, job2 and further jobs not
+        when(job.isDone()).thenReturn(true, false);
+        scheduledJobs.poll().run();
+
+        // Simulate behavior of scheduler - execute job3 at time 71 ms
+        scheduledJobs.poll().run();
+        // Verify result of executed job3
+        assertThat(expectedRequests.size(), is(1));
+        final Request actualRequest2 = expectedRequests.poll();
         assertThat(actualRequest2.getCode(), is(Code.PUT));
         assertThat(actualRequest2.getURI(), is("coaps://127.0.0.1/" + ENDPOINT_DEVICES + "/65538"));
         assertThat(actualRequest2.getType(), is(Type.CON));
         assertThat(actualRequest2.getOptions().getContentFormat(), is(MediaTypeRegistry.TEXT_PLAIN));
         assertThat(actualRequest2.getPayloadString(), is("coap payload"));
-        final long delay2 = TimeUnit.MILLISECONDS.convert(executionTimes.get(2) - executionTimes.get(1),
-                TimeUnit.NANOSECONDS);
-        assertThat(delay2, allOf(greaterThan(40L), lessThan(90L)));
 
-        final Request actualRequest3 = expectedRequests.remove();
+        // Execute third CoAP command at time 100 ms
+        // Simulate that there are already commands in the queue
+        when(job.getDelay(TimeUnit.MILLISECONDS)).thenReturn(40L);
+        client.execute(command, ENDPOINT_DEVICES + "/65539");
+        // Verify that in total 3 jobs are pending
+        assertThat(scheduledJobs.size(), is(3));
+        // Verify delays of scheduled jobs
+        assertThat(expectedDelays.size(), is(2));
+        assertThat(expectedDelays.poll(), is(40L));
+        assertThat(expectedDelays.poll(), is(110L));
+
+        // Simulate behavior of scheduler - execute job4 at time 140 ms
+        // job2 & job3 already executed, job4 and further jobs not
+        when(job.isDone()).thenReturn(true, true, false);
+        scheduledJobs.poll().run();
+
+        // Simulate behavior of scheduler - execute job5 at time 141 ms
+        scheduledJobs.poll().run();
+        // Verify result of executed job5
+        assertThat(expectedRequests.size(), is(1));
+        final Request actualRequest3 = expectedRequests.poll();
         assertThat(actualRequest3.getCode(), is(Code.PUT));
         assertThat(actualRequest3.getURI(), is("coaps://127.0.0.1/" + ENDPOINT_DEVICES + "/65539"));
         assertThat(actualRequest3.getType(), is(Type.CON));
         assertThat(actualRequest3.getOptions().getContentFormat(), is(MediaTypeRegistry.TEXT_PLAIN));
         assertThat(actualRequest3.getPayloadString(), is("coap payload"));
-        final long delay3 = TimeUnit.MILLISECONDS.convert(executionTimes.get(3) - executionTimes.get(2),
-                TimeUnit.NANOSECONDS);
-        assertThat(delay3, allOf(greaterThan(40L), lessThan(90L)));
+
+        // Simulate behavior of scheduler - execute job6 at time 210 ms
+        // job4 & job5 already executed, job6 not
+        when(job.isDone()).thenReturn(true, true, false);
+        scheduledJobs.poll().run();
+
+        // Execute fourth CoAP command at time 220 ms
+        // Simulate that there is a completed job in the queue
+        when(job.getDelay(TimeUnit.MILLISECONDS)).thenReturn(-10L);
+        client.execute(command, ENDPOINT_DEVICES + "/65540");
+        // Verify that in total 2 jobs are pending
+        assertThat(scheduledJobs.size(), is(2));
+        // Verify delays of scheduled jobs
+        assertThat(expectedDelays.size(), is(2));
+        assertThat(expectedDelays.poll(), is(0L));
+        assertThat(expectedDelays.poll(), is(70L));
+
+        // Simulate behavior of scheduler - execute job7 at time 221 ms
+        scheduledJobs.poll().run();
+        // Verify result of executed job7
+        assertThat(expectedRequests.size(), is(1));
+        final Request actualRequest4 = expectedRequests.poll();
+        assertThat(actualRequest4.getCode(), is(Code.PUT));
+        assertThat(actualRequest4.getURI(), is("coaps://127.0.0.1/" + ENDPOINT_DEVICES + "/65540"));
+        assertThat(actualRequest4.getType(), is(Type.CON));
+        assertThat(actualRequest4.getOptions().getContentFormat(), is(MediaTypeRegistry.TEXT_PLAIN));
+        assertThat(actualRequest4.getPayloadString(), is("coap payload"));
+
+        // Simulate behavior of scheduler - execute job8 at time 280 ms
+        // job6 & job7 already executed, job8 not
+        when(job.isDone()).thenReturn(true, true, false);
+        scheduledJobs.poll().run();
+
     }
 }
