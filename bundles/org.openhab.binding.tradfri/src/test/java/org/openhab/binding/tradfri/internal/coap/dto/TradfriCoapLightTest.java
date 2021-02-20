@@ -10,7 +10,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.tradfri.internal.coap.status;
+package org.openhab.binding.tradfri.internal.coap.dto;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
