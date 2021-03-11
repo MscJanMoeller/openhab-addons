@@ -12,6 +12,9 @@
  */
 package org.openhab.binding.tradfri.internal.config;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
+
 /**
  * The {@link TradfriGroupConfig} holds the
  * configuration information needed to access groups managed
@@ -19,9 +22,10 @@ package org.openhab.binding.tradfri.internal.config;
  *
  * @author Jan Möller - Initial contribution
  */
+@NonNullByDefault
 public class TradfriGroupConfig {
 
     public static final String CONFIG_ID = "id";
 
-    public String id;
+    public @Nullable String id;
 }

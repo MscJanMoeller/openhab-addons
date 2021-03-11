@@ -24,6 +24,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
@@ -60,7 +62,6 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
     private @Nullable TradfriCoapProxyFactory proxyFactory;
 
     public TradfriCoapResourceCache() {
-
         this.proxyMap = new ConcurrentHashMap<String, TradfriCoapResourceProxy>();
         this.eventHandlerMap = new ConcurrentHashMap<TradfriEventSubscription, Set<Object>>();
     }
@@ -146,6 +147,17 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
     public <T extends TradfriResource> Optional<T> getAs(String id, Class<T> resourceClass) {
         logger.trace("Resource with id {} as {} requested", id, resourceClass);
         return get(id).flatMap(resource -> resource.as(resourceClass));
+    }
+
+    @Override
+    public <T extends TradfriResource> Stream<T> streamOf(Class<T> resourceClass) {
+        return this.proxyMap.values().parallelStream().filter(r -> resourceClass.isAssignableFrom(r.getClass()))
+                .map(r -> resourceClass.cast(r));
+    }
+
+    @Override
+    public <T extends TradfriResource> Stream<T> streamOf(Class<T> resourceClass, Predicate<T> predicate) {
+        return streamOf(resourceClass).filter(predicate);
     }
 
     @Override
@@ -308,7 +320,6 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
     }
 
     private void disposeResourceListObserver() {
-
         if (this.deviceListObserver != null) {
             // Triggers RESOURCE_REMOVED event for all resources
             this.deviceListObserver.dispose();

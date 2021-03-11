@@ -98,7 +98,7 @@ public class TradfriBindingConstants {
     public static final String CHANNEL_POSITION = "position";
     public static final String CHANNEL_BATTERY_LEVEL = "battery_level";
     public static final String CHANNEL_BATTERY_LOW = "battery_low";
-    public static final String CHANNEL_SCENE = "power";
+    public static final String CHANNEL_SCENE = "scene";
 
     // IPSO Objects
     public static final String ALEXA_PAIR_STATUS = "9093";

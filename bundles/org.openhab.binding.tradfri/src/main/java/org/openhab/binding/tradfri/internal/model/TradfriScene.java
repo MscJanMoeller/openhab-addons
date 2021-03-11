@@ -26,5 +26,7 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 
 @NonNullByDefault
 public interface TradfriScene extends TradfriResource {
+    String getGroupID();
+
     Optional<String> getSceneName();
 }

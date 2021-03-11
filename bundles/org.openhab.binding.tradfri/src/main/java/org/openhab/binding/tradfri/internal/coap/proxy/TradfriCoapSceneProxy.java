@@ -32,9 +32,18 @@ import com.google.gson.JsonObject;
 @NonNullByDefault
 public class TradfriCoapSceneProxy extends TradfriCoapResourceProxy implements TradfriScene {
 
+    private final String groupID;
+
     public TradfriCoapSceneProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient, String coapPath,
             JsonObject coapPayload) {
-        super(resourceCache, coapClient, coapPath, gson.fromJson(coapPayload, TradfriCoapScene.class));
+        super(resourceCache, coapClient, coapPath, GSON.fromJson(coapPayload, TradfriCoapScene.class));
+
+        this.groupID = coapPath.split("/")[1];
+    }
+
+    @Override
+    public String getGroupID() {
+        return this.groupID;
     }
 
     @Override
@@ -44,6 +53,6 @@ public class TradfriCoapSceneProxy extends TradfriCoapResourceProxy implements T
 
     @Override
     protected TradfriCoapScene parsePayload(String coapPayload) {
-        return gson.fromJson(coapPayload, TradfriCoapScene.class);
+        return GSON.fromJson(coapPayload, TradfriCoapScene.class);
     }
 }

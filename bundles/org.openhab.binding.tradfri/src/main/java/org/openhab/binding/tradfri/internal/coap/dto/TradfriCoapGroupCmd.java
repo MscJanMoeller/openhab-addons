@@ -21,22 +21,22 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.JsonPrimitive;
 
 /**
- * The {@link TradfriCoapLightCmd} class is used for a data transfer object (DTO). It represents the payload of CoAP
- * commands for lights.
+ * The {@link TradfriCoapGroupCmd} class is used for a data transfer object (DTO). It represents the payload of CoAP
+ * commands for groups.
  *
  * @author Jan Möller - Initial contribution
  */
 
 @NonNullByDefault
-public class TradfriCoapLightCmd extends TradfriCoapCmd {
+public class TradfriCoapGroupCmd extends TradfriCoapCmd {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    public TradfriCoapLightCmd(TradfriCoapResourceProxy proxy) {
-        super(proxy, TradfriBindingConstants.LIGHT);
+    public TradfriCoapGroupCmd(TradfriCoapResourceProxy proxy) {
+        super(proxy);
     }
 
-    public TradfriCoapLightCmd setOnOff(int value) {
+    public TradfriCoapGroupCmd setOnOff(int value) {
         if (0 <= value && value <= 1) {
             addCommandProperty(TradfriBindingConstants.ONOFF, new JsonPrimitive(value));
         } else {
@@ -45,7 +45,7 @@ public class TradfriCoapLightCmd extends TradfriCoapCmd {
         return this;
     }
 
-    public TradfriCoapLightCmd setDimmer(int value) {
+    public TradfriCoapGroupCmd setDimmer(int value) {
         if (0 <= value && value < 255) {
             addCommandProperty(TradfriBindingConstants.DIMMER, new JsonPrimitive(value));
         } else {
@@ -54,18 +54,8 @@ public class TradfriCoapLightCmd extends TradfriCoapCmd {
         return this;
     }
 
-    public TradfriCoapLightCmd setColorXY(int x, int y) {
-        if (0 <= x && x <= 65535) {
-            addCommandProperty(TradfriBindingConstants.COLOR_X, new JsonPrimitive(x));
-        } else {
-            logger.error("Color X value '{}' out of range for resource {}.", x, getInstanceId());
-        }
-
-        if (0 <= y && y <= 65535) {
-            addCommandProperty(TradfriBindingConstants.COLOR_Y, new JsonPrimitive(y));
-        } else {
-            logger.error("Color Y value '{}' out of range for resource {}.", y, getInstanceId());
-        }
+    public TradfriCoapGroupCmd setScene(String sceneID) {
+        addCommandProperty(TradfriBindingConstants.SCENE_ID, new JsonPrimitive(Integer.parseInt(sceneID)));
         return this;
     }
 

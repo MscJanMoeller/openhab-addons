@@ -44,7 +44,7 @@ public abstract class TradfriCoapLightProxy extends TradfriCoapDeviceProxy imple
 
     protected TradfriCoapLightProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient,
             String coapPath, JsonObject initialData, ThingTypeUID thingType) {
-        super(resourceCache, coapClient, coapPath, gson.fromJson(initialData, TradfriCoapLight.class), thingType);
+        super(resourceCache, coapClient, coapPath, GSON.fromJson(initialData, TradfriCoapLight.class), thingType);
     }
 
     @Override
@@ -136,7 +136,7 @@ public abstract class TradfriCoapLightProxy extends TradfriCoapDeviceProxy imple
 
     @Override
     protected TradfriCoapLight parsePayload(String coapPayload) {
-        return gson.fromJson(coapPayload, TradfriCoapLight.class);
+        return GSON.fromJson(coapPayload, TradfriCoapLight.class);
     }
 
     protected int getDimmer() {

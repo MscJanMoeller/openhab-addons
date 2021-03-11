@@ -28,7 +28,7 @@ import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceCache;
 import org.openhab.binding.tradfri.internal.coap.TradfriResourceListObserver;
 import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapGroup;
-import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapLightCmd;
+import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapGroupCmd;
 import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapResource;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
@@ -52,7 +52,7 @@ public class TradfriCoapGroupProxy extends TradfriCoapThingResourceProxy impleme
 
     public TradfriCoapGroupProxy(TradfriCoapResourceCache resourceCache, TradfriCoapClient coapClient, String coapPath,
             JsonObject coapPayload) {
-        super(resourceCache, coapClient, coapPath, gson.fromJson(coapPayload, TradfriCoapGroup.class),
+        super(resourceCache, coapClient, coapPath, GSON.fromJson(coapPayload, TradfriCoapGroup.class),
                 THING_TYPE_GROUP);
 
         this.sceneListObserver = new TradfriResourceListObserver(coapClient,
@@ -80,7 +80,7 @@ public class TradfriCoapGroupProxy extends TradfriCoapThingResourceProxy impleme
 
     @Override
     public boolean lightsOn() {
-        return getLights().map(light -> light.isAlive() && light.isOn()).reduce(Boolean::logicalOr).orElse(false);
+        return getLightsAreOn().count() > 0;
     }
 
     @Override
@@ -90,7 +90,7 @@ public class TradfriCoapGroupProxy extends TradfriCoapThingResourceProxy impleme
 
     @Override
     public void setOnOff(OnOffType value) {
-        execute(new TradfriCoapLightCmd(this).setOnOff(value == OnOffType.ON ? 1 : 0));
+        execute(new TradfriCoapGroupCmd(this).setOnOff(value == OnOffType.ON ? 1 : 0));
     }
 
     @Override
@@ -106,14 +106,25 @@ public class TradfriCoapGroupProxy extends TradfriCoapThingResourceProxy impleme
 
     @Override
     public void increaseBrightnessBy(PercentType value) {
-        setBrightness(new PercentType(
-                Math.min(getBrightness().intValue() + value.intValue(), PercentType.HUNDRED.intValue())));
+        getLightsAreOn().forEach(light -> light.increaseBrightnessBy(value));
     }
 
     @Override
     public void decreaseBrightnessBy(PercentType value) {
-        setBrightness(
-                new PercentType(Math.max(getBrightness().intValue() - value.intValue(), PercentType.ZERO.intValue())));
+        getLightsAreOn().forEach(light -> light.decreaseBrightnessBy(value));
+    }
+
+    @Override
+    public Optional<TradfriScene> getSceneById(String id) {
+        return getResourceCache().getAs(id, TradfriScene.class);
+    }
+
+    @Override
+    public Optional<TradfriScene> getSceneByName(String name) {
+        return getResourceCache()
+                .streamOf(TradfriScene.class,
+                        s -> s.getGroupID().equals(getInstanceId().get()) && name.equals(s.getSceneName().get()))
+                .findFirst();
     }
 
     @Override
@@ -122,18 +133,9 @@ public class TradfriCoapGroupProxy extends TradfriCoapThingResourceProxy impleme
     }
 
     @Override
-    public void setActiveSceneByName(String name) {
-        // TODO implement command
-    }
-
-    @Override
-    public void setActiveSceneById(String id) {
-        // TODO implement command
-    }
-
-    @Override
-    public Optional<TradfriScene> getSceneById(String id) {
-        return getResourceCache().getAs(id, TradfriScene.class);
+    public void setActiveScene(TradfriScene scene) {
+        scene.getInstanceId()
+                .ifPresent(sceneID -> execute(new TradfriCoapGroupCmd(this).setOnOff(1).setScene(sceneID)));
     }
 
     @Override
@@ -163,7 +165,7 @@ public class TradfriCoapGroupProxy extends TradfriCoapThingResourceProxy impleme
 
     @Override
     protected TradfriCoapGroup parsePayload(String coapPayload) {
-        return gson.fromJson(coapPayload, TradfriCoapGroup.class);
+        return GSON.fromJson(coapPayload, TradfriCoapGroup.class);
     }
 
     private synchronized void handleSceneListChange(TradfriEvent event) {
@@ -176,11 +178,15 @@ public class TradfriCoapGroupProxy extends TradfriCoapThingResourceProxy impleme
     }
 
     private void setBrightness(int value) {
-        execute(new TradfriCoapLightCmd(this).setDimmer(value));
+        execute(new TradfriCoapGroupCmd(this).setDimmer(value));
     }
 
     private int convertToAbsoluteBrightness(PercentType relativeBrightness) {
         return (int) Math.floor(relativeBrightness.doubleValue() * 2.54);
+    }
+
+    private Stream<TradfriLight> getLightsAreOn() {
+        return getLights().filter(light -> light.isAlive() && light.isOn());
     }
 
     private Stream<TradfriLight> getLights() {

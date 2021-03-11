@@ -60,8 +60,8 @@ public class TradfriCoapGroup extends TradfriCoapResource {
 
     public TradfriCoapResourceIdList getMembers() {
         if (this.deviceLinks != null) {
-            return this.deviceLinks.resourceLinks != null ? this.deviceLinks.resourceLinks
-                    : TradfriCoapResourceIdList.empty();
+            final TradfriCoapResourceIdList resourceLinks = this.deviceLinks.resourceLinks;
+            return resourceLinks != null ? resourceLinks : TradfriCoapResourceIdList.empty();
         }
         return TradfriCoapResourceIdList.empty();
     }

@@ -12,6 +12,9 @@
  */
 package org.openhab.binding.tradfri.internal.config;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
+
 /**
  * The {@link TradfriDeviceConfig} holds the
  * configuration information needed to access single devices
@@ -19,9 +22,10 @@ package org.openhab.binding.tradfri.internal.config;
  *
  * @author Kai Kreuzer - Initial contribution
  */
+@NonNullByDefault
 public class TradfriDeviceConfig {
 
     public static final String CONFIG_ID = "id";
 
-    public Integer id;
+    public @Nullable Integer id;
 }

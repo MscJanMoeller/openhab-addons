@@ -85,7 +85,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
 
     private static final int ACCEPTED_COAP_ERRORS = 1;
 
-    private static final Gson gson = new Gson();
+    private static final Gson GSON = new Gson();
 
     private @Nullable URI gatewayURI;
 
@@ -274,7 +274,8 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
 
         final URI uri = this.gatewayURI;
         if (uri != null) {
-            this.gatewayClient = new TradfriCoapClient(uri, new CoapClient().setEndpoint(endpoint), scheduler);
+            final CoapClient coapClient = new CoapClient(uri).setEndpoint(endpoint);
+            this.gatewayClient = new TradfriCoapClient(uri, coapClient, scheduler);
         }
 
         // Schedule a CoAP ping every minute to check the connection
@@ -304,8 +305,9 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
         // Connect TradfriDiscoveryService with resource cache to get events for devices and groups
         this.resourceCache.subscribeEvents(this);
 
-        if (this.gatewayClient != null) {
-            this.resourceCache.initialize(this.gatewayClient, scheduler);
+        final TradfriCoapClient gwClient = this.gatewayClient;
+        if (gwClient != null) {
+            this.resourceCache.initialize(gwClient, scheduler);
         }
     }
 
@@ -352,7 +354,6 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
                 logger.debug("Started CoAP endpoint {}", endpoint.getAddress());
 
                 // TODO Invalidate all resource proxies?
-
             } catch (IOException e) {
                 logger.error("Could not start CoAP endpoint", e);
             }
@@ -502,7 +503,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements Connecti
                             response.getResponseText());
                     if (response.isSuccess()) {
                         try {
-                            TradfriCoapGateway gateway = gson.fromJson(response.getResponseText(),
+                            TradfriCoapGateway gateway = GSON.fromJson(response.getResponseText(),
                                     TradfriCoapGateway.class);
                             getThing().setProperty(Thing.PROPERTY_FIRMWARE_VERSION, gateway.getVersion());
                             updateOnlineStatus();

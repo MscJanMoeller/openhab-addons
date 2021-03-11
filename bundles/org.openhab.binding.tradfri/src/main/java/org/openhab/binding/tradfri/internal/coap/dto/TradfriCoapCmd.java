@@ -44,15 +44,20 @@ public class TradfriCoapCmd implements CoapHandler {
     private JsonObject payload;
     private JsonObject commandProperties;
 
-    public TradfriCoapCmd(TradfriCoapResourceProxy proxy, String commandName) {
+    public TradfriCoapCmd(TradfriCoapResourceProxy proxy) {
+        this(proxy, null);
+    }
+
+    public TradfriCoapCmd(TradfriCoapResourceProxy proxy, @Nullable String commandKey) {
         this.proxy = proxy;
-
         this.payload = new JsonObject();
-        this.commandProperties = new JsonObject();
-
-        JsonArray array = new JsonArray();
-        array.add(this.commandProperties);
-        this.payload.add(commandName, array);
+        this.commandProperties = this.payload;
+        if (commandKey != null) {
+            this.commandProperties = new JsonObject();
+            final JsonArray array = new JsonArray();
+            array.add(this.commandProperties);
+            this.payload.add(commandKey, array);
+        }
     }
 
     public String getPayload() {

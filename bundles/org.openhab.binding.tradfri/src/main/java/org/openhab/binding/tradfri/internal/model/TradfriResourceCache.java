@@ -15,6 +15,8 @@ package org.openhab.binding.tradfri.internal.model;
 
 import java.util.EnumSet;
 import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
@@ -49,6 +51,10 @@ public interface TradfriResourceCache {
     Optional<? extends TradfriResource> get(String id);
 
     <T extends TradfriResource> Optional<T> getAs(String id, Class<T> resourceClass);
+
+    <T extends TradfriResource> Stream<T> streamOf(Class<T> resourceClass);
+
+    <T extends TradfriResource> Stream<T> streamOf(Class<T> resourceClass, Predicate<T> predicate);
 
     void refresh();
 

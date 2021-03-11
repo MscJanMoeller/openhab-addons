@@ -40,7 +40,7 @@ public class TradfriCoapProxyFactory {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static final JsonParser parser = new JsonParser();
+    private final JsonParser parser = new JsonParser();
 
     private final TradfriCoapResourceCache resourceCache;
 

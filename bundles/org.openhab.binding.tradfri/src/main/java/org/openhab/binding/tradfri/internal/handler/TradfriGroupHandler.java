@@ -31,6 +31,7 @@ import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
 import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriGroup;
+import org.openhab.binding.tradfri.internal.model.TradfriScene;
 import org.openhab.binding.tradfri.internal.model.TradfriThingResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -138,9 +139,18 @@ public class TradfriGroupHandler extends TradfriThingResourceHandler {
     }
 
     private void handleSceneCommand(Command command, TradfriGroup group) {
-        // TODO: implement command to set scene of group
         if (command instanceof StringType) {
-            logger.info("Command {} for channel {} not implemented yet.", command, CHANNEL_SCENE);
+            final String sceneName = command.toString();
+            Optional<TradfriScene> scene = group.getSceneByName(sceneName);
+            if (!scene.isPresent()) {
+                scene = group.getSceneById(sceneName);
+            }
+            if (scene.isPresent()) {
+                group.setActiveScene(scene.get());
+            } else {
+                logger.error("Scene with name or ID '{}' not found. Cannot activate scene for channel {}. ", command,
+                        CHANNEL_SCENE);
+            }
         } else {
             logger.error("Cannot handle command {} for channel {}", command, CHANNEL_SCENE);
         }

@@ -43,11 +43,11 @@ public interface TradfriGroup extends TradfriThingResource {
 
     void decreaseBrightnessBy(PercentType value);
 
+    Optional<TradfriScene> getSceneById(String id);
+
+    Optional<TradfriScene> getSceneByName(String id);
+
     Optional<TradfriScene> getActiveScene();
 
-    void setActiveSceneByName(String name);
-
-    void setActiveSceneById(String id);
-
-    Optional<TradfriScene> getSceneById(String id);
+    void setActiveScene(TradfriScene scene);
 }

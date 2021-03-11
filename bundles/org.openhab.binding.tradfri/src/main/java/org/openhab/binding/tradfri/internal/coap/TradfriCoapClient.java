@@ -53,7 +53,6 @@ public class TradfriCoapClient {
     private final Deque<ScheduledFuture<?>> commandsQueue = new ConcurrentLinkedDeque<>();
 
     public TradfriCoapClient(URI gatewayURI, CoapClient coapClient, ScheduledExecutorService scheduler) {
-        super();
         this.gatewayURI = gatewayURI;
         this.scheduler = scheduler;
         this.coapClient = coapClient;

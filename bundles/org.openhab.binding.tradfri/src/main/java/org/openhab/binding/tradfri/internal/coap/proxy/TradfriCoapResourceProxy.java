@@ -43,9 +43,9 @@ import com.google.gson.JsonSyntaxException;
 @NonNullByDefault
 public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriResource {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    protected static final Gson GSON = new Gson();
 
-    protected final static Gson gson = new Gson();
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final TradfriCoapClient coapClient;
     private final String coapPath;

@@ -21,6 +21,7 @@ import java.util.concurrent.ScheduledFuture;
 
 import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapResponse;
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
@@ -38,6 +39,7 @@ import com.google.gson.reflect.TypeToken;
  * @author Jan Möller - Initial contribution
  *
  */
+@NonNullByDefault
 public class TradfriResourceListObserver implements CoapHandler {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -89,7 +91,7 @@ public class TradfriResourceListObserver implements CoapHandler {
     }
 
     @Override
-    public void onLoad(CoapResponse response) {
+    public void onLoad(@Nullable CoapResponse response) {
         if (response == null) {
             logger.trace("Received empty CoAP response.");
             return;

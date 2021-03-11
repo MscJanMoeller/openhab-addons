@@ -40,12 +40,12 @@
 			<description>The identifier of the device assigned by the gateway.</description>
 		</parameter>
 	</config-description>
-	
+
 	<config-description uri="thing-type:tradfri:group">
-        <parameter name="id" type="text" required="true">
-            <label>ID</label>
-            <description>The identifier of the group assigned by the gateway.</description>
-        </parameter>
-    </config-description>
+		<parameter name="id" type="text" required="true">
+			<label>ID</label>
+			<description>The identifier of the group assigned by the gateway.</description>
+		</parameter>
+	</config-description>
 
 </config-description:config-descriptions>
