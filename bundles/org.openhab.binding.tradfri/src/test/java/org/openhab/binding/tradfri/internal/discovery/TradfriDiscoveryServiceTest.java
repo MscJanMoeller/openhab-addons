@@ -178,7 +178,7 @@ public class TradfriDiscoveryServiceTest {
         assertThat(discoveryResult.getThingUID(), is(new ThingUID("tradfri:group:1:131079")));
         assertThat(discoveryResult.getThingTypeUID(), is(THING_TYPE_GROUP));
         assertThat(discoveryResult.getBridgeUID(), is(GATEWAY_THING_UID));
-        assertThat(discoveryResult.getProperties().get(TradfriGroupConfig.CONFIG_ID), is("131079"));
+        assertThat(discoveryResult.getProperties().get(TradfriGroupConfig.CONFIG_ID), is(131079));
         assertThat(discoveryResult.getRepresentationProperty(), is(TradfriGroupConfig.CONFIG_ID));
     }
 

@@ -224,7 +224,7 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService {
         properties.put(PROPERTY_VENDOR, TRADFRI_VENDOR_NAME);
         properties.put(PROPERTY_MODEL_ID, "TRADFRI group of devices");
 
-        group.getInstanceId().ifPresent(id -> properties.put(TradfriGroupConfig.CONFIG_ID, id));
+        group.getInstanceId().ifPresent(id -> properties.put(TradfriGroupConfig.CONFIG_ID, Integer.valueOf(id)));
 
         logger.debug("Inbox change: adding or updating group {}", thingId);
         DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(thingId).withBridge(bridge.getUID())

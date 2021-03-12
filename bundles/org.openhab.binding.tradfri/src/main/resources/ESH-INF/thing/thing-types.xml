@@ -16,7 +16,7 @@
 	<!-- Generic thing for Groups/Rooms -->
 	<thing-type id="group">
 		<supported-bridge-type-refs>
-			<bridge-type-ref id="bridge" />
+			<bridge-type-ref id="gateway" />
 		</supported-bridge-type-refs>
 
 		<label>TRÅDFRI Group/Room/</label>

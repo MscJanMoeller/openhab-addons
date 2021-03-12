@@ -27,5 +27,5 @@ public class TradfriGroupConfig {
 
     public static final String CONFIG_ID = "id";
 
-    public @Nullable String id;
+    public @Nullable Integer id;
 }

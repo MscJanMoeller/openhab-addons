@@ -61,6 +61,13 @@ public class TradfriCoapGroupProxy extends TradfriCoapThingResourceProxy impleme
     }
 
     @Override
+    public void initialize() {
+        super.initialize();
+        // Subscribe update event of assigned devices
+        getDeviceIds().stream().forEach(id -> getResourceCache().subscribeEvents(id, EType.RESOURCE_UPDATED, this));
+    }
+
+    @Override
     protected void onUpdate(TradfriCoapResource oldData, TradfriCoapResource newData) {
         final Set<String> cachedDevices = getDeviceIds(oldData);
         final Set<String> currentDevices = getDeviceIds(newData);
@@ -75,7 +82,7 @@ public class TradfriCoapGroupProxy extends TradfriCoapThingResourceProxy impleme
     @TradfriEventHandler(EType.RESOURCE_UPDATED)
     public void onDeviceUpdated(TradfriEvent event, TradfriCoapThingResourceProxy device) {
         // TODO: trigger only if light bulbs changed
-        getResourceCache().updated(device);
+        getResourceCache().updated(this);
     }
 
     @Override
