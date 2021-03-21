@@ -143,9 +143,9 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCall
     private void establishConnection() {
         TradfriGatewayConfig configuration = getConfigAs(TradfriGatewayConfig.class);
 
-        this.gatewayURI = "coaps://" + configuration.host + ":" + configuration.port + "/" + DEVICES;
-        this.gatewayInfoURI = "coaps://" + configuration.host + ":" + configuration.port + "/" + GATEWAY + "/"
-                + GATEWAY_DETAILS;
+        this.gatewayURI = "coaps://" + configuration.host + ":" + configuration.port + "/" + ENDPOINT_DEVICES;
+        this.gatewayInfoURI = "coaps://" + configuration.host + ":" + configuration.port + "/" + ENDPOINT_GATEWAY + "/"
+                + ENDPOINT_GATEWAY_DETAILS;
         try {
             URI uri = new URI(gatewayURI);
             deviceClient = new TradfriCoapClient(uri);

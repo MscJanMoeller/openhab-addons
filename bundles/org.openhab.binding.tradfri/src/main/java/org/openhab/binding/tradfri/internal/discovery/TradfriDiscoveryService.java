@@ -110,14 +110,14 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService
     public void onUpdate(@Nullable String instanceId, @Nullable JsonObject data) {
         ThingUID bridge = handler.getThing().getUID();
         try {
-            if (data != null && data.has(INSTANCE_ID)) {
-                int id = data.get(INSTANCE_ID).getAsInt();
-                String type = data.get(TYPE).getAsString();
+            if (data != null && data.has(RESOURCE_INSTANCE_ID)) {
+                int id = data.get(RESOURCE_INSTANCE_ID).getAsInt();
+                int type = data.get(DEVICE_TYPE).getAsInt();
                 JsonObject deviceInfo = data.get(DEVICE).getAsJsonObject();
                 String model = deviceInfo.get(DEVICE_MODEL).getAsString();
                 ThingUID thingId = null;
 
-                if (TYPE_LIGHT.equals(type) && data.has(LIGHT)) {
+                if (DEVICE_TYPE_LIGHT == type && data.has(LIGHT)) {
                     JsonObject state = data.get(LIGHT).getAsJsonArray().get(0).getAsJsonObject();
 
                     // Color temperature light:
@@ -139,13 +139,13 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService
                         thingType = THING_TYPE_DIMMABLE_LIGHT;
                     }
                     thingId = new ThingUID(thingType, bridge, Integer.toString(id));
-                } else if (TYPE_BLINDS.equals(type) && data.has(BLINDS)) {
+                } else if (DEVICE_TYPE_BLINDS == type && data.has(BLINDS)) {
                     // Blinds
                     thingId = new ThingUID(THING_TYPE_BLINDS, bridge, Integer.toString(id));
-                } else if (TYPE_PLUG.equals(type) && data.has(PLUG)) {
+                } else if (DEVICE_TYPE_PLUG == type && data.has(PLUG)) {
                     // Smart plug
                     thingId = new ThingUID(THING_TYPE_ONOFF_PLUG, bridge, Integer.toString(id));
-                } else if (TYPE_SWITCH.equals(type) && data.has(SWITCH)) {
+                } else if (DEVICE_TYPE_SWITCH == type && data.has(SWITCH)) {
                     // Remote control and wireless dimmer
                     // As protocol does not distinguishes between remote control and wireless dimmer,
                     // we check for the whole model name
@@ -153,9 +153,9 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService
                             ? THING_TYPE_REMOTE_CONTROL
                             : THING_TYPE_DIMMER;
                     thingId = new ThingUID(thingType, bridge, Integer.toString(id));
-                } else if (TYPE_REMOTE.equals(type)) {
+                } else if (DEVICE_TYPE_REMOTE == type) {
                     thingId = new ThingUID(THING_TYPE_OPEN_CLOSE_REMOTE_CONTROL, bridge, Integer.toString(id));
-                } else if (TYPE_SENSOR.equals(type) && data.has(SENSOR)) {
+                } else if (DEVICE_TYPE_SENSOR == type && data.has(SENSOR)) {
                     // Motion sensor
                     thingId = new ThingUID(THING_TYPE_MOTION_SENSOR, bridge, Integer.toString(id));
                 }
@@ -167,7 +167,7 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService
                     return;
                 }
 
-                String label = data.get(NAME).getAsString();
+                String label = data.get(RESOURCE_NAME).getAsString();
 
                 Map<String, Object> properties = new HashMap<>(1);
                 properties.put("id", id);
