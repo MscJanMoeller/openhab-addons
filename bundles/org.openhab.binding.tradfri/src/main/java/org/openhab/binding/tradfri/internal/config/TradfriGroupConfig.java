@@ -16,14 +16,14 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
- * The {@link TradfriDeviceConfig} holds the
- * configuration information needed to access single devices
- * managed by the gateway.
+ * The {@link TradfriGroupConfig} holds the
+ * configuration information needed to access groups managed
+ * by the gateway.
  *
- * @author Kai Kreuzer - Initial contribution
+ * @author Jan Möller - Initial contribution
  */
 @NonNullByDefault
-public class TradfriDeviceConfig {
+public class TradfriGroupConfig {
 
     public static final String CONFIG_ID = "id";
 

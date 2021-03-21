@@ -13,6 +13,7 @@
 package org.openhab.binding.tradfri.internal.discovery;
 
 import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
+import static org.openhab.binding.tradfri.internal.config.TradfriGatewayConfig.*;
 import static org.openhab.core.thing.Thing.*;
 
 import java.util.HashMap;
@@ -85,15 +86,15 @@ public class TradfriDiscoveryParticipant implements MDNSDiscoveryParticipant {
                 logger.debug("Discovered Tradfri gateway: {}", service);
                 Map<String, Object> properties = new HashMap<>(4);
                 properties.put(PROPERTY_VENDOR, "IKEA of Sweden");
-                properties.put(GATEWAY_CONFIG_HOST, service.getHostAddresses()[0]);
-                properties.put(GATEWAY_CONFIG_PORT, service.getPort());
+                properties.put(CONFIG_HOST, service.getHostAddresses()[0]);
+                properties.put(CONFIG_PORT, service.getPort());
                 properties.put(PROPERTY_SERIAL_NUMBER, service.getName());
                 String fwVersion = service.getPropertyString("version");
                 if (fwVersion != null) {
                     properties.put(PROPERTY_FIRMWARE_VERSION, fwVersion);
                 }
                 return DiscoveryResultBuilder.create(thingUID).withProperties(properties).withLabel("TRÅDFRI Gateway")
-                        .withRepresentationProperty(GATEWAY_CONFIG_HOST).build();
+                        .withRepresentationProperty(CONFIG_HOST).build();
             } else {
                 logger.warn("Discovered Tradfri gateway doesn't have an IP address: {}", service);
             }

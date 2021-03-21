@@ -13,6 +13,7 @@
 package org.openhab.binding.tradfri.internal.handler;
 
 import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
+import static org.openhab.binding.tradfri.internal.config.TradfriGatewayConfig.*;
 
 import java.io.IOException;
 import java.net.URI;
@@ -25,6 +26,7 @@ import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapResponse;
@@ -36,12 +38,13 @@ import org.eclipse.californium.scandium.dtls.pskstore.StaticPskStore;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.DeviceUpdateListener;
-import org.openhab.binding.tradfri.internal.TradfriBindingConstants;
+import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceCache;
 import org.openhab.binding.tradfri.internal.coap.legacy.CoapCallback;
 import org.openhab.binding.tradfri.internal.coap.legacy.TradfriCoapClient;
 import org.openhab.binding.tradfri.internal.coap.legacy.TradfriCoapHandler;
 import org.openhab.binding.tradfri.internal.config.TradfriGatewayConfig;
 import org.openhab.binding.tradfri.internal.discovery.TradfriDiscoveryService;
+import org.openhab.binding.tradfri.internal.model.TradfriResourceCache;
 import org.openhab.binding.tradfri.internal.model.TradfriVersion;
 import org.openhab.core.config.core.Configuration;
 import org.openhab.core.thing.Bridge;
@@ -84,10 +87,16 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCall
 
     private final Set<DeviceUpdateListener> deviceUpdateListeners = new CopyOnWriteArraySet<>();
 
+    private final TradfriCoapResourceCache resourceCache;
+
+    private final AtomicInteger activeScans = new AtomicInteger(0);
+
     private @Nullable ScheduledFuture<?> scanJob;
 
     public TradfriGatewayHandler(Bridge bridge) {
         super(bridge);
+
+        this.resourceCache = new TradfriCoapResourceCache();
     }
 
     @Override
@@ -229,9 +238,9 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCall
                     logger.debug("Using identity '{}' with pre-shared key '{}'.", identity, preSharedKey);
 
                     Configuration editedConfig = editConfiguration();
-                    editedConfig.put(TradfriBindingConstants.GATEWAY_CONFIG_CODE, null);
-                    editedConfig.put(TradfriBindingConstants.GATEWAY_CONFIG_IDENTITY, identity);
-                    editedConfig.put(TradfriBindingConstants.GATEWAY_CONFIG_PRE_SHARED_KEY, preSharedKey);
+                    editedConfig.put(CONFIG_CODE, null);
+                    editedConfig.put(CONFIG_IDENTITY, identity);
+                    editedConfig.put(CONFIG_PRE_SHARED_KEY, preSharedKey);
                     updateConfiguration(editedConfig);
 
                     return true;
@@ -278,6 +287,22 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCall
     }
 
     /**
+     * Enables background discovery of devices, groups and scenes
+     */
+    public void startBackgroundDiscovery() {
+        this.activeScans.getAndIncrement();
+        logger.trace("Start background discovery. Num active scans: {}", this.activeScans.toString());
+    }
+
+    /**
+     * Disables background discovery of devices, groups and scenes
+     */
+    public void stopBackgroundDiscovery() {
+        this.activeScans.getAndUpdate(i -> i > 0 ? i - 1 : 0);
+        logger.trace("Stop background discovery. Num active scans: {}", this.activeScans.toString());
+    }
+
+    /**
      * Does a request to the gateway to list all available devices/services.
      * The response is received and processed by the method {@link onUpdate(JsonElement data)}.
      */
@@ -304,6 +329,10 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCall
      */
     public @Nullable CoapEndpoint getEndpoint() {
         return endPoint;
+    }
+
+    public TradfriResourceCache getResourceCache() {
+        return this.resourceCache;
     }
 
     @Override

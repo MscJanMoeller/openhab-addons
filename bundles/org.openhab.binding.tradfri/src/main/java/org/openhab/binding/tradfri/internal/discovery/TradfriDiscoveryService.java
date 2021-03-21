@@ -16,18 +16,18 @@ import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 import static org.openhab.core.thing.Thing.*;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.DeviceUpdateListener;
+import org.openhab.binding.tradfri.internal.config.TradfriDeviceConfig;
+import org.openhab.binding.tradfri.internal.config.TradfriGroupConfig;
 import org.openhab.binding.tradfri.internal.handler.TradfriGatewayHandler;
+import org.openhab.binding.tradfri.internal.model.TradfriDevice;
+import org.openhab.binding.tradfri.internal.model.TradfriResource;
 import org.openhab.core.config.discovery.AbstractDiscoveryService;
 import org.openhab.core.config.discovery.DiscoveryResult;
 import org.openhab.core.config.discovery.DiscoveryResultBuilder;
@@ -57,19 +57,8 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService
 
     private @Nullable TradfriGatewayHandler handler;
 
-    private static final String REMOTE_CONTROLLER_MODEL = "TRADFRI remote control";
-
-    private static final Set<String> COLOR_TEMP_MODELS = Collections
-            .unmodifiableSet(Stream
-                    .of("TRADFRI bulb E27 WS opal 980lm", "TRADFRI bulb E27 WS clear 950lm",
-                            "TRADFRI bulb GU10 WS 400lm", "TRADFRI bulb E14 WS opal 400lm", "FLOALT panel WS 30x30",
-                            "FLOALT panel WS 60x60", "FLOALT panel WS 30x90", "TRADFRI bulb E12 WS opal 400lm")
-                    .collect(Collectors.toSet()));
-
-    private static final String[] COLOR_MODEL_IDENTIFIER_HINTS = new String[] { "CWS", " C/WS " };
-
     public TradfriDiscoveryService() {
-        super(SUPPORTED_DEVICE_TYPES_UIDS, 10, true);
+        super(DISCOVERABLE_TYPES_UIDS, 10, true);
     }
 
     @Override
@@ -190,4 +179,50 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService
             logger.debug("JSON error during discovery: {}", e.getMessage());
         }
     }
+
+    public void onDeviceUpdated(TradfriDevice device) {
+        final ThingUID bridgeUID = handler.getThing().getUID();
+        final ThingUID thingId = new ThingUID(device.getThingType(), bridgeUID, device.getInstanceId().orElse("-1"));
+
+        String label = device.getName().orElse("missing device name");
+
+        Map<String, Object> properties = new HashMap<>(1);
+
+        device.getInstanceId().ifPresent(id -> properties.put(TradfriDeviceConfig.CONFIG_ID, Integer.valueOf(id)));
+        device.getModel().ifPresent(model -> properties.put(PROPERTY_MODEL_ID, model));
+        device.getVendor().ifPresent(vendor -> properties.put(PROPERTY_VENDOR, vendor));
+        device.getFirmwareVersion()
+                .ifPresent(firmwareVersion -> properties.put(PROPERTY_FIRMWARE_VERSION, firmwareVersion));
+
+        logger.debug("Adding device {} to inbox", thingId);
+        DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(thingId).withBridge(bridgeUID).withLabel(label)
+                .withProperties(properties).withRepresentationProperty(TradfriDeviceConfig.CONFIG_ID).build();
+        thingDiscovered(discoveryResult);
+    }
+
+    public void onGroupUpdated(TradfriResource group) {
+        final ThingUID bridgeUID = handler.getThing().getUID();
+        final ThingUID thingId = new ThingUID(THING_TYPE_GROUP, bridgeUID, group.getInstanceId().orElse("-1"));
+
+        String label = group.getName().orElse("missing group name");
+
+        Map<String, Object> properties = new HashMap<>(1);
+        properties.put(PROPERTY_VENDOR, TRADFRI_VENDOR_NAME);
+        properties.put(PROPERTY_MODEL_ID, "TRADFRI group of devices");
+
+        group.getInstanceId().ifPresent(id -> properties.put(TradfriGroupConfig.CONFIG_ID, Integer.valueOf(id)));
+
+        logger.debug("Inbox change: adding or updating group {}", thingId);
+        DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(thingId).withBridge(bridgeUID).withLabel(label)
+                .withProperties(properties).withRepresentationProperty(TradfriGroupConfig.CONFIG_ID).build();
+        thingDiscovered(discoveryResult);
+    }
+
+    public void onGroupRemoved(TradfriResource group) {
+        final ThingUID bridgeUID = handler.getThing().getUID();
+        final ThingUID thingId = new ThingUID(THING_TYPE_GROUP, bridgeUID, group.getInstanceId().orElse("-1"));
+        logger.debug("Inbox change: removing group {}", thingId);
+        thingRemoved(thingId);
+    }
+
 }

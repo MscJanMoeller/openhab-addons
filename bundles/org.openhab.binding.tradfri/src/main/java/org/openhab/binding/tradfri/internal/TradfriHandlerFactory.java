@@ -17,9 +17,10 @@ import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.handler.TradfriGatewayHandler;
+import org.openhab.binding.tradfri.internal.handler.TradfriGroupHandler;
+import org.openhab.binding.tradfri.internal.handler.TradfriLightHandler;
 import org.openhab.binding.tradfri.internal.handler.legacy.TradfriBlindHandler;
 import org.openhab.binding.tradfri.internal.handler.legacy.TradfriControllerHandler;
-import org.openhab.binding.tradfri.internal.handler.legacy.TradfriLightHandler;
 import org.openhab.binding.tradfri.internal.handler.legacy.TradfriPlugHandler;
 import org.openhab.binding.tradfri.internal.handler.legacy.TradfriSensorHandler;
 import org.openhab.core.thing.Bridge;
@@ -52,6 +53,8 @@ public class TradfriHandlerFactory extends BaseThingHandlerFactory {
 
         if (GATEWAY_TYPE_UID.equals(thingTypeUID)) {
             return new TradfriGatewayHandler((Bridge) thing);
+        } else if (THING_TYPE_GROUP.equals(thingTypeUID)) {
+            return new TradfriGroupHandler(thing);
         } else if (THING_TYPE_DIMMER.equals(thingTypeUID) || THING_TYPE_REMOTE_CONTROL.equals(thingTypeUID)
                 || THING_TYPE_OPEN_CLOSE_REMOTE_CONTROL.equals(thingTypeUID)) {
             return new TradfriControllerHandler(thing);

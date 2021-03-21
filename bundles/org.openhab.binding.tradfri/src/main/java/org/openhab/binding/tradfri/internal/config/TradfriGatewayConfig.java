@@ -12,16 +12,28 @@
  */
 package org.openhab.binding.tradfri.internal.config;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
+
 /**
  * Configuration class for the gateway.
  *
  * @author Kai Kreuzer - Initial contribution
+ * @author Jan Möller - Moved configuration property names from TradfriBindingConstants to this class
  */
+@NonNullByDefault
 public class TradfriGatewayConfig {
 
-    public String host;
+    // List of all gateway configuration properties
+    public static final String CONFIG_HOST = "host";
+    public static final String CONFIG_PORT = "port";
+    public static final String CONFIG_CODE = "code";
+    public static final String CONFIG_IDENTITY = "identity";
+    public static final String CONFIG_PRE_SHARED_KEY = "preSharedKey";
+
+    public @Nullable String host;
     public int port = 5684; // default port
-    public String code;
-    public String identity;
-    public String preSharedKey;
+    public @Nullable String code;
+    public @Nullable String identity;
+    public @Nullable String preSharedKey;
 }

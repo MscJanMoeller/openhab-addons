@@ -10,22 +10,32 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.tradfri.internal.config;
+
+package org.openhab.binding.tradfri.internal.model;
+
+import java.util.Optional;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
 
 /**
- * The {@link TradfriDeviceConfig} holds the
- * configuration information needed to access single devices
- * managed by the gateway.
+ * {@link TradfriDevice} represents of a single Tradfri device
  *
- * @author Kai Kreuzer - Initial contribution
+ * @author Jan Möller - Initial contribution
+ *
  */
+
 @NonNullByDefault
-public class TradfriDeviceConfig {
+public interface TradfriDevice extends TradfriThingResource {
 
-    public static final String CONFIG_ID = "id";
+    Optional<String> getVendor();
 
-    public @Nullable Integer id;
+    Optional<String> getModel();
+
+    Optional<String> getSerialNumber();
+
+    Optional<String> getFirmwareVersion();
+
+    boolean isAlive();
+
+    int getBatteryLevel();
 }

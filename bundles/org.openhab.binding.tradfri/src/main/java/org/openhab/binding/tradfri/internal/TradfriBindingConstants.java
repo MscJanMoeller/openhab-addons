@@ -27,6 +27,7 @@ import org.openhab.core.thing.ThingTypeUID;
  * @author Kai Kreuzer - Initial contribution
  * @author Christoph Weitkamp - Added support for remote controller and motion sensor devices (read-only battery level)
  * @author Manuel Raffel - Added support for blinds
+ * @author Jan Möller - Added support for groups and scenes
  */
 @NonNullByDefault
 public class TradfriBindingConstants {
@@ -35,7 +36,7 @@ public class TradfriBindingConstants {
 
     // List of all Thing Type UIDs
     public static final ThingTypeUID GATEWAY_TYPE_UID = new ThingTypeUID(BINDING_ID, "gateway");
-    
+
     public static final ThingTypeUID THING_TYPE_GROUP = new ThingTypeUID(BINDING_ID, "group");
     public static final ThingTypeUID THING_TYPE_ONOFF_PLUG = new ThingTypeUID(BINDING_ID, "0010");
     public static final ThingTypeUID THING_TYPE_DIMMABLE_LIGHT = new ThingTypeUID(BINDING_ID, "0100");
@@ -46,7 +47,7 @@ public class TradfriBindingConstants {
     public static final ThingTypeUID THING_TYPE_MOTION_SENSOR = new ThingTypeUID(BINDING_ID, "0107");
     public static final ThingTypeUID THING_TYPE_BLINDS = new ThingTypeUID(BINDING_ID, "0202");
     public static final ThingTypeUID THING_TYPE_OPEN_CLOSE_REMOTE_CONTROL = new ThingTypeUID(BINDING_ID, "0203");
-    
+
     public static final Set<ThingTypeUID> SUPPORTED_GROUP_TYPES_UIDS = Collections.singleton(THING_TYPE_GROUP);
 
     public static final Set<ThingTypeUID> SUPPORTED_LIGHT_TYPES_UIDS = Collections
@@ -56,13 +57,6 @@ public class TradfriBindingConstants {
     public static final Set<ThingTypeUID> SUPPORTED_PLUG_TYPES_UIDS = Collections.singleton(THING_TYPE_ONOFF_PLUG);
 
     public static final Set<ThingTypeUID> SUPPORTED_BLINDS_TYPES_UIDS = Collections.singleton(THING_TYPE_BLINDS);
-
-    // List of all Gateway Configuration Properties
-    public static final String GATEWAY_CONFIG_HOST = "host";
-    public static final String GATEWAY_CONFIG_PORT = "port";
-    public static final String GATEWAY_CONFIG_CODE = "code";
-    public static final String GATEWAY_CONFIG_IDENTITY = "identity";
-    public static final String GATEWAY_CONFIG_PRE_SHARED_KEY = "preSharedKey";
 
     // Not yet used - included for future support
     public static final Set<ThingTypeUID> SUPPORTED_CONTROLLER_TYPES_UIDS = Collections
@@ -80,7 +74,7 @@ public class TradfriBindingConstants {
             .of(SUPPORTED_BRIDGE_TYPES_UIDS.stream(), SUPPORTED_GROUP_TYPES_UIDS.stream(),
                     SUPPORTED_DEVICE_TYPES_UIDS.stream())
             .reduce(Stream::concat).orElseGet(Stream::empty).collect(Collectors.toSet()));
-    
+
     public static final Set<ThingTypeUID> DISCOVERABLE_TYPES_UIDS = Collections
             .unmodifiableSet(Stream.of(SUPPORTED_GROUP_TYPES_UIDS.stream(), SUPPORTED_DEVICE_TYPES_UIDS.stream())
                     .reduce(Stream::concat).orElseGet(Stream::empty).collect(Collectors.toSet()));
@@ -256,5 +250,8 @@ public class TradfriBindingConstants {
     public static final String USE_CURRENT_LIGHT_SETTINGS = "9070";
     public static final String VERSION = "9029";
     public static final int WAKE_UP_SMART_TASK = 3;
+
+    // List of fixed string
+    public static final String TRADFRI_VENDOR_NAME = "IKEA of Sweden";
 
 }
