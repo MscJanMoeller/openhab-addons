@@ -10,7 +10,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.tradfri.internal.handler;
+package org.openhab.binding.tradfri.internal.handler.legacy;
 
 import static org.openhab.core.thing.Thing.*;
 
@@ -21,10 +21,11 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.californium.core.CoapObserveRelation;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
-import org.openhab.binding.tradfri.internal.CoapCallback;
-import org.openhab.binding.tradfri.internal.TradfriCoapClient;
+import org.openhab.binding.tradfri.internal.coap.legacy.CoapCallback;
+import org.openhab.binding.tradfri.internal.coap.legacy.TradfriCoapClient;
 import org.openhab.binding.tradfri.internal.config.TradfriDeviceConfig;
-import org.openhab.binding.tradfri.internal.model.TradfriDeviceData;
+import org.openhab.binding.tradfri.internal.handler.TradfriGatewayHandler;
+import org.openhab.binding.tradfri.internal.model.legacy.TradfriDeviceData;
 import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.Thing;
 import org.openhab.core.thing.ThingStatus;

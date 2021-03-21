@@ -10,7 +10,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.tradfri.internal.model;
+package org.openhab.binding.tradfri.internal.model.legacy;
 
 import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.DEVICE_BATTERY_LEVEL;
 
