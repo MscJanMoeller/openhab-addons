@@ -67,8 +67,8 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
     }
 
     public boolean isInitialized() {
-        TradfriResourceListObserver deviceListObserver = this.deviceListObserver;
-        TradfriResourceListObserver groupListObserver = this.groupListObserver;
+        final TradfriResourceListObserver deviceListObserver = this.deviceListObserver;
+        final TradfriResourceListObserver groupListObserver = this.groupListObserver;
         boolean observerInitialzed = false;
         if (deviceListObserver != null && groupListObserver != null) {
             observerInitialzed = deviceListObserver.isInitialized() && groupListObserver.isInitialized();

@@ -17,8 +17,12 @@ import static org.openhab.core.thing.Thing.*;
 
 import java.util.Arrays;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
@@ -27,7 +31,12 @@ import org.openhab.binding.tradfri.internal.config.TradfriDeviceConfig;
 import org.openhab.binding.tradfri.internal.config.TradfriGroupConfig;
 import org.openhab.binding.tradfri.internal.handler.TradfriGatewayHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriDevice;
+import org.openhab.binding.tradfri.internal.model.TradfriEvent;
+import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
+import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
+import org.openhab.binding.tradfri.internal.model.TradfriGroup;
 import org.openhab.binding.tradfri.internal.model.TradfriResource;
+import org.openhab.binding.tradfri.internal.model.TradfriResourceCache;
 import org.openhab.core.config.discovery.AbstractDiscoveryService;
 import org.openhab.core.config.discovery.DiscoveryResult;
 import org.openhab.core.config.discovery.DiscoveryResultBuilder;
@@ -56,6 +65,9 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService
     private final Logger logger = LoggerFactory.getLogger(TradfriDiscoveryService.class);
 
     private @Nullable TradfriGatewayHandler handler;
+    private @Nullable TradfriResourceCache resourceCache;
+
+    private final AtomicInteger activeScans = new AtomicInteger(0);
 
     public TradfriDiscoveryService() {
         super(DISCOVERABLE_TYPES_UIDS, 10, true);
@@ -63,11 +75,24 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService
 
     @Override
     protected void startScan() {
-        handler.startScan();
+        // TODO: remove
+        final TradfriGatewayHandler handler = this.handler;
+        if (handler != null) {
+            handler.startScan();
+        }
+
+        final TradfriResourceCache resourceCache = this.resourceCache;
+        if (resourceCache != null) {
+            this.activeScans.getAndIncrement();
+            logger.trace("Start discovery. Num active scan: {}", this.activeScans.toString());
+            resourceCache.refresh();
+        }
     }
 
     @Override
     protected synchronized void stopScan() {
+        this.activeScans.getAndUpdate(i -> i > 0 ? i - 1 : 0);
+        logger.trace("Stop discovery. Num active scan: {}", this.activeScans.toString());
         super.stopScan();
         removeOlderResults(getTimestampOfLastScan());
     }
@@ -86,15 +111,29 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService
 
     @Override
     public void activate() {
-        handler.registerDeviceUpdateListener(this);
+        final TradfriGatewayHandler handler = this.handler;
+        if (handler != null) {
+            // TODO: remove
+            handler.registerDeviceUpdateListener(this);
+            this.resourceCache = handler.getResourceCache();
+            this.resourceCache.subscribeEvents(this);
+        }
     }
 
     @Override
     public void deactivate() {
         removeOlderResults(new Date().getTime());
-        handler.unregisterDeviceUpdateListener(this);
+        if (this.handler != null) {
+            this.handler.unregisterDeviceUpdateListener(this);
+        }
+
+        final TradfriResourceCache resourceCache = this.resourceCache;
+        if (resourceCache != null) {
+            resourceCache.unsubscribeEvents(this);
+        }
     }
 
+    // TODO: remove after migration of all handlers
     @Override
     public void onUpdate(@Nullable String instanceId, @Nullable JsonObject data) {
         ThingUID bridge = handler.getThing().getUID();
@@ -180,49 +219,94 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService
         }
     }
 
+    @TradfriEventHandler({ EType.RESOURCE_ADDED, EType.RESOURCE_UPDATED, EType.RESOURCE_REMOVED })
+    public void onResourceEvent(TradfriEvent event) {
+        final TradfriResourceCache resourceCache = this.resourceCache;
+        if (mustNotify() && resourceCache != null) {
+            resourceCache.get(event.getId()).ifPresent(r -> {
+                if (r instanceof TradfriDevice) {
+                    onResourceEvent(event.getType(), (TradfriDevice) r, this::onDeviceUpdated, this::onDeviceRemoved);
+                } else if (r instanceof TradfriGroup) {
+                    onResourceEvent(event.getType(), (TradfriGroup) r, this::onGroupUpdated, this::onGroupRemoved);
+                }
+            });
+        }
+    }
+
     public void onDeviceUpdated(TradfriDevice device) {
-        final ThingUID bridgeUID = handler.getThing().getUID();
-        final ThingUID thingId = new ThingUID(device.getThingType(), bridgeUID, device.getInstanceId().orElse("-1"));
+        if (this.handler != null) {
+            final ThingUID bridgeUID = this.handler.getThing().getUID();
+            final ThingUID thingId = new ThingUID(device.getThingType(), bridgeUID,
+                    device.getInstanceId().orElse("-1"));
 
-        String label = device.getName().orElse("missing device name");
+            String label = device.getName().orElse("missing device name");
 
-        Map<String, Object> properties = new HashMap<>(1);
+            Map<String, Object> properties = new HashMap<>(1);
 
-        device.getInstanceId().ifPresent(id -> properties.put(TradfriDeviceConfig.CONFIG_ID, Integer.valueOf(id)));
-        device.getModel().ifPresent(model -> properties.put(PROPERTY_MODEL_ID, model));
-        device.getVendor().ifPresent(vendor -> properties.put(PROPERTY_VENDOR, vendor));
-        device.getFirmwareVersion()
-                .ifPresent(firmwareVersion -> properties.put(PROPERTY_FIRMWARE_VERSION, firmwareVersion));
+            device.getInstanceId().ifPresent(id -> properties.put(TradfriDeviceConfig.CONFIG_ID, Integer.valueOf(id)));
+            device.getModel().ifPresent(model -> properties.put(PROPERTY_MODEL_ID, model));
+            device.getVendor().ifPresent(vendor -> properties.put(PROPERTY_VENDOR, vendor));
+            device.getFirmwareVersion()
+                    .ifPresent(firmwareVersion -> properties.put(PROPERTY_FIRMWARE_VERSION, firmwareVersion));
 
-        logger.debug("Adding device {} to inbox", thingId);
-        DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(thingId).withBridge(bridgeUID).withLabel(label)
-                .withProperties(properties).withRepresentationProperty(TradfriDeviceConfig.CONFIG_ID).build();
-        thingDiscovered(discoveryResult);
+            logger.trace("Adding device {} to inbox", thingId);
+            DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(thingId).withBridge(bridgeUID)
+                    .withLabel(label).withProperties(properties)
+                    .withRepresentationProperty(TradfriDeviceConfig.CONFIG_ID).build();
+            thingDiscovered(discoveryResult);
+        }
     }
 
-    public void onGroupUpdated(TradfriResource group) {
-        final ThingUID bridgeUID = handler.getThing().getUID();
-        final ThingUID thingId = new ThingUID(THING_TYPE_GROUP, bridgeUID, group.getInstanceId().orElse("-1"));
-
-        String label = group.getName().orElse("missing group name");
-
-        Map<String, Object> properties = new HashMap<>(1);
-        properties.put(PROPERTY_VENDOR, TRADFRI_VENDOR_NAME);
-        properties.put(PROPERTY_MODEL_ID, "TRADFRI group of devices");
-
-        group.getInstanceId().ifPresent(id -> properties.put(TradfriGroupConfig.CONFIG_ID, Integer.valueOf(id)));
-
-        logger.debug("Inbox change: adding or updating group {}", thingId);
-        DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(thingId).withBridge(bridgeUID).withLabel(label)
-                .withProperties(properties).withRepresentationProperty(TradfriGroupConfig.CONFIG_ID).build();
-        thingDiscovered(discoveryResult);
+    public void onDeviceRemoved(TradfriDevice device) {
+        if (this.handler != null) {
+            final ThingUID bridgeUID = this.handler.getThing().getUID();
+            final ThingUID thingId = new ThingUID(device.getThingType(), bridgeUID,
+                    device.getInstanceId().orElse("-1"));
+            logger.trace("Inbox change: removing device {}", thingId);
+            thingRemoved(thingId);
+        }
     }
 
-    public void onGroupRemoved(TradfriResource group) {
-        final ThingUID bridgeUID = handler.getThing().getUID();
-        final ThingUID thingId = new ThingUID(THING_TYPE_GROUP, bridgeUID, group.getInstanceId().orElse("-1"));
-        logger.debug("Inbox change: removing group {}", thingId);
-        thingRemoved(thingId);
+    public void onGroupUpdated(TradfriGroup group) {
+        if (this.handler != null) {
+            final ThingUID bridgeUID = this.handler.getThing().getUID();
+            final ThingUID thingId = new ThingUID(THING_TYPE_GROUP, bridgeUID, group.getInstanceId().orElse("-1"));
+
+            String label = group.getName().orElse("missing group name");
+
+            Map<String, Object> properties = new HashMap<>(1);
+            properties.put(PROPERTY_VENDOR, TRADFRI_VENDOR_NAME);
+            properties.put(PROPERTY_MODEL_ID, "TRADFRI group of devices");
+
+            group.getInstanceId().ifPresent(id -> properties.put(TradfriGroupConfig.CONFIG_ID, Integer.valueOf(id)));
+
+            logger.trace("Inbox change: adding or updating group {}", thingId);
+            DiscoveryResult discoveryResult = DiscoveryResultBuilder.create(thingId).withBridge(bridgeUID)
+                    .withLabel(label).withProperties(properties)
+                    .withRepresentationProperty(TradfriGroupConfig.CONFIG_ID).build();
+            thingDiscovered(discoveryResult);
+        }
     }
 
+    public void onGroupRemoved(TradfriGroup group) {
+        if (this.handler != null) {
+            final ThingUID bridgeUID = this.handler.getThing().getUID();
+            final ThingUID thingId = new ThingUID(THING_TYPE_GROUP, bridgeUID, group.getInstanceId().orElse("-1"));
+            logger.debug("Inbox change: removing group {}", thingId);
+            thingRemoved(thingId);
+        }
+    }
+
+    private <T extends TradfriResource> void onResourceEvent(EType eventType, T resource, Consumer<T> updateAction,
+            Consumer<T> removeAction) {
+        if (EnumSet.of(EType.RESOURCE_ADDED, EType.RESOURCE_UPDATED).contains(eventType)) {
+            updateAction.accept(resource);
+        } else if (Objects.equals(EType.RESOURCE_REMOVED, eventType)) {
+            removeAction.accept(resource);
+        }
+    }
+
+    private boolean mustNotify() {
+        return (this.handler != null && this.handler.isBackgroundDiscoveryEnabled()) || (this.activeScans.get() > 0);
+    }
 }
