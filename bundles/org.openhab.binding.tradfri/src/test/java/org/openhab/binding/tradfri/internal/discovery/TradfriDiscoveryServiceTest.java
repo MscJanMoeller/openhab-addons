@@ -159,7 +159,7 @@ public class TradfriDiscoveryServiceTest {
 
         prepareStubsWith("131079", jsonResponse);
         proxyFactory.createAndAddGroupProxy("131079");
-        discovery.onResourceEvent(TradfriEvent.from("131079", EType.RESOURCE_ADDED));
+        discovery.onEvent(TradfriEvent.from("131079", EType.RESOURCE_ADDED));
 
         assertNotNull(discoveryResult);
         assertThat(discoveryResult.getFlag(), is(DiscoveryResultFlag.NEW));
@@ -176,7 +176,7 @@ public class TradfriDiscoveryServiceTest {
 
         prepareStubsWith("65537", jsonResponse);
         proxyFactory.createAndAddGroupProxy("65537");
-        discovery.onResourceEvent(TradfriEvent.from("65537", EType.RESOURCE_ADDED));
+        discovery.onEvent(TradfriEvent.from("65537", EType.RESOURCE_ADDED));
 
         assertNotNull(discoveryResult);
         assertThat(discoveryResult.getFlag(), is(DiscoveryResultFlag.NEW));
@@ -193,7 +193,7 @@ public class TradfriDiscoveryServiceTest {
 
         prepareStubsWith("65537", jsonResponse);
         proxyFactory.createAndAddGroupProxy("65537");
-        discovery.onResourceEvent(TradfriEvent.from("65537", EType.RESOURCE_ADDED));
+        discovery.onEvent(TradfriEvent.from("65537", EType.RESOURCE_ADDED));
 
         assertNotNull(discoveryResult);
         assertThat(discoveryResult.getFlag(), is(DiscoveryResultFlag.NEW));
@@ -212,7 +212,7 @@ public class TradfriDiscoveryServiceTest {
 
         prepareStubsWith("65537", jsonResponse);
         proxyFactory.createAndAddGroupProxy("65537");
-        discovery.onResourceEvent(TradfriEvent.from("65537", EType.RESOURCE_ADDED));
+        discovery.onEvent(TradfriEvent.from("65537", EType.RESOURCE_ADDED));
 
         assertNotNull(discoveryResult);
         assertThat(discoveryResult.getFlag(), is(DiscoveryResultFlag.NEW));
@@ -229,7 +229,7 @@ public class TradfriDiscoveryServiceTest {
 
         prepareStubsWith("65537", jsonResponse);
         proxyFactory.createAndAddGroupProxy("65537");
-        discovery.onResourceEvent(TradfriEvent.from("65537", EType.RESOURCE_ADDED));
+        discovery.onEvent(TradfriEvent.from("65537", EType.RESOURCE_ADDED));
 
         assertNotNull(discoveryResult);
         assertThat(discoveryResult.getFlag(), is(DiscoveryResultFlag.NEW));
@@ -246,7 +246,7 @@ public class TradfriDiscoveryServiceTest {
 
         prepareStubsWith("65537", jsonResponse);
         proxyFactory.createAndAddGroupProxy("65537");
-        discovery.onResourceEvent(TradfriEvent.from("65537", EType.RESOURCE_ADDED));
+        discovery.onEvent(TradfriEvent.from("65537", EType.RESOURCE_ADDED));
 
         assertNotNull(discoveryResult);
         assertThat(discoveryResult.getFlag(), is(DiscoveryResultFlag.NEW));

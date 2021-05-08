@@ -116,14 +116,6 @@ public class TradfriCoapResourceCacheTest {
 
     @Test
     public void subscribeAllEventsForDeviceWithoutIdAndType() {
-        Object subscriber = new Object() {
-            @TradfriEventHandler
-            public void onAddedOrUpdatedOrRemoved(TradfriEvent event, TradfriDevice device) {
-                expectedEvents.add(event);
-                expectedResources.add(device);
-            }
-        };
-        this.resourceCache.subscribeEvents(subscriber);
 
         final String coapPayload = getCoapPayloadOfLightWithColorSupport();
         final TradfriCoapLight bulbData = Objects.requireNonNull(gson.fromJson(coapPayload, TradfriCoapLight.class));
@@ -134,6 +126,11 @@ public class TradfriCoapResourceCacheTest {
 
         final String actualResourceId = bulbData.getInstanceId().get();
         assertNotNull(actualResourceId);
+
+        this.resourceCache.subscribeEvents((event) -> {
+            expectedEvents.add(event);
+            expectedResources.add(device);
+        });
 
         // Generates event RESOURCE_ADDED
         this.resourceCache.add(device);
@@ -155,15 +152,6 @@ public class TradfriCoapResourceCacheTest {
 
     @Test
     public void subscribeAddedAndUpdatedEventsForDeviceWithoutIdAndType() {
-        Object subscriber = new Object() {
-            @TradfriEventHandler({ EType.RESOURCE_ADDED, EType.RESOURCE_UPDATED })
-            public void onAddedOrUpdated(TradfriEvent event, TradfriDevice device) {
-                expectedEvents.add(event);
-                expectedResources.add(device);
-            }
-        };
-        this.resourceCache.subscribeEvents(subscriber);
-
         final String coapPayload = getCoapPayloadOfLightWithColorSupport();
         final TradfriCoapLight bulbData = Objects.requireNonNull(gson.fromJson(coapPayload, TradfriCoapLight.class));
 
@@ -173,6 +161,11 @@ public class TradfriCoapResourceCacheTest {
 
         final String actualResourceId = bulbData.getInstanceId().get();
         assertNotNull(actualResourceId);
+
+        this.resourceCache.subscribeEvents(EnumSet.of(EType.RESOURCE_ADDED, EType.RESOURCE_UPDATED), (event) -> {
+            expectedEvents.add(event);
+            expectedResources.add(device);
+        });
 
         // Generates event RESOURCE_ADDED
         this.resourceCache.add(device);
@@ -198,28 +191,22 @@ public class TradfriCoapResourceCacheTest {
         final String actualResourceId = bulbData.getInstanceId().get();
         assertNotNull(actualResourceId);
 
-        Object subscriber1 = new Object() {
-            @TradfriEventHandler
-            public void onAddedOrUpdatedOrRemoved(TradfriEvent event, TradfriDevice device) {
-                expectedEvents.add(event);
-                expectedResources.add(device);
-            }
-        };
-        this.resourceCache.subscribeEvents(subscriber1);
-
-        Object subscriber2 = new Object() {
-            @TradfriEventHandler
-            public void onAddedOrUpdated(TradfriEvent event, TradfriDevice device) {
-                expectedEvents.add(event);
-                expectedResources.add(device);
-            }
-        };
-        this.resourceCache.subscribeEvents(actualResourceId, EnumSet.of(EType.RESOURCE_ADDED, EType.RESOURCE_UPDATED),
-                subscriber2);
-
         final String coapPath = ENDPOINT_DEVICES + "/" + actualResourceId;
         final TradfriCoapResourceProxy device = new TradfriCoapColorLightProxy(this.resourceCache, this.coapClient,
                 coapPath, coapPayload);
+
+        TradfriEventHandler subscriber1 = (event) -> {
+            expectedEvents.add(event);
+            expectedResources.add(device);
+        };
+        this.resourceCache.subscribeEvents(subscriber1);
+
+        TradfriEventHandler subscriber2 = (event) -> {
+            expectedEvents.add(event);
+            expectedResources.add(device);
+        };
+        this.resourceCache.subscribeEvents(actualResourceId, EnumSet.of(EType.RESOURCE_ADDED, EType.RESOURCE_UPDATED),
+                subscriber2);
 
         // Generates event RESOURCE_ADDED
         this.resourceCache.add(device);
