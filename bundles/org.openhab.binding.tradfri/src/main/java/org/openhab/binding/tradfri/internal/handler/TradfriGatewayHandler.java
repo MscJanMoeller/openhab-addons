@@ -206,7 +206,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCall
         // Schedule a CoAP ping every minute to check the connection
         supvJob = scheduler.scheduleWithFixedDelay(this::checkConnection, 0, 1, TimeUnit.MINUTES);
 
-        // TODO: remove after migration
+        // TODO: remove after migration of all handlers
         // schedule a new scan every minute
         scanJob = scheduler.scheduleWithFixedDelay(this::startScan, 0, 1, TimeUnit.MINUTES);
     }
@@ -323,7 +323,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCall
         // Requesting info about the gateway and add firmware version
         requestGatewayInfo();
 
-        // Connect TradfriDiscoveryService with resource cache to get events for devices and groups
+        // Subscribe at resource cache to get events for devices and groups
         this.resourceCache.subscribeEvents(this);
 
         final TradfriCoapClient gwClient = this.gatewayClient;
@@ -451,6 +451,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCall
         return this.resourceCache;
     }
 
+    // TODO: remove after migration of all handlers
     @Override
     public void onUpdate(JsonElement data) {
         logger.debug("onUpdate response: {}", data);
@@ -481,10 +482,12 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCall
                             response.getResponseText());
                     if (response.isSuccess()) {
                         try {
-                            TradfriCoapGateway gateway = GSON.fromJson(response.getResponseText(),
+                            final TradfriCoapGateway gateway = GSON.fromJson(response.getResponseText(),
                                     TradfriCoapGateway.class);
-                            getThing().setProperty(Thing.PROPERTY_FIRMWARE_VERSION, gateway.getVersion());
-                            updateOnlineStatus();
+                            if (gateway != null) {
+                                getThing().setProperty(Thing.PROPERTY_FIRMWARE_VERSION, gateway.getVersion());
+                                updateOnlineStatus();
+                            }
                         } catch (JsonParseException ex) {
                             logger.error("Unexpected requestGatewayInfo response: {}", response);
                         }
@@ -514,6 +517,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCall
         deviceClient.setURI(gatewayURI);
     }
 
+    // TODO: remove after migration of all handlers
     @Override
     public void setStatus(ThingStatus status, ThingStatusDetail statusDetail) {
         // to fix connection issues after a gateway reboot, a session resume is forced for the next command
@@ -530,8 +534,8 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCall
     }
 
     private void updateOnlineStatus() {
-        Bridge gateway = getThing();
-        ThingStatus status = gateway.getStatus();
+        final Bridge gateway = getThing();
+        final ThingStatus status = gateway.getStatus();
         if (status != ThingStatus.ONLINE) {
             boolean hasFwVersion = gateway.getProperties().containsKey(Thing.PROPERTY_FIRMWARE_VERSION);
             if (hasFwVersion && this.resourceCache.isInitialized()) {
@@ -545,6 +549,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCall
      *
      * @param listener the listener to register
      */
+    // TODO: remove after migration of all handlers
     public void registerDeviceUpdateListener(DeviceUpdateListener listener) {
         this.deviceUpdateListeners.add(listener);
     }
@@ -554,6 +559,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCall
      *
      * @param listener the listener to unregister
      */
+    // TODO: remove after migration of all handlers
     public void unregisterDeviceUpdateListener(DeviceUpdateListener listener) {
         this.deviceUpdateListeners.remove(listener);
     }
