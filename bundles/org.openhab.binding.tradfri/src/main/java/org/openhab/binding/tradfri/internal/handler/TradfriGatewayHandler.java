@@ -80,6 +80,7 @@ import com.google.gson.JsonSyntaxException;
  * sent to one of the channels.
  *
  * @author Kai Kreuzer - Initial contribution
+ * @author Jan Möller - Refactoring to support groups and scenes
  */
 @NonNullByDefault
 public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCallback, ConnectionListener, AlertHandler {
@@ -323,9 +324,6 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCall
         // Requesting info about the gateway and add firmware version
         requestGatewayInfo();
 
-        // Subscribe at resource cache to get events for devices and groups
-        this.resourceCache.subscribeEvents(this);
-
         final TradfriCoapClient gwClient = this.gatewayClient;
         if (gwClient != null) {
             this.resourceCache.initialize(gwClient, scheduler);
@@ -383,8 +381,6 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCall
 
     @Override
     public void dispose() {
-        this.resourceCache.unsubscribeEvents(this);
-
         this.resourceCache.clear();
 
         // TODO: remove after migration of all handlers
@@ -427,22 +423,22 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCall
         this.resourceCache.refresh();
     }
 
-    // TODO: remove after migration of all handlers
     /**
      * Returns the root URI of the gateway.
      *
      * @return root URI of the gateway with coaps scheme
      */
+    // TODO: remove after migration of all handlers
     public String getGatewayURI() {
         return gatewayURI;
     }
 
-    // TODO: remove after migration of all handlers
     /**
      * Returns the coap endpoint that can be used within coap clients.
      *
      * @return the coap endpoint
      */
+    // TODO: remove after migration of all handlers
     public @Nullable CoapEndpoint getEndpoint() {
         return endPoint;
     }

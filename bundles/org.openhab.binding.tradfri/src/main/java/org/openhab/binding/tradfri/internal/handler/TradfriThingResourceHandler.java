@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * @author Jan Möller - Initial contribution
  */
 @NonNullByDefault
-public abstract class TradfriThingResourceHandler extends BaseThingHandler {
+public abstract class TradfriThingResourceHandler extends BaseThingHandler implements TradfriEventHandler {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -71,21 +71,12 @@ public abstract class TradfriThingResourceHandler extends BaseThingHandler {
         getResource().ifPresent(thingResource -> onResourceInitialized(thingResource));
     }
 
-    @TradfriEventHandler(EType.RESOURCE_ADDED)
-    public void onResourceInitialized(TradfriEvent event, TradfriThingResource thingResource) {
-        logger.trace("Processing RESOURCE_ADDED event for resource with id {}", thingResource.getInstanceId().get());
-        if (getThingId().equals(thingResource.getInstanceId().get())) {
-            onResourceInitialized(thingResource);
-        }
-    }
-
     @Override
     public synchronized void dispose() {
         getResourceCache().ifPresent((cache) -> cache.unsubscribeEvents(this));
         this.resourceCache = Optional.empty();
 
         super.dispose();
-
     }
 
     @Override
@@ -96,6 +87,23 @@ public abstract class TradfriThingResourceHandler extends BaseThingHandler {
             dispose();
         } else if (bridgeStatusInfo.getStatus() == ThingStatus.ONLINE) {
             initialize();
+        }
+    }
+
+    @Override
+    public void onEvent(TradfriEvent event) {
+        if (getThingId().equals(event.getId())) {
+            switch (event.getType()) {
+                case RESOURCE_ADDED:
+                    getResource().ifPresent(thingResource -> onResourceInitialized(thingResource));
+                    break;
+                case RESOURCE_UPDATED: {
+                    getResource().ifPresent(thingResource -> onResourceUpdated(thingResource));
+                    break;
+                }
+                default:
+                    break;
+            }
         }
     }
 

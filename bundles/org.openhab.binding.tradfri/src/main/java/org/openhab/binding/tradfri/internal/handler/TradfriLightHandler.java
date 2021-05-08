@@ -17,9 +17,6 @@ import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 import java.util.Optional;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.openhab.binding.tradfri.internal.model.TradfriEvent;
-import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
-import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriLight;
 import org.openhab.binding.tradfri.internal.model.TradfriThingResource;
 import org.openhab.core.library.types.HSBType;
@@ -41,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * @author Kai Kreuzer - Initial contribution
  * @author Holger Reichert - Support for color bulbs
  * @author Christoph Weitkamp - Restructuring and refactoring of the binding
- * @author Jan Möller - Refactoring of the binding to support groups and scenes
+ * @author Jan Möller - Refactoring to support groups and scenes
  */
 @NonNullByDefault
 public class TradfriLightHandler extends TradfriDeviceHandler {
@@ -53,11 +50,6 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
 
     public TradfriLightHandler(Thing thing) {
         super(thing);
-    }
-
-    @TradfriEventHandler(EType.RESOURCE_UPDATED)
-    public void onLightUpdated(TradfriEvent event, TradfriLight bulb) {
-        onLightUpdated(bulb);
     }
 
     @Override

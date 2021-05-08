@@ -15,8 +15,6 @@ package org.openhab.binding.tradfri.internal.coap;
 
 import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 
-import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Optional;
@@ -57,13 +55,13 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
 
     private final Map<String, TradfriCoapResourceProxy> proxyMap;
 
-    private final Map<TradfriEventSubscription, Set<Object>> eventHandlerMap;
+    private final Map<TradfriEventSubscription, Set<TradfriEventHandler>> eventHandlerMap;
 
     private @Nullable TradfriCoapProxyFactory proxyFactory;
 
     public TradfriCoapResourceCache() {
         this.proxyMap = new ConcurrentHashMap<String, TradfriCoapResourceProxy>();
-        this.eventHandlerMap = new ConcurrentHashMap<TradfriEventSubscription, Set<Object>>();
+        this.eventHandlerMap = new ConcurrentHashMap<TradfriEventSubscription, Set<TradfriEventHandler>>();
     }
 
     public boolean isInitialized() {
@@ -84,32 +82,32 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
     }
 
     @Override
-    public void subscribeEvents(Object subscriber) {
+    public void subscribeEvents(TradfriEventHandler subscriber) {
         subscribe(TradfriEventSubscription.allEvents(), subscriber);
     }
 
     @Override
-    public void subscribeEvents(String id, Object subscriber) {
+    public void subscribeEvents(String id, TradfriEventHandler subscriber) {
         subscribe(new TradfriEventSubscription(id), subscriber);
     }
 
     @Override
-    public void subscribeEvents(EnumSet<EType> eventTypes, Object subscriber) {
+    public void subscribeEvents(EnumSet<EType> eventTypes, TradfriEventHandler subscriber) {
         subscribe(new TradfriEventSubscription(eventTypes), subscriber);
     }
 
     @Override
-    public void subscribeEvents(String id, EType eventType, Object subscriber) {
+    public void subscribeEvents(String id, EType eventType, TradfriEventHandler subscriber) {
         subscribe(new TradfriEventSubscription(id, EnumSet.of(eventType)), subscriber);
     }
 
     @Override
-    public void subscribeEvents(String id, EnumSet<EType> eventTypes, Object subscriber) {
+    public void subscribeEvents(String id, EnumSet<EType> eventTypes, TradfriEventHandler subscriber) {
         subscribe(new TradfriEventSubscription(id, eventTypes), subscriber);
     }
 
     @Override
-    public void unsubscribeEvents(Object subscriber) {
+    public void unsubscribeEvents(TradfriEventHandler subscriber) {
         this.eventHandlerMap.entrySet().forEach((entry) -> {
             if (entry.getValue().remove(subscriber)) {
                 if (entry.getValue().isEmpty()) {
@@ -120,7 +118,7 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
     }
 
     @Override
-    public void unsubscribeEvents(String id, EType eventType, Object subscriber) {
+    public void unsubscribeEvents(String id, EType eventType, TradfriEventHandler subscriber) {
         this.eventHandlerMap.entrySet().forEach((entry) -> {
             if (entry.getKey().covers(id, eventType)) {
                 if (entry.getValue().remove(subscriber)) {
@@ -188,7 +186,7 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
             if (this.proxyFactory != null) {
                 /**
                  * Create new proxy for added device
-                 * New proxy adds itself automatically to the resource storage
+                 * New proxy adds itself automatically to the resource cache
                  */
                 this.proxyFactory.createAndAddDeviceProxy(id);
             } else {
@@ -202,7 +200,7 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
             if (this.proxyFactory != null) {
                 /**
                  * Create new proxy for added group
-                 * New proxy adds itself automatically to the resource storage
+                 * New proxy adds itself automatically to the resource cache
                  */
                 this.proxyFactory.createAndAddGroupProxy(id);
             } else {
@@ -249,9 +247,9 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
         return proxy;
     }
 
-    private void subscribe(TradfriEventSubscription eventSubscription, Object subscriber) {
+    private void subscribe(TradfriEventSubscription eventSubscription, TradfriEventHandler subscriber) {
         if (!eventHandlerMap.containsKey(eventSubscription)) {
-            eventHandlerMap.put(eventSubscription, new CopyOnWriteArraySet<Object>());
+            eventHandlerMap.put(eventSubscription, new CopyOnWriteArraySet<TradfriEventHandler>());
         }
         eventHandlerMap.get(eventSubscription).add(subscriber);
         logger.trace("Added event subscription for {}", eventSubscription);
@@ -262,41 +260,10 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
             final TradfriEvent event = TradfriEvent.from(id, eventType);
             this.eventHandlerMap.entrySet().forEach((entry) -> {
                 if (entry.getKey().covers(event)) {
-                    entry.getValue().parallelStream().forEach((subscriber) -> {
-                        for (final Method method : subscriber.getClass().getMethods()) {
-                            TradfriEventHandler annotation = method.getAnnotation(getTrafriEventHandlerAnnotation());
-                            if (annotation != null) {
-                                EType[] definedETypes = annotation.value();
-                                if (definedETypes.length == 0 || Arrays.stream(definedETypes)
-                                        .anyMatch(definedEType -> definedEType == eventType)) {
-                                    deliverEvent(subscriber, method, event, proxy);
-                                }
-                            }
-                        }
-                    });
+                    entry.getValue().parallelStream().forEach((subscriber) -> subscriber.onEvent(event));
                 }
-
             });
         });
-    }
-
-    private <T, R extends TradfriResource> void deliverEvent(T subscriber, Method method, TradfriEvent event,
-            R resource) {
-        final Class<?>[] paramClasses = method.getParameterTypes();
-        if ((paramClasses.length == 2) && paramClasses[0].equals(TradfriEvent.class)) {
-            try {
-                if (paramClasses[1].isAssignableFrom(resource.getClass())) {
-                    method.setAccessible(true);
-                    method.invoke(subscriber, event, resource);
-                }
-            } catch (Exception e) {
-                logger.debug("Error while invoking annotated method {}. Exception:\n {}", method.getName(),
-                        e.getMessage());
-            }
-        } else {
-            logger.debug("Method {} is annotated with @TradfriEventHandler but doesn't match parameter types.",
-                    method.getName());
-        }
     }
 
     /**
@@ -357,9 +324,5 @@ public class TradfriCoapResourceCache implements TradfriResourceCache {
             remove(id).ifPresent(proxy -> proxy.dispose());
             // TODO: error handling if there is a configured thing for that proxy
         }
-    }
-
-    private static Class<@Nullable TradfriEventHandler> getTrafriEventHandlerAnnotation() {
-        return (Class<@Nullable TradfriEventHandler>) TradfriEventHandler.class;
     }
 }

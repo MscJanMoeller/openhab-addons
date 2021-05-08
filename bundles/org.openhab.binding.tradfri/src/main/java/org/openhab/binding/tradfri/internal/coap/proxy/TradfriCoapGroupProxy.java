@@ -44,7 +44,7 @@ import org.openhab.core.library.types.PercentType;
  *
  */
 @NonNullByDefault
-public class TradfriCoapGroupProxy extends TradfriCoapThingResourceProxy implements TradfriGroup {
+public class TradfriCoapGroupProxy extends TradfriCoapThingResourceProxy implements TradfriEventHandler, TradfriGroup {
 
     private @Nullable TradfriResourceListObserver sceneListObserver;
 
@@ -76,10 +76,12 @@ public class TradfriCoapGroupProxy extends TradfriCoapThingResourceProxy impleme
                 .forEach(id -> getResourceCache().unsubscribeEvents(id, EType.RESOURCE_UPDATED, this));
     }
 
-    @TradfriEventHandler(EType.RESOURCE_UPDATED)
-    public void onDeviceUpdated(TradfriEvent event, TradfriCoapThingResourceProxy device) {
+    @Override
+    public void onEvent(TradfriEvent event) {
         // TODO: trigger only if light bulbs changed
-        getResourceCache().updated(this);
+        if (event.is(EType.RESOURCE_UPDATED)) {
+            getResourceCache().updated(this);
+        }
     }
 
     @Override

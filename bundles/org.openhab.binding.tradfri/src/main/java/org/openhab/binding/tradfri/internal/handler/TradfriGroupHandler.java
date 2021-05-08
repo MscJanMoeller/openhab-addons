@@ -17,9 +17,6 @@ import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 import java.util.Optional;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.openhab.binding.tradfri.internal.model.TradfriEvent;
-import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
-import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
 import org.openhab.binding.tradfri.internal.model.TradfriGroup;
 import org.openhab.binding.tradfri.internal.model.TradfriScene;
 import org.openhab.binding.tradfri.internal.model.TradfriThingResource;
@@ -61,11 +58,6 @@ public class TradfriGroupHandler extends TradfriThingResourceHandler {
             // Delegate
             super.onResourceUpdated(resource);
         }
-    }
-
-    @TradfriEventHandler(EType.RESOURCE_UPDATED)
-    public void onGroupUpdated(TradfriEvent event, TradfriGroup group) {
-        onGroupUpdated(group);
     }
 
     @Override

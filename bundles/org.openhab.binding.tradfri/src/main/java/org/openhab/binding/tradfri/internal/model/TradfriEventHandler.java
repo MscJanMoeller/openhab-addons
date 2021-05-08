@@ -12,22 +12,23 @@
  */
 package org.openhab.binding.tradfri.internal.model;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
-import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
+import org.eclipse.jdt.annotation.NonNullByDefault;
 
 /**
- * {@link TradfriEventHandler} This annotation type must be used to mark a
- * method as handler for Tradfri resource events. Only methods using this
- * annotation type will be called by the event publisher.
+ * {@link TradfriEventHandler} will be informed about the creation or deletion
+ * of resources like devices, groups or scenes.
  *
  * @author Jan Möller - Initial contribution
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface TradfriEventHandler {
-    EType[] value() default {};
+
+@NonNullByDefault
+@FunctionalInterface
+public interface TradfriEventHandler {
+    /**
+     * This method is called when a resource list was updated.
+     *
+     * @param event provides details of the event e.g. whether resource was added or removed
+     *            and the related instance id of the resource
+     */
+    public void onEvent(TradfriEvent event);
 }

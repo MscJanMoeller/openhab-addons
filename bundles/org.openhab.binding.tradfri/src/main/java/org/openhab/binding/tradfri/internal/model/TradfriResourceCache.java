@@ -32,19 +32,19 @@ import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
 @NonNullByDefault
 public interface TradfriResourceCache {
 
-    void subscribeEvents(Object subscriber);
+    void subscribeEvents(TradfriEventHandler subscriber);
 
-    void subscribeEvents(String id, Object subscriber);
+    void subscribeEvents(String id, TradfriEventHandler subscriber);
 
-    void subscribeEvents(EnumSet<EType> eventTypes, Object subscriber);
+    void subscribeEvents(EnumSet<EType> eventTypes, TradfriEventHandler subscriber);
 
-    void subscribeEvents(String id, EType eventType, Object subscriber);
+    void subscribeEvents(String id, EType eventType, TradfriEventHandler subscriber);
 
-    void subscribeEvents(String id, EnumSet<EType> eventTypes, Object subscriber);
+    void subscribeEvents(String id, EnumSet<EType> eventTypes, TradfriEventHandler subscriber);
 
-    void unsubscribeEvents(Object subscriber);
+    void unsubscribeEvents(TradfriEventHandler subscriber);
 
-    void unsubscribeEvents(String id, EType eventType, Object subscriber);
+    void unsubscribeEvents(String id, EType eventType, TradfriEventHandler subscriber);
 
     boolean contains(String id);
 

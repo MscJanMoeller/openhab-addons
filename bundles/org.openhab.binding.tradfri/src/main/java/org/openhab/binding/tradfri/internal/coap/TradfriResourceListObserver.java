@@ -25,6 +25,7 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
+import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +52,7 @@ public class TradfriResourceListObserver implements CoapHandler {
 
     private @Nullable ScheduledFuture<?> updateJob;
 
-    private final Set<TradfriResourceListEventHandler> updateHandler = new CopyOnWriteArraySet<>();
+    private final Set<TradfriEventHandler> eventHandler = new CopyOnWriteArraySet<>();
 
     // Stores resource IDs
     private Set<String> cachedResources = Collections.emptySet();
@@ -120,11 +121,11 @@ public class TradfriResourceListObserver implements CoapHandler {
     public synchronized void dispose() {
         updateCounter = 0;
 
-        this.cachedResources.forEach(id -> updateHandler
-                .forEach(listener -> listener.onUpdate(TradfriEvent.from(id, EType.RESOURCE_REMOVED))));
+        this.cachedResources.forEach(
+                id -> eventHandler.forEach(handler -> handler.onEvent(TradfriEvent.from(id, EType.RESOURCE_REMOVED))));
 
         this.cachedResources.clear();
-        this.updateHandler.clear();
+        this.eventHandler.clear();
 
         if (this.updateJob != null) {
             this.updateJob.cancel(true);
@@ -133,12 +134,12 @@ public class TradfriResourceListObserver implements CoapHandler {
     }
 
     /**
-     * Registers a handler, which will be informed about resource list changes.
+     * Registers a handler, which will be informed about resource events.
      *
      * @param handler the handler to register
      */
-    public void registerHandler(TradfriResourceListEventHandler handler) {
-        this.updateHandler.add(handler);
+    public void registerHandler(TradfriEventHandler handler) {
+        this.eventHandler.add(handler);
     }
 
     /**
@@ -146,20 +147,20 @@ public class TradfriResourceListObserver implements CoapHandler {
      *
      * @param handler the handler to unregister
      */
-    public void unregisterHandler(TradfriResourceListEventHandler handler) {
-        this.updateHandler.remove(handler);
+    public void unregisterHandler(TradfriEventHandler handler) {
+        this.eventHandler.remove(handler);
     }
 
     private synchronized void onUpdate(@Nullable Set<String> resourceList) {
         final Set<String> currentResources = resourceList != null ? resourceList : Collections.emptySet();
 
         // Inform listener about added resources
-        currentResources.stream().filter(id -> !cachedResources.contains(id)).forEach(id -> updateHandler
-                .forEach(listener -> listener.onUpdate(TradfriEvent.from(id, EType.RESOURCE_ADDED))));
+        currentResources.stream().filter(id -> !cachedResources.contains(id)).forEach(
+                id -> eventHandler.forEach(handler -> handler.onEvent(TradfriEvent.from(id, EType.RESOURCE_ADDED))));
 
         // Inform listener about removed resources
-        cachedResources.stream().filter(id -> !currentResources.contains(id)).forEach(id -> updateHandler
-                .forEach(listener -> listener.onUpdate(TradfriEvent.from(id, EType.RESOURCE_REMOVED))));
+        cachedResources.stream().filter(id -> !currentResources.contains(id)).forEach(
+                id -> eventHandler.forEach(handler -> handler.onEvent(TradfriEvent.from(id, EType.RESOURCE_REMOVED))));
 
         this.cachedResources = currentResources;
         updateCounter++;

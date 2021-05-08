@@ -61,7 +61,7 @@ import com.google.gson.JsonSyntaxException;
  */
 @NonNullByDefault
 public class TradfriDiscoveryService extends AbstractDiscoveryService
-        implements DeviceUpdateListener, DiscoveryService, ThingHandlerService {
+        implements TradfriEventHandler, DeviceUpdateListener, DiscoveryService, ThingHandlerService {
     private final Logger logger = LoggerFactory.getLogger(TradfriDiscoveryService.class);
 
     private @Nullable TradfriGatewayHandler handler;
@@ -113,7 +113,7 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService
     public void activate() {
         final TradfriGatewayHandler handler = this.handler;
         if (handler != null) {
-            // TODO: remove
+            // TODO: remove after migration of all handlers
             handler.registerDeviceUpdateListener(this);
             this.resourceCache = handler.getResourceCache();
             this.resourceCache.subscribeEvents(this);
@@ -219,8 +219,8 @@ public class TradfriDiscoveryService extends AbstractDiscoveryService
         }
     }
 
-    @TradfriEventHandler({ EType.RESOURCE_ADDED, EType.RESOURCE_UPDATED, EType.RESOURCE_REMOVED })
-    public void onResourceEvent(TradfriEvent event) {
+    @Override
+    public void onEvent(TradfriEvent event) {
         final TradfriResourceCache resourceCache = this.resourceCache;
         if (mustNotify() && resourceCache != null) {
             resourceCache.get(event.getId()).ifPresent(r -> {
