@@ -16,6 +16,8 @@ package org.openhab.binding.tradfri.internal.model;
 import java.util.Optional;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.openhab.core.library.types.DecimalType;
+import org.openhab.core.library.types.OnOffType;
 
 /**
  * {@link TradfriDevice} represents of a single Tradfri device
@@ -37,5 +39,7 @@ public interface TradfriDevice extends TradfriThingResource {
 
     boolean isAlive();
 
-    int getBatteryLevel();
+    DecimalType getBatteryLevel();
+
+    OnOffType getBatteryLow();
 }

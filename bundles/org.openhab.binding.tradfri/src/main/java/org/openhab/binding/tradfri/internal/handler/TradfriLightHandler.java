@@ -53,36 +53,6 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
     }
 
     @Override
-    protected void onResourceUpdated(TradfriThingResource resource) {
-        if (resource.matchesOneOf(SUPPORTED_LIGHT_TYPES_UIDS)) {
-            resource.as(TradfriLight.class).ifPresent(bulb -> onLightUpdated(bulb));
-        } else {
-            // Delegate
-            super.onResourceUpdated(resource);
-        }
-    }
-
-    protected void onLightUpdated(TradfriLight bulb) {
-        updateState(CHANNEL_BRIGHTNESS, bulb.getBrightness());
-        logger.debug("Updated channel {} of light bulb {} to {}}", CHANNEL_BRIGHTNESS, bulb.getInstanceId().get(),
-                bulb.getBrightness());
-
-        if (thingSupportsColorTemperature() && bulb.supportsColorTemperature()) {
-            bulb.getColorTemperature().ifPresent(colorTemp -> updateState(CHANNEL_COLOR_TEMPERATURE, colorTemp));
-            logger.debug("Updated channel {} of light bulb {} to {}}", CHANNEL_COLOR_TEMPERATURE,
-                    bulb.getInstanceId().get(), bulb.getColorTemperature().get());
-        }
-
-        if (thingSupportsColor() & bulb.supportsColor()) {
-            bulb.getColor().ifPresent(color -> updateState(CHANNEL_COLOR, color));
-            logger.debug("Updated channel {} of light bulb {} to {}}", CHANNEL_COLOR, bulb.getInstanceId().get(),
-                    bulb.getColor().get());
-        }
-
-        onDeviceUpdated(bulb);
-    }
-
-    @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
         Bridge gateway = getBridge();
         if (gateway != null && gateway.getStatus() == ThingStatus.ONLINE) {
@@ -109,6 +79,36 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
         } else {
             logger.debug("Bridge not online. Cannot handle command {} for channel {}", command, channelUID);
         }
+    }
+
+    @Override
+    protected void onResourceUpdated(TradfriThingResource resource) {
+        if (resource.matchesOneOf(SUPPORTED_LIGHT_TYPES_UIDS)) {
+            resource.as(TradfriLight.class).ifPresent(bulb -> onLightUpdated(bulb));
+        } else {
+            // Delegate
+            super.onResourceUpdated(resource);
+        }
+    }
+
+    protected void onLightUpdated(TradfriLight bulb) {
+        updateState(CHANNEL_BRIGHTNESS, bulb.getBrightness());
+        logger.trace("Updated channel {} of light bulb {} to {}}", CHANNEL_BRIGHTNESS, bulb.getInstanceId().get(),
+                bulb.getBrightness());
+
+        if (thingSupportsColorTemperature() && bulb.supportsColorTemperature()) {
+            bulb.getColorTemperature().ifPresent(colorTemp -> updateState(CHANNEL_COLOR_TEMPERATURE, colorTemp));
+            logger.trace("Updated channel {} of light bulb {} to {}}", CHANNEL_COLOR_TEMPERATURE,
+                    bulb.getInstanceId().get(), bulb.getColorTemperature().get());
+        }
+
+        if (thingSupportsColor() & bulb.supportsColor()) {
+            bulb.getColor().ifPresent(color -> updateState(CHANNEL_COLOR, color));
+            logger.trace("Updated channel {} of light bulb {} to {}}", CHANNEL_COLOR, bulb.getInstanceId().get(),
+                    bulb.getColor().get());
+        }
+
+        onDeviceUpdated(bulb);
     }
 
     private void handleBrightnessCommand(Command command, TradfriLight bulb) {

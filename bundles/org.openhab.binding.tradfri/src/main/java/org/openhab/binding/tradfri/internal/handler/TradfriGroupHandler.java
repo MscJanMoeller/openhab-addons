@@ -51,16 +51,6 @@ public class TradfriGroupHandler extends TradfriThingResourceHandler {
     }
 
     @Override
-    protected void onResourceUpdated(TradfriThingResource resource) {
-        if (resource.matches(THING_TYPE_GROUP)) {
-            resource.as(TradfriGroup.class).ifPresent(group -> onGroupUpdated(group));
-        } else {
-            // Delegate
-            super.onResourceUpdated(resource);
-        }
-    }
-
-    @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
         Bridge gateway = getBridge();
         if (gateway != null && gateway.getStatus() == ThingStatus.ONLINE) {
@@ -88,6 +78,16 @@ public class TradfriGroupHandler extends TradfriThingResourceHandler {
             }
         } else {
             logger.debug("Gateway not online. Cannot handle command {} for channel {}", command, channelUID);
+        }
+    }
+
+    @Override
+    protected void onResourceUpdated(TradfriThingResource resource) {
+        if (resource.matches(THING_TYPE_GROUP)) {
+            resource.as(TradfriGroup.class).ifPresent(group -> onGroupUpdated(group));
+        } else {
+            // Delegate
+            super.onResourceUpdated(resource);
         }
     }
 

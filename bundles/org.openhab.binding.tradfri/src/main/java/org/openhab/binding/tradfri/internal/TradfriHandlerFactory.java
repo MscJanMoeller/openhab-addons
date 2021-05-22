@@ -16,13 +16,13 @@ import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.openhab.binding.tradfri.internal.handler.TradfriControllerHandler;
 import org.openhab.binding.tradfri.internal.handler.TradfriGatewayHandler;
 import org.openhab.binding.tradfri.internal.handler.TradfriGroupHandler;
 import org.openhab.binding.tradfri.internal.handler.TradfriLightHandler;
+import org.openhab.binding.tradfri.internal.handler.TradfriSensorHandler;
 import org.openhab.binding.tradfri.internal.handler.legacy.TradfriBlindHandler;
-import org.openhab.binding.tradfri.internal.handler.legacy.TradfriControllerHandler;
 import org.openhab.binding.tradfri.internal.handler.legacy.TradfriPlugHandler;
-import org.openhab.binding.tradfri.internal.handler.legacy.TradfriSensorHandler;
 import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.Thing;
 import org.openhab.core.thing.ThingTypeUID;

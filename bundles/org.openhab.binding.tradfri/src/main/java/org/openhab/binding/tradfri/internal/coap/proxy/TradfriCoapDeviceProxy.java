@@ -21,6 +21,8 @@ import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceCache;
 import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapDevice;
 import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapDeviceInfo;
 import org.openhab.binding.tradfri.internal.model.TradfriDevice;
+import org.openhab.core.library.types.DecimalType;
+import org.openhab.core.library.types.OnOffType;
 import org.openhab.core.thing.ThingTypeUID;
 
 /**
@@ -63,11 +65,22 @@ public abstract class TradfriCoapDeviceProxy extends TradfriCoapThingResourcePro
     }
 
     @Override
-    public int getBatteryLevel() {
-        return getDeviceInfo().map(deviceInfo -> deviceInfo.getBatteryLevel()).orElse(-1);
+    public DecimalType getBatteryLevel() {
+        return new DecimalType(getDeviceInfo().map(deviceInfo -> deviceInfo.getBatteryLevel()).orElse(-1));
     }
 
-    private Optional<TradfriCoapDeviceInfo> getDeviceInfo() {
+    @Override
+    public OnOffType getBatteryLow() {
+        return getDeviceInfo().map(deviceInfo -> deviceInfo.getBatteryLevel()).orElse(-1) < 10 ? OnOffType.ON
+                : OnOffType.OFF;
+    }
+
+    @Override
+    protected TradfriCoapDevice parsePayload(String coapPayload) {
+        return dtoFrom(coapPayload, TradfriCoapDevice.class);
+    }
+
+    protected Optional<TradfriCoapDeviceInfo> getDeviceInfo() {
         return getDataAs(TradfriCoapDevice.class).flatMap(device -> device.getDeviceInfo());
     }
 }

@@ -23,7 +23,11 @@ import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapColorLightProx
 import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapColorTempLightProxy;
 import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapDeviceProxy;
 import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapDimmableLightProxy;
+import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapDimmerProxy;
 import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapGroupProxy;
+import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapMotionSensorProxy;
+import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapRemoteControlOpenCloseProxy;
+import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapRemoteControlProxy;
 import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapResourceProxy;
 import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapSceneProxy;
 
@@ -77,11 +81,11 @@ public class TradfriProxyClassMap {
             // Color light:
             // As the protocol does not distinguishes between color and full-color lights,
             // we check if the "CWS" or "CW/S" identifier is given in the model name
-            if (model != null && Arrays.stream(COLOR_MODEL_IDENTIFIER_HINTS).anyMatch(model::contains)) {
+            if (Arrays.stream(COLOR_MODEL_IDENTIFIER_HINTS).anyMatch(model::contains)) {
                 proxyClass = TradfriCoapColorLightProxy.class;
             }
             if (proxyClass == null && //
-                    (state.has(COLOR) || (model != null && COLOR_TEMP_MODELS.contains(model)))) {
+                    (state.has(COLOR) || (COLOR_TEMP_MODELS.contains(model)))) {
                 proxyClass = TradfriCoapColorTempLightProxy.class;
             }
             if (proxyClass == null) {
@@ -99,20 +103,14 @@ public class TradfriProxyClassMap {
             // Remote control and wireless dimmer: THING_TYPE_REMOTE_CONTROL, THING_TYPE_DIMMER
             // As protocol does not distinguishes between remote control and wireless dimmer,
             // we check for the whole model name
-
-            // proxyClass = (model != null && REMOTE_CONTROLLER_MODEL.equals(model)) ? THING_TYPE_REMOTE_CONTROL
-            // : THING_TYPE_DIMMER;
-
-            // TODO: change to specific proxy class
-            proxyClass = TradfriCoapDeviceProxy.class;
+            proxyClass = (REMOTE_CONTROLLER_MODEL.equals(model)) ? TradfriCoapRemoteControlProxy.class
+                    : TradfriCoapDimmerProxy.class;
         } else if (DEVICE_TYPE_REMOTE == type) {
             // THING_TYPE_OPEN_CLOSE_REMOTE_CONTROL
-            // TODO: change to specific proxy class
-            proxyClass = TradfriCoapDeviceProxy.class;
+            proxyClass = TradfriCoapRemoteControlOpenCloseProxy.class;
         } else if (DEVICE_TYPE_SENSOR == type && payload.has(SENSOR)) {
             // Motion sensor: THING_TYPE_MOTION_SENSOR
-            // TODO: change to specific proxy class
-            proxyClass = TradfriCoapDeviceProxy.class;
+            proxyClass = TradfriCoapMotionSensorProxy.class;
         }
 
         return proxyClass;

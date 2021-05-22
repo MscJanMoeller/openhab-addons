@@ -58,16 +58,18 @@ public class TradfriBindingConstants {
 
     public static final Set<ThingTypeUID> SUPPORTED_BLINDS_TYPES_UIDS = Collections.singleton(THING_TYPE_BLINDS);
 
-    // Not yet used - included for future support
-    public static final Set<ThingTypeUID> SUPPORTED_CONTROLLER_TYPES_UIDS = Collections
-            .unmodifiableSet(Stream.of(THING_TYPE_DIMMER, THING_TYPE_REMOTE_CONTROL,
-                    THING_TYPE_OPEN_CLOSE_REMOTE_CONTROL, THING_TYPE_MOTION_SENSOR).collect(Collectors.toSet()));
+    public static final Set<ThingTypeUID> SUPPORTED_CONTROLLER_TYPES_UIDS = Collections.unmodifiableSet(
+            Stream.of(THING_TYPE_DIMMER, THING_TYPE_REMOTE_CONTROL, THING_TYPE_OPEN_CLOSE_REMOTE_CONTROL)
+                    .collect(Collectors.toSet()));
+
+    public static final Set<ThingTypeUID> SUPPORTED_SENSOR_TYPES_UIDS = Collections.singleton(THING_TYPE_MOTION_SENSOR);
 
     public static final Set<ThingTypeUID> SUPPORTED_BRIDGE_TYPES_UIDS = Collections.singleton(GATEWAY_TYPE_UID);
 
     public static final Set<ThingTypeUID> SUPPORTED_DEVICE_TYPES_UIDS = Collections.unmodifiableSet(Stream
             .of(SUPPORTED_LIGHT_TYPES_UIDS.stream(), SUPPORTED_CONTROLLER_TYPES_UIDS.stream(),
-                    SUPPORTED_PLUG_TYPES_UIDS.stream(), SUPPORTED_BLINDS_TYPES_UIDS.stream())
+                    SUPPORTED_PLUG_TYPES_UIDS.stream(), SUPPORTED_BLINDS_TYPES_UIDS.stream(),
+                    SUPPORTED_SENSOR_TYPES_UIDS.stream())
             .reduce(Stream::concat).orElseGet(Stream::empty).collect(Collectors.toSet()));
 
     public static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Collections.unmodifiableSet(Stream
