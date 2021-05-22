@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.JsonParseException;
 
 /**
- * The {@link TradfriCoapHandler} is used to handle the asynchronous coap reponses.
+ * The {@link TradfriCoapHandler} is used to handle the asynchronous CoAP responses.
  *
  * @author Kai Kreuzer - Initial contribution
  * @author Jan Möller - Refactored CoAP backend
