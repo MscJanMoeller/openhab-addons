@@ -30,7 +30,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.californium.core.CoapClient;
-import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.network.CoapEndpoint;
 import org.eclipse.californium.core.network.Endpoint;
@@ -466,35 +465,11 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCall
 
     private void requestGatewayInfo() {
         if (this.gatewayClient != null) {
-            this.gatewayClient.get(ENDPOINT_GATEWAY_DETAILS, new CoapHandler() {
-                @Override
-                public void onLoad(@Nullable CoapResponse response) {
-                    if (response == null) {
-                        logger.trace("Received empty GatewayInfo CoAP response");
-                        return;
-                    }
-
-                    logger.trace("GatewayInfo CoAP response\noptions: {}\npayload: {}", response.getOptions(),
-                            response.getResponseText());
-                    if (response.isSuccess()) {
-                        try {
-                            final TradfriCoapGateway gateway = GSON.fromJson(response.getResponseText(),
-                                    TradfriCoapGateway.class);
-                            if (gateway != null) {
-                                getThing().setProperty(Thing.PROPERTY_FIRMWARE_VERSION, gateway.getVersion());
-                                updateOnlineStatus();
-                            }
-                        } catch (JsonParseException ex) {
-                            logger.error("Unexpected requestGatewayInfo response: {}", response);
-                        }
-                    } else {
-                        logger.error("GatewayInfo CoAP error: {}", response.getCode());
-                    }
-                }
-
-                @Override
-                public void onError() {
-                    logger.error("CoAP error: requestGatewayInfo failed");
+            this.gatewayClient.get(ENDPOINT_GATEWAY_DETAILS, (String payload) -> {
+                final TradfriCoapGateway gateway = GSON.fromJson(payload, TradfriCoapGateway.class);
+                if (gateway != null) {
+                    getThing().setProperty(Thing.PROPERTY_FIRMWARE_VERSION, gateway.getVersion());
+                    updateOnlineStatus();
                 }
             });
         }

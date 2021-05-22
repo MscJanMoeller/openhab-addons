@@ -15,15 +15,10 @@ package org.openhab.binding.tradfri.internal.coap;
 
 import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 
-import org.eclipse.californium.core.CoapHandler;
-import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapResourceProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.gson.JsonSyntaxException;
 
 /**
  * {@link TradfriCoapProxyFactory} creates proxy objects for specific
@@ -60,51 +55,26 @@ public class TradfriCoapProxyFactory {
     }
 
     private void createProxy(String relPath) {
-        this.coapClient.get(relPath, new CoapHandler() {
-            @Override
-            public void onLoad(@Nullable CoapResponse response) {
-                if (response == null) {
-                    logger.trace("Received empty CoAP response");
-                    return;
-                }
-                logger.trace("Creating proxy based on CoAP response. Options: {}  Payload: {}", response.getOptions(),
-                        response.getResponseText());
-                if (response.isSuccess()) {
-                    final String payload = response.getResponseText();
-
-                    try {
-                        // Create proxy based on coap payload
-                        Class<? extends TradfriCoapResourceProxy> proxyClass = TradfriProxyClassMap
-                                .getProxyClassFrom(payload);
-                        if (proxyClass != null) {
-                            resourceCache.add(proxyClass
+        this.coapClient.get(relPath, (String payload) -> {
+            try {
+                // Create proxy based on coap payload
+                Class<? extends TradfriCoapResourceProxy> proxyClass = TradfriProxyClassMap.getProxyClassFrom(payload);
+                if (proxyClass != null) {
+                    resourceCache
+                            .add(proxyClass
                                     .getConstructor(TradfriCoapResourceCache.class, TradfriCoapClient.class,
                                             String.class, String.class)
-                                    .newInstance(resourceCache, coapClient, relPath, payload)).initialize();
-                        } else {
-                            logger.info("Ignoring unknown device of TRADFRI gateway. Options: {}  Payload: {}",
-                                    response.getOptions(), payload);
-                        }
-                    } catch (JsonSyntaxException ex) {
-                        logger.error("Unexpected CoAP response. Options: {}  Payload: {}", response.getOptions(),
-                                payload);
-                    } catch (ReflectiveOperationException e) {
-                        logger.error(
-                                "Unexpected error while creating device proxy based on CoAP response. Options: {}  Payload: {}",
-                                response.getOptions(), payload);
-                    } catch (IllegalArgumentException e) {
-                        logger.error(
-                                "Unexpected error while creating device proxy based on CoAP response. Options: {}  Payload: {}",
-                                response.getOptions(), payload);
-                    }
+                                    .newInstance(resourceCache, coapClient, relPath, payload))
+                            .initialize();
                 } else {
-                    logger.error("CoAP error: {}. Failed to get device data for {}.", response.getCode(), relPath);
+                    logger.info("Ignoring unknown device of TRADFRI gateway. CoAP payload: {}", payload);
                 }
-            }
-
-            @Override
-            public void onError() {
-                logger.warn("CoAP error. Failed to get device data for {}.", relPath);
+            } catch (ReflectiveOperationException e) {
+                logger.error("Unexpected error while creating device proxy based on CoAP response. CoAP payload: {}",
+                        payload);
+            } catch (IllegalArgumentException e) {
+                logger.error("Unexpected error while creating device proxy based on CoAP response. CoAP payload: {}",
+                        payload);
             }
         });
     }

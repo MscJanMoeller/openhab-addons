@@ -23,13 +23,13 @@ import static org.openhab.binding.tradfri.internal.config.TradfriDeviceConfig.CO
 
 import java.util.Collection;
 import java.util.Optional;
+import java.util.function.Consumer;
 
-import org.eclipse.californium.core.CoapHandler;
-import org.eclipse.californium.core.CoapResponse;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -116,14 +116,9 @@ public class TradfriDiscoveryServiceTest {
     }
 
     private void prepareStubsWith(String id, String payload) {
-        // Stub behavior of CoapResponse
-        CoapResponse response = mock(CoapResponse.class);
-        when(response.isSuccess()).thenReturn(true);
-        when(response.getResponseText()).thenReturn(payload);
-
         // Stub behavior of CoapClient
-        doAnswer(answerVoid((String relPath, CoapHandler callback) -> callback.onLoad(response))).when(coapClient)
-                .get(any(String.class), any(CoapHandler.class));
+        doAnswer(answerVoid((String relPath, Consumer<String> consumer) -> consumer.accept(payload))).when(coapClient)
+                .get(any(String.class), ArgumentMatchers.any());
 
         // Stub behavior of resource cache and use call to inform discovery service
         when(resourceCache.add(any(TradfriCoapResourceProxy.class))).thenAnswer((invocation) -> {

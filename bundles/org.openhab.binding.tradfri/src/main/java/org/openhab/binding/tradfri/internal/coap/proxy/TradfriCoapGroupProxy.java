@@ -78,7 +78,6 @@ public class TradfriCoapGroupProxy extends TradfriCoapThingResourceProxy impleme
 
     @Override
     public void onEvent(TradfriEvent event) {
-        // TODO: trigger only if light bulbs changed
         if (event.is(EType.RESOURCE_UPDATED)) {
             getResourceCache().updated(this);
         }

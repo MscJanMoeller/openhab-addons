@@ -19,8 +19,6 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledFuture;
 
-import org.eclipse.californium.core.CoapHandler;
-import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent;
@@ -30,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
 
 /**
@@ -41,11 +38,10 @@ import com.google.gson.reflect.TypeToken;
  *
  */
 @NonNullByDefault
-public class TradfriResourceListObserver implements CoapHandler {
+public class TradfriResourceListObserver {
+    private static final Gson GSON = new Gson();
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-
-    protected final Gson gson = new Gson();
 
     private final TradfriCoapClient coapClient;
     private final String coapPath;
@@ -83,39 +79,18 @@ public class TradfriResourceListObserver implements CoapHandler {
          * the gateway every POLL_PERIOD seconds for changes.
          */
         if (this.updateJob == null) {
-            this.updateJob = this.coapClient.poll(coapPath, this, POLL_PERIOD);
+            this.updateJob = this.coapClient.poll(coapPath, POLL_PERIOD, this::processResponse);
         }
     }
 
     public void triggerUpdate() {
-        this.coapClient.get(coapPath, this);
+        this.coapClient.get(coapPath, this::processResponse);
     }
 
-    @Override
-    public void onLoad(@Nullable CoapResponse response) {
-        if (response == null) {
-            logger.trace("Received empty CoAP response.");
-            return;
-        }
-        logger.trace("Processing CoAP response. Options: {}  Payload: {}", response.getOptions(),
-                response.getResponseText());
-        if (response.isSuccess()) {
-            try {
-                Type setType = new TypeToken<Set<String>>() {
-                }.getType();
-                onUpdate(gson.fromJson(response.getResponseText(), setType));
-            } catch (JsonParseException e) {
-                logger.error("Coap response is no valid json: {}, {}", response.getResponseText(), e.getMessage());
-            }
-        } else {
-            logger.debug("CoAP error: '{}' '{}'  Options: {}  Payload: {}", response.getCode(),
-                    response.getCode().name(), response.getOptions(), response.getResponseText());
-        }
-    }
-
-    @Override
-    public synchronized void onError() {
-        logger.warn("CoAP error. Failed to get resource list update for {}.", this.coapPath);
+    public void processResponse(String payload) {
+        Type setType = new TypeToken<Set<String>>() {
+        }.getType();
+        onUpdate(GSON.fromJson(payload, setType));
     }
 
     public synchronized void dispose() {

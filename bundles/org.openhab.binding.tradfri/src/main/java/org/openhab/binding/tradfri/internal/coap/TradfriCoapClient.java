@@ -18,9 +18,9 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import org.eclipse.californium.core.CoapClient;
-import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapObserveRelation;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
@@ -67,15 +67,15 @@ public class TradfriCoapClient {
         return this.coapClient.ping();
     }
 
-    public void get(String relPath, CoapHandler handler) {
-        this.coapClient.advanced(handler, newGet(relPath));
+    public void get(String relPath, Consumer<String> handler) {
+        this.coapClient.advanced(new TradfriCoapHandler(relPath, handler), newGet(relPath));
     }
 
-    public CoapObserveRelation observe(String relPath, CoapHandler handler) {
-        return this.coapClient.observe(newGet(relPath).setObserve(), handler);
+    public CoapObserveRelation observe(String relPath, Consumer<String> handler) {
+        return this.coapClient.observe(newGet(relPath).setObserve(), new TradfriCoapHandler(relPath, handler));
     }
 
-    public ScheduledFuture<?> poll(String relPath, CoapHandler handler, long pollPeriod) {
+    public ScheduledFuture<?> poll(String relPath, long pollPeriod, Consumer<String> handler) {
         return this.scheduler.scheduleWithFixedDelay(() -> get(relPath, handler), 1, pollPeriod, TimeUnit.SECONDS);
     }
 
@@ -90,6 +90,7 @@ public class TradfriCoapClient {
             this.coapClient.advanced(command, newPut(relPath, command.getPayload()));
         }, delay, TimeUnit.MILLISECONDS));
 
+        // Schedule task to cleanup completed commands
         this.commandsQueue.add(this.scheduler.schedule(() -> {
             while (!this.commandsQueue.isEmpty() && commandsQueue.peek().isDone()) {
                 this.commandsQueue.poll();

@@ -31,12 +31,10 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapObserveRelation;
-import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.CoAP.Type;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Request;
-import org.eclipse.jdt.annotation.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -83,14 +81,7 @@ public class TradfriCoapClientTest {
         doAnswer(answerVoid((CoapHandler callback, Request request) -> expectedRequests.add(request))).when(coapClient)
                 .advanced(any(CoapHandler.class), any(Request.class));
 
-        client.get(ENDPOINT_DEVICES + "/65537", new CoapHandler() {
-            @Override
-            public void onLoad(@Nullable CoapResponse response) {
-            }
-
-            @Override
-            public void onError() {
-            }
+        client.get(ENDPOINT_DEVICES + "/65537", (String) -> {
         });
 
         assertThat(expectedRequests.size(), is(1));
@@ -112,14 +103,7 @@ public class TradfriCoapClientTest {
             return mock(CoapObserveRelation.class);
         });
 
-        CoapObserveRelation observeRelation = client.observe(ENDPOINT_DEVICES + "/65537", new CoapHandler() {
-            @Override
-            public void onLoad(@Nullable CoapResponse response) {
-            }
-
-            @Override
-            public void onError() {
-            }
+        CoapObserveRelation observeRelation = client.observe(ENDPOINT_DEVICES + "/65537", (String) -> {
         });
 
         assertNotNull(observeRelation);

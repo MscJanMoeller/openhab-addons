@@ -15,9 +15,7 @@ package org.openhab.binding.tradfri.internal.coap.proxy;
 
 import java.util.Optional;
 
-import org.eclipse.californium.core.CoapHandler;
 import org.eclipse.californium.core.CoapObserveRelation;
-import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.coap.TradfriCoapClient;
@@ -29,7 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
 
 /**
@@ -41,7 +38,7 @@ import com.google.gson.JsonSyntaxException;
  */
 
 @NonNullByDefault
-public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriResource {
+public abstract class TradfriCoapResourceProxy implements TradfriResource {
 
     protected static final Gson GSON = new Gson();
 
@@ -97,34 +94,11 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
     @Override
     public void triggerUpdate() {
         // Asynchronous call
-        this.coapClient.get(coapPath, this);
+        this.coapClient.get(coapPath, this::processResponse);
     }
 
-    @Override
-    public void onLoad(@Nullable CoapResponse response) {
-        if (response == null) {
-            logger.trace("Received empty CoAP response.");
-            return;
-        }
-        logger.trace("Processing CoAP response. Options: {}  Payload: {}", response.getOptions(),
-                response.getResponseText());
-        if (response.isSuccess()) {
-            try {
-                updateData(parsePayload(response.getResponseText()));
-            } catch (JsonParseException e) {
-                logger.error("Coap response is no valid json: {}, {}", response.getResponseText(), e.getMessage());
-            }
-        } else {
-            logger.debug("CoAP error: '{}' '{}'  Options: {}  Payload: {}", response.getCode(),
-                    response.getCode().name(), response.getOptions(), response.getResponseText());
-            // TODO: implement generic error reaction for resource proxy
-        }
-    }
-
-    @Override
-    public void onError() {
-        logger.warn("CoAP error. Failed to get resource update for {}.", this.coapPath);
-        // TODO: implement generic error reaction for resource proxy
+    private void processResponse(String payload) {
+        updateData(parsePayload(payload));
     }
 
     @Override
@@ -169,6 +143,6 @@ public abstract class TradfriCoapResourceProxy implements CoapHandler, TradfriRe
             this.observeRelation = null;
         }
 
-        observeRelation = coapClient.observe(this.coapPath, this);
+        observeRelation = coapClient.observe(this.coapPath, this::processResponse);
     }
 }
