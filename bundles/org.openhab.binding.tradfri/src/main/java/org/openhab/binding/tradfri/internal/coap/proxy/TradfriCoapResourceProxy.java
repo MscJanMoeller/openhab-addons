@@ -23,8 +23,6 @@ import org.openhab.binding.tradfri.internal.coap.TradfriCoapResourceCache;
 import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapCmd;
 import org.openhab.binding.tradfri.internal.coap.dto.TradfriCoapResource;
 import org.openhab.binding.tradfri.internal.model.TradfriResource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
@@ -41,8 +39,6 @@ import com.google.gson.JsonSyntaxException;
 public abstract class TradfriCoapResourceProxy implements TradfriResource {
 
     protected static final Gson GSON = new Gson();
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final TradfriCoapClient coapClient;
     private final String coapPath;
