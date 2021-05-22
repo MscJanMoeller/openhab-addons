@@ -24,8 +24,6 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent;
 import org.openhab.binding.tradfri.internal.model.TradfriEvent.EType;
 import org.openhab.binding.tradfri.internal.model.TradfriEventHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -40,8 +38,6 @@ import com.google.gson.reflect.TypeToken;
 @NonNullByDefault
 public class TradfriResourceListObserver {
     private static final Gson GSON = new Gson();
-
-    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final TradfriCoapClient coapClient;
     private final String coapPath;
