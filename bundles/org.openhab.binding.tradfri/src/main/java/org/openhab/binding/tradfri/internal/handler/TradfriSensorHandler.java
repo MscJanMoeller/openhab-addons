@@ -59,7 +59,8 @@ public class TradfriSensorHandler extends TradfriDeviceHandler {
     @Override
     protected void onResourceUpdated(TradfriThingResource resource) {
         if (resource.matchesOneOf(SUPPORTED_SENSOR_TYPES_UIDS)) {
-            resource.as(TradfriDevice.class).ifPresent(sensor -> onSensorUpdated(sensor));
+            resource.as(TradfriDevice.class).ifPresentOrElse(sensor -> onSensorUpdated(sensor),
+                    () -> super.onResourceUpdated(resource));
         } else {
             // Delegate
             super.onResourceUpdated(resource);

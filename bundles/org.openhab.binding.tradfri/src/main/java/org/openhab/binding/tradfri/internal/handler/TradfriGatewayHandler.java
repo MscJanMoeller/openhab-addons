@@ -184,6 +184,7 @@ public class TradfriGatewayHandler extends BaseBridgeHandler implements CoapCall
 
         final DtlsConnectorConfig.Builder builder = new DtlsConnectorConfig.Builder();
         builder.setPskStore(new StaticPskStore(configuration.identity, configuration.preSharedKey.getBytes()));
+        builder.setConnectionListener(this);
         builder.setMaxConnections(100);
         // builder.setStaleConnectionThreshold(60);
         final DTLSConnector dtlsConnector = new DTLSConnector(builder.build());

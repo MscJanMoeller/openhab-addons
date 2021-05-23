@@ -84,7 +84,8 @@ public class TradfriGroupHandler extends TradfriThingResourceHandler {
     @Override
     protected void onResourceUpdated(TradfriThingResource resource) {
         if (resource.matches(THING_TYPE_GROUP)) {
-            resource.as(TradfriGroup.class).ifPresent(group -> onGroupUpdated(group));
+            resource.as(TradfriGroup.class).ifPresentOrElse(group -> onGroupUpdated(group),
+                    () -> super.onResourceUpdated(resource));
         } else {
             // Delegate
             super.onResourceUpdated(resource);
@@ -93,7 +94,7 @@ public class TradfriGroupHandler extends TradfriThingResourceHandler {
 
     private void onGroupUpdated(TradfriGroup group) {
         updateState(CHANNEL_BRIGHTNESS, group.getBrightness());
-        logger.debug("Updated channel {} of group {} to {}}", CHANNEL_BRIGHTNESS, group.getInstanceId().get(),
+        logger.debug("Updated channel {} of group {} to {}}", CHANNEL_BRIGHTNESS, group.getInstanceId().orElse("-1"),
                 group.getBrightness());
 
         // TODO update channels: color_temperature, color

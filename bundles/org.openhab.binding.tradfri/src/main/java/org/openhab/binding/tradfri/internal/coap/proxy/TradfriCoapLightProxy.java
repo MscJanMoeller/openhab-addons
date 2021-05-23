@@ -121,9 +121,8 @@ public abstract class TradfriCoapLightProxy extends TradfriCoapDeviceProxy imple
                 return Optional.of(color.getHSB());
             }
         } else {
-            Optional.of(HSBType.BLACK);
+            return Optional.of(HSBType.BLACK);
         }
-
         return Optional.empty();
     }
 

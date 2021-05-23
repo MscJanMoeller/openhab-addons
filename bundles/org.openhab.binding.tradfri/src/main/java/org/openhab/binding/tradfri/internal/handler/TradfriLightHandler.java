@@ -84,7 +84,8 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
     @Override
     protected void onResourceUpdated(TradfriThingResource resource) {
         if (resource.matchesOneOf(SUPPORTED_LIGHT_TYPES_UIDS)) {
-            resource.as(TradfriLight.class).ifPresent(bulb -> onLightUpdated(bulb));
+            resource.as(TradfriLight.class).ifPresentOrElse(bulb -> onLightUpdated(bulb),
+                    () -> super.onResourceUpdated(resource));
         } else {
             // Delegate
             super.onResourceUpdated(resource);
@@ -93,8 +94,8 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
 
     protected void onLightUpdated(TradfriLight bulb) {
         updateState(CHANNEL_BRIGHTNESS, bulb.getBrightness());
-        logger.trace("Updated channel {} of light bulb {} to {}}", CHANNEL_BRIGHTNESS, bulb.getInstanceId().get(),
-                bulb.getBrightness());
+        logger.trace("Updated channel {} of light bulb {} to {}}", CHANNEL_BRIGHTNESS,
+                bulb.getInstanceId().orElse("-1"), bulb.getBrightness());
 
         if (thingSupportsColorTemperature() && bulb.supportsColorTemperature()) {
             bulb.getColorTemperature().ifPresent(colorTemp -> updateState(CHANNEL_COLOR_TEMPERATURE, colorTemp));
@@ -103,9 +104,11 @@ public class TradfriLightHandler extends TradfriDeviceHandler {
         }
 
         if (thingSupportsColor() & bulb.supportsColor()) {
-            bulb.getColor().ifPresent(color -> updateState(CHANNEL_COLOR, color));
-            logger.trace("Updated channel {} of light bulb {} to {}}", CHANNEL_COLOR, bulb.getInstanceId().get(),
-                    bulb.getColor().get());
+            bulb.getColor().ifPresent(color -> {
+                updateState(CHANNEL_COLOR, color);
+                logger.trace("Updated channel {} of light bulb {} to {}}", CHANNEL_COLOR,
+                        bulb.getInstanceId().orElse("-1"), color);
+            });
         }
 
         onDeviceUpdated(bulb);

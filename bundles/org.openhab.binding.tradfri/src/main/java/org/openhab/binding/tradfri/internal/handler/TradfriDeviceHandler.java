@@ -14,8 +14,6 @@ package org.openhab.binding.tradfri.internal.handler;
 
 import static org.openhab.core.thing.Thing.*;
 
-import java.util.Optional;
-
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.binding.tradfri.internal.model.TradfriDevice;
 import org.openhab.binding.tradfri.internal.model.TradfriThingResource;
@@ -36,12 +34,8 @@ public abstract class TradfriDeviceHandler extends TradfriThingResourceHandler {
 
     @Override
     protected void onResourceUpdated(TradfriThingResource resource) {
-        Optional<TradfriDevice> device = resource.as(TradfriDevice.class);
-        if (device.isPresent()) {
-            onDeviceUpdated(device.get());
-        } else {
-            super.onResourceUpdated(resource);
-        }
+        resource.as(TradfriDevice.class).ifPresentOrElse((device) -> onDeviceUpdated(device),
+                () -> super.onResourceUpdated(resource));
     }
 
     protected void onDeviceUpdated(TradfriDevice device) {

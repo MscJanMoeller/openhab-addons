@@ -59,7 +59,8 @@ public class TradfriControllerHandler extends TradfriDeviceHandler {
     @Override
     protected void onResourceUpdated(TradfriThingResource resource) {
         if (resource.matchesOneOf(SUPPORTED_CONTROLLER_TYPES_UIDS)) {
-            resource.as(TradfriDevice.class).ifPresent(controller -> onControllerUpdated(controller));
+            resource.as(TradfriDevice.class).ifPresentOrElse(controller -> onControllerUpdated(controller),
+                    () -> super.onResourceUpdated(resource));
         } else {
             // Delegate
             super.onResourceUpdated(resource);
