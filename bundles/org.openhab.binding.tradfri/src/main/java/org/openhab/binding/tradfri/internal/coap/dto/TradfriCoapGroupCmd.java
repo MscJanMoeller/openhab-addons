@@ -58,5 +58,4 @@ public class TradfriCoapGroupCmd extends TradfriCoapCmd {
         addCommandProperty(TradfriBindingConstants.SCENE_ID, new JsonPrimitive(Integer.parseInt(sceneID)));
         return this;
     }
-
 }

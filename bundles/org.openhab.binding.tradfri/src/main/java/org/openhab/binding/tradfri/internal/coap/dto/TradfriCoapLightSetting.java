@@ -84,5 +84,4 @@ public class TradfriCoapLightSetting {
     public int getSaturation() {
         return this.saturation;
     }
-
 }

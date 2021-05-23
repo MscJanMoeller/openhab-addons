@@ -44,19 +44,19 @@ public class TradfriCoapDeviceInfo {
     private int batteryLevel = -1;
 
     public Optional<String> getVendor() {
-        return (this.vendor != null) ? Optional.of(this.vendor) : Optional.empty();
+        return Optional.ofNullable(this.vendor);
     }
 
     public Optional<String> getModel() {
-        return (this.model != null) ? Optional.of(this.model) : Optional.empty();
+        return Optional.ofNullable(this.model);
     }
 
     public Optional<String> getSerialNumber() {
-        return (this.serialNumber != null) ? Optional.of(this.serialNumber) : Optional.empty();
+        return Optional.ofNullable(this.serialNumber);
     }
 
     public Optional<String> getFirmware() {
-        return (this.firmware != null) ? Optional.of(this.firmware) : Optional.empty();
+        return Optional.ofNullable(this.firmware);
     }
 
     public int getPowerSource() {

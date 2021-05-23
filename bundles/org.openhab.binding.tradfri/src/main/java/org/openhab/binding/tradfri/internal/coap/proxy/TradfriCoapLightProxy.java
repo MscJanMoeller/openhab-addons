@@ -171,5 +171,4 @@ public abstract class TradfriCoapLightProxy extends TradfriCoapDeviceProxy imple
     private Optional<TradfriCoapLightSetting> getLightSetting() {
         return getDataAs(TradfriCoapLight.class).flatMap(light -> light.getLightSetting());
     }
-
 }

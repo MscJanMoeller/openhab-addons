@@ -255,5 +255,4 @@ public class TradfriBindingConstants {
 
     // List of fixed string
     public static final String TRADFRI_VENDOR_NAME = "IKEA of Sweden";
-
 }

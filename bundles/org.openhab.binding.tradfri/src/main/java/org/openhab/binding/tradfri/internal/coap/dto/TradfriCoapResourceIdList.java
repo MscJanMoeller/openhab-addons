@@ -13,6 +13,7 @@
 package org.openhab.binding.tradfri.internal.coap.dto;
 
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
@@ -60,6 +61,6 @@ public class TradfriCoapResourceIdList {
     }
 
     public Set<String> toSet() {
-        return (this.instanceIDs != null) ? this.instanceIDs : Collections.emptySet();
+        return Objects.requireNonNullElse(this.instanceIDs, Collections.emptySet());
     }
 }

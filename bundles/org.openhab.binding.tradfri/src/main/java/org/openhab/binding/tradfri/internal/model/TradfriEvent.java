@@ -74,5 +74,4 @@ public class TradfriEvent {
         TradfriEvent other = (TradfriEvent) obj;
         return Objects.equals(id, other.id) && type == other.type;
     }
-
 }

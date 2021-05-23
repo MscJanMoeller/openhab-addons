@@ -246,6 +246,5 @@ public class TradfriCoapClientTest {
         // job6 & job7 already executed, job8 not
         when(job.isDone()).thenReturn(true, true, false);
         Objects.requireNonNull(scheduledJobs.poll()).run();
-
     }
 }

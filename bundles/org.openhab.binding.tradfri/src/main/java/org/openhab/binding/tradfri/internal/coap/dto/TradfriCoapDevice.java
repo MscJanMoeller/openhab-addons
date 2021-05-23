@@ -88,11 +88,10 @@ public class TradfriCoapDevice extends TradfriCoapResource {
     }
 
     public Optional<TradfriCoapDeviceInfo> getDeviceInfo() {
-        return (this.deviceInfo != null) ? Optional.of(this.deviceInfo) : Optional.empty();
+        return Optional.ofNullable(this.deviceInfo);
     }
 
     public boolean isAlive() {
         return getReachabilityState() == TradfriBindingConstants.REACHABILITY_STATE_ALIVE;
     }
-
 }

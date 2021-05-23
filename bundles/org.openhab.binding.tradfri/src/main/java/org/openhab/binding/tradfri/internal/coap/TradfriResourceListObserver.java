@@ -136,5 +136,4 @@ public class TradfriResourceListObserver {
         this.cachedResources = currentResources;
         updateCounter++;
     }
-
 }

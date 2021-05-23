@@ -68,5 +68,4 @@ public class TradfriCoapLightCmd extends TradfriCoapCmd {
         }
         return this;
     }
-
 }

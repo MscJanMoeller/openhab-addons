@@ -12,6 +12,7 @@
  */
 package org.openhab.binding.tradfri.internal.coap.dto;
 
+import java.util.Objects;
 import java.util.Optional;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
@@ -51,7 +52,7 @@ public class TradfriCoapGroup extends TradfriCoapResource {
     private @Nullable DeviceLinks deviceLinks;
 
     public Optional<String> getSceneId() {
-        return (this.sceneId != null) ? Optional.of(this.sceneId) : Optional.empty();
+        return Optional.ofNullable(this.sceneId);
     }
 
     public int getGroupType() {
@@ -60,10 +61,8 @@ public class TradfriCoapGroup extends TradfriCoapResource {
 
     public TradfriCoapResourceIdList getMembers() {
         if (this.deviceLinks != null) {
-            final TradfriCoapResourceIdList resourceLinks = this.deviceLinks.resourceLinks;
-            return resourceLinks != null ? resourceLinks : TradfriCoapResourceIdList.empty();
+            return Objects.requireNonNullElse(this.deviceLinks.resourceLinks, TradfriCoapResourceIdList.empty());
         }
         return TradfriCoapResourceIdList.empty();
     }
-
 }

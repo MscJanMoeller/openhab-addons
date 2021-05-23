@@ -42,7 +42,7 @@ public class TradfriCoapResource {
     }
 
     public Optional<String> getName() {
-        return (this.name != null) ? Optional.of(this.name) : Optional.empty();
+        return Optional.ofNullable(this.name);
     }
 
     public long getTimestampCreatedAt() {
@@ -50,6 +50,6 @@ public class TradfriCoapResource {
     }
 
     public Optional<String> getInstanceId() {
-        return (this.instanceId != null) ? Optional.of(this.instanceId) : Optional.empty();
+        return Optional.ofNullable(this.instanceId);
     }
 }

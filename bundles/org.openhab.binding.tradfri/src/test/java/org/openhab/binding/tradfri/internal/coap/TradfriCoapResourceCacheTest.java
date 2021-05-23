@@ -248,5 +248,4 @@ public class TradfriCoapResourceCacheTest {
         assertThat(expectedResources.remove(), is(device));
         assertThat(expectedResources.remove(), is(device));
     }
-
 }
