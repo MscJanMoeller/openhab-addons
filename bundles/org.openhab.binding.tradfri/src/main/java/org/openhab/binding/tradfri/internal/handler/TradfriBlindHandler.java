@@ -10,17 +10,17 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.tradfri.internal.handler.legacy;
+package org.openhab.binding.tradfri.internal.handler;
 
 import static org.openhab.binding.tradfri.internal.TradfriBindingConstants.*;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.openhab.binding.tradfri.internal.model.legacy.TradfriBlindData;
-import org.openhab.core.library.types.DecimalType;
-import org.openhab.core.library.types.OnOffType;
+import org.openhab.binding.tradfri.internal.model.TradfriBlind;
+import org.openhab.binding.tradfri.internal.model.TradfriThingResource;
 import org.openhab.core.library.types.PercentType;
 import org.openhab.core.library.types.StopMoveType;
 import org.openhab.core.library.types.UpDownType;
+import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.ChannelUID;
 import org.openhab.core.thing.Thing;
 import org.openhab.core.thing.ThingStatus;
@@ -29,15 +29,14 @@ import org.openhab.core.types.RefreshType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.JsonElement;
-
 /**
  * The {@link TradfriBlindHandler} is responsible for handling commands for individual blinds.
  *
  * @author Manuel Raffel - Initial contribution
+ * @author Jan Möller - Refactored
  */
 @NonNullByDefault
-public class TradfriBlindHandler extends TradfriThingHandler {
+public class TradfriBlindHandler extends TradfriDeviceHandler {
 
     private final Logger logger = LoggerFactory.getLogger(TradfriBlindHandler.class);
 
@@ -46,75 +45,67 @@ public class TradfriBlindHandler extends TradfriThingHandler {
     }
 
     @Override
-    public void onUpdate(JsonElement data) {
-        if (active && !(data.isJsonNull())) {
-            TradfriBlindData state = new TradfriBlindData(data);
-            updateStatus(state.getReachabilityStatus() ? ThingStatus.ONLINE : ThingStatus.OFFLINE);
-
-            PercentType position = state.getPosition();
-            if (position != null) {
-                updateState(CHANNEL_POSITION, position);
-            }
-
-            DecimalType batteryLevel = state.getBatteryLevel();
-            if (batteryLevel != null) {
-                updateState(CHANNEL_BATTERY_LEVEL, batteryLevel);
-            }
-
-            OnOffType batteryLow = state.getBatteryLow();
-            if (batteryLow != null) {
-                updateState(CHANNEL_BATTERY_LOW, batteryLow);
-            }
-
-            updateDeviceProperties(state);
-
-            logger.debug(
-                    "Updating thing for blindId {} to state {position: {}, firmwareVersion: {}, modelId: {}, vendor: {}}",
-                    state.getDeviceId(), position, state.getFirmwareVersion(), state.getModelId(), state.getVendor());
-        }
-    }
-
-    private void setPosition(PercentType percent) {
-        set(new TradfriBlindData().setPosition(percent).getJsonString());
-    }
-
-    private void triggerStop() {
-        set(new TradfriBlindData().stop().getJsonString());
-    }
-
-    @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
-        if (active) {
+        Bridge gateway = getBridge();
+        if (gateway != null && gateway.getStatus() == ThingStatus.ONLINE) {
             if (command instanceof RefreshType) {
                 logger.debug("Refreshing channel {}", channelUID);
-                coapClient.asyncGet(this);
+                getResource().ifPresent(resource -> resource.triggerUpdate());
                 return;
             }
-
             switch (channelUID.getId()) {
                 case CHANNEL_POSITION:
-                    handlePositionCommand(command);
+                    getResourceAs(TradfriBlind.class).ifPresent(blind -> handlePositionCommand(command, blind));
                     break;
                 default:
                     logger.error("Unknown channel UID {}", channelUID);
             }
+        } else {
+            logger.debug("Bridge not online. Cannot handle command {} for channel {}", command, channelUID);
         }
     }
 
-    private void handlePositionCommand(Command command) {
+    @Override
+    protected void onResourceUpdated(TradfriThingResource resource) {
+        if (resource.matches(THING_TYPE_BLINDS)) {
+            resource.as(TradfriBlind.class).ifPresentOrElse(blind -> onBlindUpdated(blind),
+                    () -> super.onResourceUpdated(resource));
+        } else {
+            // Delegate
+            super.onResourceUpdated(resource);
+        }
+    }
+
+    protected void onBlindUpdated(TradfriBlind blind) {
+        updateState(CHANNEL_POSITION, blind.getPosition());
+        logger.trace("Updated channel {} of blind {} to {}}", CHANNEL_POSITION, blind.getInstanceId().orElse("-1"),
+                blind.getBatteryLevel());
+
+        updateState(CHANNEL_BATTERY_LEVEL, blind.getBatteryLevel());
+        logger.trace("Updated channel {} of blind {} to {}}", CHANNEL_BATTERY_LEVEL, blind.getInstanceId().orElse("-1"),
+                blind.getBatteryLevel());
+
+        updateState(CHANNEL_BATTERY_LOW, blind.getBatteryLow());
+        logger.trace("Updated channel {} of blind {} to {}}", CHANNEL_BATTERY_LOW, blind.getInstanceId().orElse("-1"),
+                blind.getBatteryLevel());
+
+        onDeviceUpdated(blind);
+    }
+
+    private void handlePositionCommand(Command command, TradfriBlind blind) {
         if (command instanceof PercentType) {
-            setPosition((PercentType) command);
+            blind.setPosition((PercentType) command);
         } else if (command instanceof StopMoveType) {
             if (StopMoveType.STOP.equals(command)) {
-                triggerStop();
+                blind.stop();
             } else {
                 logger.debug("Cannot handle command '{}' for channel '{}'", command, CHANNEL_POSITION);
             }
         } else if (command instanceof UpDownType) {
             if (UpDownType.UP.equals(command)) {
-                setPosition(PercentType.ZERO);
+                blind.setPosition(PercentType.ZERO);
             } else {
-                setPosition(PercentType.HUNDRED);
+                blind.setPosition(PercentType.HUNDRED);
             }
         } else {
             logger.debug("Cannot handle command '{}' for channel '{}'", command, CHANNEL_POSITION);

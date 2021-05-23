@@ -69,11 +69,11 @@ public class TradfriSensorHandler extends TradfriDeviceHandler {
 
     protected void onSensorUpdated(TradfriDevice sensor) {
         updateState(CHANNEL_BATTERY_LEVEL, sensor.getBatteryLevel());
-        logger.trace("Updated channel {} of sensor {} to {}}", CHANNEL_BATTERY_LEVEL, sensor.getInstanceId().get(),
-                sensor.getBatteryLevel());
+        logger.trace("Updated channel {} of sensor {} to {}}", CHANNEL_BATTERY_LEVEL,
+                sensor.getInstanceId().orElse("-1"), sensor.getBatteryLevel());
 
         updateState(CHANNEL_BATTERY_LOW, sensor.getBatteryLow());
-        logger.trace("Updated channel {} of sensor {} to {}}", CHANNEL_BATTERY_LOW, sensor.getInstanceId().get(),
+        logger.trace("Updated channel {} of sensor {} to {}}", CHANNEL_BATTERY_LOW, sensor.getInstanceId().orElse("-1"),
                 sensor.getBatteryLevel());
 
         onDeviceUpdated(sensor);

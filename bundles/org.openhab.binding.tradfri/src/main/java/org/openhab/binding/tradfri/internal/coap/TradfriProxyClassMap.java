@@ -19,6 +19,7 @@ import java.util.Arrays;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapBlindProxy;
 import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapColorLightProxy;
 import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapColorTempLightProxy;
 import org.openhab.binding.tradfri.internal.coap.proxy.TradfriCoapDeviceProxy;
@@ -93,8 +94,7 @@ public class TradfriProxyClassMap {
             }
         } else if (DEVICE_TYPE_BLINDS == type && payload.has(BLINDS)) {
             // Blinds: THING_TYPE_BLINDS
-            // TODO: change to specific proxy class
-            proxyClass = TradfriCoapDeviceProxy.class;
+            proxyClass = TradfriCoapBlindProxy.class;
         } else if (DEVICE_TYPE_PLUG == type && payload.has(PLUG)) {
             // Smart plug: THING_TYPE_ONOFF_PLUG
             // TODO: change to specific proxy class

@@ -70,11 +70,11 @@ public class TradfriControllerHandler extends TradfriDeviceHandler {
     protected void onControllerUpdated(TradfriDevice controller) {
         updateState(CHANNEL_BATTERY_LEVEL, controller.getBatteryLevel());
         logger.trace("Updated channel {} of controller {} to {}}", CHANNEL_BATTERY_LEVEL,
-                controller.getInstanceId().get(), controller.getBatteryLevel());
+                controller.getInstanceId().orElse("-1"), controller.getBatteryLevel());
 
         updateState(CHANNEL_BATTERY_LOW, controller.getBatteryLow());
         logger.trace("Updated channel {} of controller {} to {}}", CHANNEL_BATTERY_LOW,
-                controller.getInstanceId().get(), controller.getBatteryLevel());
+                controller.getInstanceId().orElse("-1"), controller.getBatteryLevel());
 
         onDeviceUpdated(controller);
     }

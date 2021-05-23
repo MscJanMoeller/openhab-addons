@@ -299,4 +299,21 @@ public class TradfriDiscoveryServiceTest {
         assertThat(discoveryResult.getProperties().get(CONFIG_ID), is(65538));
         assertThat(discoveryResult.getRepresentationProperty(), is(CONFIG_ID));
     }
+
+    @Test
+    public void validDiscoveryResultBlind() {
+        String jsonResponse = "{\"3\":{\"0\":\"IKEA of Sweden\",\"1\":\"FYRTUR block-out roller blind\",\"2\":\"\",\"3\":\"2.2.007\",\"6\":3,\"9\":77},\"5750\":7,\"9001\":\"Blind name\",\"9002\":1566141494,\"9003\":65601,\"9019\":1,\"9020\":1566402653,\"9054\":0,\"9084\":\" 9d 58 b0 2 4 6a df be 77 e5 c1 e0 a2 26 2e 57\",\"15015\":[{\"5536\":51.0,\"9003\":0}]}";
+
+        prepareStubsWith("65601", jsonResponse);
+        proxyFactory.createAndAddDeviceProxy("65601");
+        discovery.onEvent(TradfriEvent.from("65601", EType.RESOURCE_ADDED));
+
+        assertNotNull(discoveryResult);
+        assertThat(discoveryResult.getFlag(), is(DiscoveryResultFlag.NEW));
+        assertThat(discoveryResult.getThingUID(), is(new ThingUID("tradfri:0202:1:65601")));
+        assertThat(discoveryResult.getThingTypeUID(), is(THING_TYPE_BLINDS));
+        assertThat(discoveryResult.getBridgeUID(), is(GATEWAY_THING_UID));
+        assertThat(discoveryResult.getProperties().get(CONFIG_ID), is(65601));
+        assertThat(discoveryResult.getRepresentationProperty(), is(CONFIG_ID));
+    }
 }
